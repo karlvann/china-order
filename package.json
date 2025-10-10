@@ -1,5 +1,5 @@
 {
-  "name": "ultra",
+  "name": "china-order",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Mattress Order System - Inventory Management",
+  "description": "China Order System - Spring and Component Inventory Management",
   "dependencies": {
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
