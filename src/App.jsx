@@ -4,6 +4,7 @@ import InventoryTable from './components/InventoryTable';
 import { CoverageGrid } from './components/CoverageCard';
 import PalletList from './components/PalletList';
 import RunwayMini from './components/RunwayMini';
+import ComponentRunway from './components/ComponentRunway';
 
 // Import algorithms
 import {
@@ -275,6 +276,15 @@ export default function App() {
                 inventory={inventory}
                 springOrder={springOrder}
                 showDetails={false}
+              />
+            </section>
+
+            {/* Component Coverage */}
+            <section style={styles.section}>
+              <ComponentRunway
+                inventory={inventory}
+                springOrder={springOrder}
+                componentOrder={componentOrder}
               />
             </section>
 
