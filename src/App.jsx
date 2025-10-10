@@ -1,457 +1,52 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import SaveLoadModal from './SaveLoadModal';
 
-// Business Constants
-const LEAD_TIME_WEEKS = 10;
-const SPRINGS_PER_PALLET = 30;
-const MIN_PALLETS = 4;
-const MAX_PALLETS = 12;
-const DEFAULT_PALLETS = 8;
+// Import algorithms from lib
+import {
+  calculateCoverage,
+  calculateNPlus1Order,
+  calculateComponentOrder,
+  optimizeComponentOrder,
+  generateTSV
+} from './lib/algorithms';
 
-const MATTRESS_SIZES = [
-  { id: 'King', name: 'King', ratio: 0.3688 },
-  { id: 'Queen', name: 'Queen', ratio: 0.5115 },
-  { id: 'Double', name: 'Double', ratio: 0.0688 },
-  { id: 'King Single', name: 'King Single', ratio: 0.0385 },
-  { id: 'Single', name: 'Single', ratio: 0.0125 }
-];
+// Import constants
+import {
+  LEAD_TIME_WEEKS,
+  SPRINGS_PER_PALLET,
+  MIN_PALLETS,
+  MAX_PALLETS,
+  DEFAULT_PALLETS,
+  MATTRESS_SIZES,
+  MONTHLY_SALES_RATE,
+  FIRMNESS_TYPES,
+  FIRMNESS_DISTRIBUTION,
+  BUSY_MONTHS,
+  SEASONAL_MULTIPLIER_BUSY,
+  SEASONAL_MULTIPLIER_SLOW,
+  COMPONENT_TYPES
+} from './lib/constants';
 
-const FIRMNESS_TYPES = ['firm', 'medium', 'soft'];
-
-const FIRMNESS_DISTRIBUTION = {
-  'King': { firm: 0.1356, medium: 0.8446, soft: 0.0198 },
-  'Queen': { firm: 0.1344, medium: 0.8269, soft: 0.0387 },
-  'Double': { firm: 0.2121, medium: 0.6061, soft: 0.1818 },
-  'King Single': { firm: 0.1622, medium: 0.6216, soft: 0.2162 },
-  'Single': { firm: 0.2500, medium: 0.5833, soft: 0.1667 }
-};
-
-const MONTHLY_SALES_RATE = {
-  'King': 30,
-  'Queen': 41,
-  'Double': 6,
-  'King Single': 3,
-  'Single': 1
-};
-
-// Seasonality: April-August is 30% busier
-const BUSY_MONTHS = [3, 4, 5, 6, 7]; // April=3, May=4, June=5, July=6, August=7 (0-indexed)
-const SEASONAL_MULTIPLIER_BUSY = 1.14; // 14% above average
-const SEASONAL_MULTIPLIER_SLOW = 0.88; // 12% below average
-
-const COMPONENT_TYPES = [
-  { id: 'micro_coils', name: 'Micro Coils', multiplier: 1.5, lotSize: 20 },
-  { id: 'thin_latex', name: 'Thin Latex', multiplier: 1.5, lotSize: 10 },
-  { id: 'felt', name: 'Felt', multiplier: 1.0, lotSize: 10 },
-  { id: 'top_panel', name: 'Top Panel', multiplier: 1.0, lotSize: 10 },
-  { id: 'bottom_panel', name: 'Bottom Panel', multiplier: 1.0, lotSize: 20 },
-  { id: 'side_panel', name: 'Side Panel', multiplier: 1.0, lotSize: 20 }
-];
-
-// Initialize empty inventory structure
-const createEmptySpringInventory = () => ({
-  firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-  medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-  soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-});
-
-const createEmptyComponentInventory = () => {
-  const inv = {};
-  COMPONENT_TYPES.forEach(comp => {
-    inv[comp.id] = { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 };
-  });
-  return inv;
-};
-
-// Algorithm 1: Coverage Calculation
-const calculateCoverage = (inventory, size) => {
-  const totalStock = FIRMNESS_TYPES.reduce((sum, firmness) => 
-    sum + (inventory.springs[firmness][size] || 0), 0
-  );
-  const monthlySales = MONTHLY_SALES_RATE[size] || 0;
-  
-  if (monthlySales === 0) {
-    return totalStock > 0 ? Infinity : 0;
-  }
-  return totalStock / monthlySales;
-};
-
-// Algorithm 2: Find Critical Small Size(s)
-const findCriticalSmallSizes = (inventory, count = 1) => {
-  const smallSizes = ['Double', 'King Single', 'Single'];
-  
-  // Calculate medium coverage for each size (using medium firmness as tiebreaker)
-  const sizesWithCoverage = smallSizes.map(size => {
-    const totalStock = FIRMNESS_TYPES.reduce((sum, firmness) => 
-      sum + (inventory.springs[firmness][size] || 0), 0
-    );
-    const mediumStock = inventory.springs['medium'][size] || 0;
-    const monthlySales = MONTHLY_SALES_RATE[size] || 0;
-    const mediumRatio = FIRMNESS_DISTRIBUTION[size]['medium'];
-    const mediumMonthlySales = monthlySales * mediumRatio;
-    
-    const totalCoverage = monthlySales === 0 ? (totalStock > 0 ? Infinity : 0) : totalStock / monthlySales;
-    const mediumCoverage = mediumMonthlySales === 0 ? (mediumStock > 0 ? Infinity : 0) : mediumStock / mediumMonthlySales;
-    
-    return {
-      size,
-      totalCoverage,
-      mediumCoverage
-    };
-  });
-  
-  // Sort by medium coverage first, then total coverage
-  sizesWithCoverage.sort((a, b) => {
-    if (a.mediumCoverage !== b.mediumCoverage) {
-      return a.mediumCoverage - b.mediumCoverage;
-    }
-    return a.totalCoverage - b.totalCoverage;
-  });
-  
-  return sizesWithCoverage.slice(0, count).map(item => item.size);
-};
-
-// Backward compatibility wrapper
-const findCriticalSmallSize = (inventory) => {
-  return findCriticalSmallSizes(inventory, 1)[0];
-};
-
-// Algorithm 3: Create Pallets for Size (with dynamic firmness allocation)
-const createPalletsForSize = (size, numPallets, palletIdStart, palletType, inventory) => {
-  const totalUnits = numPallets * SPRINGS_PER_PALLET;
-  const monthlySales = MONTHLY_SALES_RATE[size];
-  const targetCoverage = 8; // Target 8 months of coverage
-  
-  // Calculate current coverage and need for each firmness
-  const firmnesNeeds = {};
-  let totalNeed = 0;
-  
-  FIRMNESS_TYPES.forEach(firmness => {
-    const currentStock = inventory.springs[firmness][size];
-    const firmRatio = FIRMNESS_DISTRIBUTION[size][firmness];
-    const monthlyDepletion = monthlySales * firmRatio;
-    const currentCoverage = monthlyDepletion > 0 ? currentStock / monthlyDepletion : Infinity;
-    const targetStock = monthlyDepletion * targetCoverage;
-    const need = Math.max(0, targetStock - currentStock);
-    
-    firmnesNeeds[firmness] = need;
-    totalNeed += need;
-  });
-  
-  // Distribute springs based on need
-  let firmUnits, mediumUnits, softUnits;
-  
-  if (totalNeed === 0) {
-    // If no need, use default ratios
-    const firmRatios = FIRMNESS_DISTRIBUTION[size];
-    firmUnits = Math.round(totalUnits * firmRatios.firm);
-    mediumUnits = Math.round(totalUnits * firmRatios.medium);
-    softUnits = Math.round(totalUnits * firmRatios.soft);
-  } else {
-    // Distribute based on proportional need
-    firmUnits = Math.round((firmnesNeeds.firm / totalNeed) * totalUnits);
-    mediumUnits = Math.round((firmnesNeeds.medium / totalNeed) * totalUnits);
-    softUnits = Math.round((firmnesNeeds.soft / totalNeed) * totalUnits);
-  }
-  
-  // Adjust for rounding errors
-  const total = firmUnits + mediumUnits + softUnits;
-  if (total !== totalUnits) {
-    const diff = totalUnits - total;
-    mediumUnits += diff;
-  }
-  
-  const remaining = { firm: firmUnits, medium: mediumUnits, soft: softUnits };
-  const pallets = [];
-  let palletId = palletIdStart;
-  
-  // Step 1: Create pure pallets
-  ['firm', 'medium', 'soft'].forEach(firmness => {
-    while (remaining[firmness] >= SPRINGS_PER_PALLET) {
-      pallets.push({
-        id: palletId++,
-        size,
-        type: 'Pure',
-        firmness_breakdown: { [firmness]: SPRINGS_PER_PALLET },
-        total: SPRINGS_PER_PALLET
-      });
-      remaining[firmness] -= SPRINGS_PER_PALLET;
-    }
-  });
-  
-  // Step 2: Create mixed pallets
-  while (remaining.firm + remaining.medium + remaining.soft >= SPRINGS_PER_PALLET) {
-    const pallet = {
-      id: palletId++,
-      size,
-      type: palletType === 'Critical' ? 'Critical' : 'Mixed',
-      firmness_breakdown: {},
-      total: 0
-    };
-    
-    ['firm', 'medium', 'soft'].forEach(firmness => {
-      if (remaining[firmness] > 0) {
-        const toAdd = Math.min(remaining[firmness], SPRINGS_PER_PALLET - pallet.total);
-        if (toAdd > 0) {
-          pallet.firmness_breakdown[firmness] = toAdd;
-          remaining[firmness] -= toAdd;
-          pallet.total += toAdd;
-        }
-      }
-    });
-    
-    pallets.push(pallet);
-  }
-  
-  // Step 3: Pad critical pallet if needed
-  if (palletType === 'Critical' && pallets.length > 0) {
-    const lastPallet = pallets[pallets.length - 1];
-    if (lastPallet.total < SPRINGS_PER_PALLET) {
-      const needed = SPRINGS_PER_PALLET - lastPallet.total;
-      
-      // Distribute based on need ratios
-      let addFirm, addMedium, addSoft;
-      if (totalNeed === 0) {
-        const firmRatios = FIRMNESS_DISTRIBUTION[size];
-        addFirm = Math.round(needed * firmRatios.firm);
-        addMedium = Math.round(needed * firmRatios.medium);
-        addSoft = needed - addFirm - addMedium;
-      } else {
-        addFirm = Math.round((firmnesNeeds.firm / totalNeed) * needed);
-        addMedium = Math.round((firmnesNeeds.medium / totalNeed) * needed);
-        addSoft = needed - addFirm - addMedium;
-      }
-      
-      lastPallet.firmness_breakdown.firm = (lastPallet.firmness_breakdown.firm || 0) + addFirm;
-      lastPallet.firmness_breakdown.medium = (lastPallet.firmness_breakdown.medium || 0) + addMedium;
-      lastPallet.firmness_breakdown.soft = (lastPallet.firmness_breakdown.soft || 0) + addSoft;
-      lastPallet.total = SPRINGS_PER_PALLET;
-    }
-  }
-  
-  return pallets;
-};
-
-// Algorithm 4: N+1 or N+2 Pallet Optimization
-const calculateNPlus1Order = (totalPallets, inventory, smallSizePallets = 1) => {
-  // Get the top N critical small sizes
-  const criticalSizes = findCriticalSmallSizes(inventory, smallSizePallets);
-  
-  let pallets = [];
-  let palletIdCounter = 1;
-  
-  // Allocate 1 pallet to each critical size
-  criticalSizes.forEach(criticalSize => {
-    const criticalPallets = createPalletsForSize(criticalSize, 1, palletIdCounter, 'Critical', inventory);
-    pallets = [...pallets, ...criticalPallets];
-    palletIdCounter += criticalPallets.length;
-  });
-  
-  const kingCoverage = calculateCoverage(inventory, 'King');
-  const queenCoverage = calculateCoverage(inventory, 'Queen');
-  
-  const remainingPallets = totalPallets - smallSizePallets;
-  let queenPallets, kingPallets;
-  
-  if (queenCoverage <= kingCoverage) {
-    queenPallets = Math.round(remainingPallets * 0.6);
-    kingPallets = remainingPallets - queenPallets;
-  } else {
-    kingPallets = Math.round(remainingPallets * 0.6);
-    queenPallets = remainingPallets - kingPallets;
-  }
-  
-  const queenPalletList = createPalletsForSize('Queen', queenPallets, palletIdCounter, 'Mixed', inventory);
-  pallets = [...pallets, ...queenPalletList];
-  palletIdCounter += queenPalletList.length;
-  
-  const kingPalletList = createPalletsForSize('King', kingPallets, palletIdCounter, 'Mixed', inventory);
-  pallets = [...pallets, ...kingPalletList];
-  
-  const springs = createEmptySpringInventory();
-  
-  pallets.forEach(pallet => {
-    Object.entries(pallet.firmness_breakdown).forEach(([firmness, count]) => {
-      springs[firmness][pallet.size] += count;
-    });
-  });
-  
-  const purePallets = pallets.filter(p => p.type === 'Pure').length;
-  const mixedPallets = pallets.filter(p => p.type !== 'Pure').length;
-  const totalSprings = pallets.reduce((sum, p) => sum + p.total, 0);
-  
-  return {
-    springs,
-    metadata: {
-      total_pallets: totalPallets,
-      total_springs: totalSprings,
-      pure_pallets: purePallets,
-      mixed_pallets: mixedPallets,
-      critical_sizes: criticalSizes,
-      small_size_pallets: smallSizePallets
-    },
-    pallets
-  };
-};
-
-// Algorithm 5: Component Calculation
-const calculateComponentOrder = (springOrder, componentInventory) => {
-  const componentOrder = {};
-  
-  COMPONENT_TYPES.forEach(comp => {
-    componentOrder[comp.id] = {};
-    
-    MATTRESS_SIZES.forEach(size => {
-      const totalSprings = FIRMNESS_TYPES.reduce((sum, firmness) => 
-        sum + (springOrder.springs[firmness][size.id] || 0), 0
-      );
-      const rawNeed = Math.ceil(totalSprings * comp.multiplier);
-      componentOrder[comp.id][size.id] = rawNeed;
-    });
-  });
-  
-  // Apply consolidation rules
-  // Micro Coils & Thin Latex: Don't order for small sizes
-  ['micro_coils', 'thin_latex'].forEach(comp => {
-    componentOrder[comp]['Double'] = 0;
-    componentOrder[comp]['King Single'] = 0;
-    componentOrder[comp]['Single'] = 0;
-  });
-  
-  // Apply consolidation for side panels
-  componentOrder['side_panel']['Double'] += componentOrder['side_panel']['Single'];
-  componentOrder['side_panel']['Double'] += componentOrder['side_panel']['King Single'];
-  componentOrder['side_panel']['Single'] = 0;
-  componentOrder['side_panel']['King Single'] = 0;
-  
-  // Subtract current inventory
-  COMPONENT_TYPES.forEach(comp => {
-    MATTRESS_SIZES.forEach(size => {
-      const currentStock = componentInventory[comp.id][size.id] || 0;
-      componentOrder[comp.id][size.id] = Math.max(0, componentOrder[comp.id][size.id] - currentStock);
-    });
-  });
-  
-  return componentOrder;
-};
-
-// Algorithm 6: Export Optimization
-const optimizeComponentOrder = (componentOrder, format) => {
-  if (format === 'exact') return componentOrder;
-  
-  const optimized = {};
-  
-  COMPONENT_TYPES.forEach(comp => {
-    optimized[comp.id] = {};
-    
-    MATTRESS_SIZES.forEach(size => {
-      const quantity = componentOrder[comp.id][size.id];
-      
-      if (quantity === 0) {
-        optimized[comp.id][size.id] = 0;
-        return;
-      }
-      
-      const lotSize = comp.lotSize;
-      const bufferThreshold = lotSize === 20 ? 10 : 5;
-      const bufferAdd = 20;
-      
-      const rounded = Math.ceil(quantity / lotSize) * lotSize;
-      const difference = rounded - quantity;
-      
-      if (difference <= bufferThreshold) {
-        optimized[comp.id][size.id] = rounded + bufferAdd;
-      } else {
-        optimized[comp.id][size.id] = rounded;
-      }
-    });
-  });
-  
-  return optimized;
-};
-
-// Algorithm 7: TSV Export Generation
-const generateTSV = (springOrder, componentOrder, format) => {
-  const date = new Date().toISOString().split('T')[0];
-  const lines = [];
-  
-  lines.push(`ULTRA ORDER - Container Order - ${date}`);
-  lines.push(`Format: ${format === 'exact' ? 'Exact Calculations' : 'Optimized for Supplier'}`);
-  lines.push(`Total Pallets: ${springOrder.metadata.total_pallets}`);
-  lines.push(`Total Springs: ${springOrder.metadata.total_springs}`);
-  lines.push(`Critical Small Size${springOrder.metadata.critical_sizes.length > 1 ? 's' : ''}: ${springOrder.metadata.critical_sizes.join(', ')}`);
-  lines.push('');
-  
-  lines.push('PALLET BREAKDOWN');
-  lines.push('Pallet ID\tSize\tType\tFirm\tMedium\tSoft\tTotal');
-  springOrder.pallets.forEach(pallet => {
-    lines.push([
-      pallet.id,
-      pallet.size,
-      pallet.type,
-      pallet.firmness_breakdown.firm || '',
-      pallet.firmness_breakdown.medium || '',
-      pallet.firmness_breakdown.soft || '',
-      pallet.total
-    ].join('\t'));
-  });
-  lines.push('');
-  
-  lines.push('SPRINGS ORDER');
-  lines.push('Firmness\tKing\tQueen\tDouble\tKing Single\tSingle\tTotal');
-  FIRMNESS_TYPES.forEach(firmness => {
-    const row = [firmness.charAt(0).toUpperCase() + firmness.slice(1)];
-    let total = 0;
-    MATTRESS_SIZES.forEach(size => {
-      const val = springOrder.springs[firmness][size.id];
-      row.push(val);
-      total += val;
-    });
-    row.push(total);
-    lines.push(row.join('\t'));
-  });
-  lines.push('');
-  
-  lines.push('COMPONENTS ORDER');
-  lines.push('Component\tKing\tQueen\tDouble\tKing Single\tSingle\tTotal');
-  COMPONENT_TYPES.forEach(comp => {
-    const row = [comp.name];
-    let total = 0;
-    MATTRESS_SIZES.forEach(size => {
-      const val = componentOrder[comp.id][size.id];
-      row.push(val);
-      total += val;
-    });
-    row.push(total);
-    lines.push(row.join('\t'));
-  });
-  lines.push('');
-  
-  lines.push('SUMMARY');
-  lines.push(`Pure Pallets: ${springOrder.metadata.pure_pallets}`);
-  lines.push(`Mixed Pallets: ${springOrder.metadata.mixed_pallets}`);
-  const efficiency = Math.round((springOrder.metadata.pure_pallets / springOrder.metadata.total_pallets) * 100);
-  lines.push(`Pure Pallet Efficiency: ${efficiency}%`);
-  
-  return lines.join('\n');
-};
+// Import utilities
+import { createEmptySpringInventory, createEmptyComponentInventory } from './lib/utils/inventory';
 
 // Main App Component
 export default function MattressOrderSystem() {
   const [activeTab, setActiveTab] = useState('goal');
   const [palletCount, setPalletCount] = useState(DEFAULT_PALLETS);
-  const [smallSizePallets, setSmallSizePallets] = useState(1); // N+1 or N+2
   const [exportFormat, setExportFormat] = useState('optimized');
   const [copyFeedback, setCopyFeedback] = useState(false);
-  
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
   const [inventory, setInventory] = useState({
     springs: createEmptySpringInventory(),
     components: createEmptyComponentInventory()
   });
-  
-  // Calculate spring order
+
+  // Calculate spring order (automatic N+0, N+1, or N+2 based on inventory)
   const springOrder = useMemo(() => {
-    return calculateNPlus1Order(palletCount, inventory, smallSizePallets);
-  }, [palletCount, inventory, smallSizePallets]);
+    return calculateNPlus1Order(palletCount, inventory);
+  }, [palletCount, inventory]);
   
   // Calculate component order
   const componentOrder = useMemo(() => {
@@ -514,7 +109,31 @@ export default function MattressOrderSystem() {
     a.click();
     URL.revokeObjectURL(url);
   };
-  
+
+  // Get current state for saving
+  const getCurrentSaveData = () => ({
+    inventory,
+    settings: {
+      palletCount,
+      exportFormat
+    }
+  });
+
+  // Apply loaded state
+  const applyLoadedData = (data) => {
+    if (data.inventory) {
+      setInventory(data.inventory);
+    }
+    if (data.settings) {
+      if (data.settings.palletCount !== undefined) {
+        setPalletCount(data.settings.palletCount);
+      }
+      if (data.settings.exportFormat !== undefined) {
+        setExportFormat(data.settings.exportFormat);
+      }
+    }
+  };
+
   return (
     <div style={{ 
       minHeight: '100vh', 
@@ -540,31 +159,52 @@ export default function MattressOrderSystem() {
           <div style={{ fontSize: '20px', fontWeight: 'bold' }}>Mattress Order</div>
           <div style={{ fontSize: '12px', color: '#a1a1aa' }}>Inventory Management</div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {[
-            { id: 'goal', label: 'Goal & Strategy' },
-            { id: 'order', label: 'Order Builder' },
-            { id: 'components', label: 'Components' },
-            { id: 'runway', label: 'Inventory Runway' },
-            { id: 'export', label: 'Export' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: 'none',
-                fontWeight: '500',
-                cursor: 'pointer',
-                background: activeTab === tab.id ? '#ffffff' : 'transparent',
-                color: activeTab === tab.id ? '#000000' : '#d4d4d8',
-                transition: 'all 0.2s'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid #27272a',
+              fontWeight: '600',
+              cursor: 'pointer',
+              background: '#18181b',
+              color: '#60a5fa',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <span>💾</span>
+            <span>Save/Load</span>
+          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {[
+              { id: 'goal', label: 'Goal & Strategy' },
+              { id: 'order', label: 'Order Builder' },
+              { id: 'components', label: 'Components' },
+              { id: 'runway', label: 'Inventory Runway' },
+              { id: 'export', label: 'Export' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  background: activeTab === tab.id ? '#ffffff' : 'transparent',
+                  color: activeTab === tab.id ? '#000000' : '#d4d4d8',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
       </nav>
       
@@ -572,13 +212,11 @@ export default function MattressOrderSystem() {
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px' }}>
         {activeTab === 'goal' && <GoalTab setActiveTab={setActiveTab} />}
         {activeTab === 'order' && (
-          <OrderBuilderTab 
+          <OrderBuilderTab
             inventory={inventory}
             updateSpringInventory={updateSpringInventory}
             palletCount={palletCount}
             setPalletCount={setPalletCount}
-            smallSizePallets={smallSizePallets}
-            setSmallSizePallets={setSmallSizePallets}
             springOrder={springOrder}
           />
         )}
@@ -612,6 +250,14 @@ export default function MattressOrderSystem() {
           />
         )}
       </div>
+
+      {/* Save/Load Modal */}
+      <SaveLoadModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        currentData={getCurrentSaveData()}
+        onLoad={applyLoadedData}
+      />
     </div>
   );
 }
@@ -755,7 +401,7 @@ function GoalTab({ setActiveTab }) {
 }
 
 // Order Builder Tab
-function OrderBuilderTab({ inventory, updateSpringInventory, palletCount, setPalletCount, smallSizePallets, setSmallSizePallets, springOrder }) {
+function OrderBuilderTab({ inventory, updateSpringInventory, palletCount, setPalletCount, springOrder }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       <Card>
@@ -819,39 +465,13 @@ function OrderBuilderTab({ inventory, updateSpringInventory, palletCount, setPal
       
       <Card>
         <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>Order Strategy</h2>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '24px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '14px', color: '#a1a1aa', marginBottom: '8px', fontWeight: '600' }}>
-              Small Size Strategy
-            </label>
-            <select
-              value={smallSizePallets}
-              onChange={(e) => setSmallSizePallets(parseInt(e.target.value))}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: '#18181b',
-                border: '1px solid #27272a',
-                borderRadius: '8px',
-                color: '#fafafa',
-                fontSize: '16px',
-                cursor: 'pointer',
-                fontWeight: '600'
-              }}
-            >
-              <option value={1}>N+1 Strategy (1 pallet for critical small size)</option>
-              <option value={2}>N+2 Strategy (2 pallets - 1 each to 2 critical small sizes)</option>
-            </select>
-            <p style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '8px' }}>
-              {smallSizePallets === 1 ? 
-                'Allocate 1 pallet (30 springs) to the small size with lowest Medium coverage' : 
-                'Allocate 1 pallet each (30 springs) to the 2 small sizes with lowest Medium coverage'
-              }
-            </p>
-          </div>
-          
-          <div>
+        <p style={{ fontSize: '14px', color: '#a1a1aa', marginBottom: '20px' }}>
+          System automatically allocates 0-2 pallets to small sizes (Double, King Single, Single) with coverage &lt;4 months.
+          Remaining pallets distributed to King/Queen (60/40 split favoring lower coverage).
+        </p>
+        {/* Automatic allocation - no manual toggle needed */}
+
+        <div style={{ maxWidth: '500px' }}>
             <label style={{ display: 'block', fontSize: '14px', color: '#a1a1aa', marginBottom: '8px', fontWeight: '600' }}>
               Container Size
             </label>
@@ -877,32 +497,36 @@ function OrderBuilderTab({ inventory, updateSpringInventory, palletCount, setPal
                 <div style={{ fontSize: '12px', color: '#a1a1aa' }}>pallets</div>
               </div>
             </div>
-          </div>
         </div>
       </Card>
       
-      {springOrder.metadata.critical_sizes && (
-        <InfoCard variant="error">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>⚠️</span>
+      <InfoCard variant="info">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '24px' }}>🤖</span>
+          <div>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#60a5fa' }}>
+              Automatic Small Size Allocation
+            </div>
             <div>
-              <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#f87171' }}>
-                Critical Small Size{springOrder.metadata.critical_sizes.length > 1 ? 's' : ''}
-              </div>
-              <div>
-                {springOrder.metadata.critical_sizes.length === 1 ? (
-                  <>Allocated 1 pallet (30 springs) to <strong>{springOrder.metadata.critical_sizes[0]}</strong></>
-                ) : (
-                  <>Allocated 1 pallet each (30 springs) to <strong>{springOrder.metadata.critical_sizes.join(' and ')}</strong></>
-                )}
-              </div>
-              <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '4px' }}>
-                Selected based on lowest Medium firmness coverage
-              </div>
+              {springOrder.metadata.critical_sizes && springOrder.metadata.critical_sizes.length > 0 ? (
+                <>
+                  <strong>{springOrder.metadata.small_size_pallets} {springOrder.metadata.small_size_pallets === 1 ? 'pallet' : 'pallets'}</strong> allocated to critical small {springOrder.metadata.small_size_pallets === 1 ? 'size' : 'sizes'}:
+                  {' '}<strong>{springOrder.metadata.critical_sizes.join(', ')}</strong>
+                  {' '}(coverage &lt;4 months)
+                </>
+              ) : (
+                <>
+                  All small sizes have healthy coverage (&gt;4 months) -
+                  {' '}<strong>all {springOrder.metadata.total_pallets} pallets</strong> allocated to King/Queen
+                </>
+              )}
+            </div>
+            <div style={{ fontSize: '12px', color: '#a1a1aa', marginTop: '4px' }}>
+              System automatically determines optimal allocation: {springOrder.metadata.king_pallets} King pallets, {springOrder.metadata.queen_pallets} Queen pallets (60/40 split favoring lower coverage)
             </div>
           </div>
-        </InfoCard>
-      )}
+        </div>
+      </InfoCard>
       
       <InfoCard variant="info">
         <div style={{ fontSize: '14px' }}>

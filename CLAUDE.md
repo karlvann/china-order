@@ -2,25 +2,144 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⚠️ FIXED CONSTRAINTS - DO NOT SUGGEST CHANGES
+
+**CRITICAL FOR AI ASSISTANTS**: The following constraints are FIXED by the business and CANNOT be changed. Do NOT suggest:
+- Larger/smaller containers
+- Different pallet sizes
+- More frequent ordering
+- Mixed pallets (multiple sizes per pallet)
+- Different supplier lot sizes
+- Changing lead times
+- Any workarounds to these constraints
+
+**ALL algorithm improvements must work WITHIN these constraints. See CONSTRAINTS.md for full details.**
+
+### Non-Negotiable Constraints
+
+1. **Container capacity**: 4-12 pallets (user chooses within this range)
+2. **Pallet size**: EXACTLY 30 springs per pallet (supplier fixed)
+3. **Lead time**: 10 weeks (shipping fixed)
+4. **Small sizes**: Can only receive WHOLE pallets (1 or 2 maximum)
+5. **Component lot sizes**: Fixed by supplier (20 or 10 units)
+6. **No pallet mixing**: Each pallet must be single size (supplier requirement)
+7. **Order frequency**: Cannot change (driven by lead time and cash flow)
+
+### What You CAN Change
+
+✅ Allocation logic (which sizes get how many pallets)
+✅ Coverage thresholds (when to skip/allocate)
+✅ Priority rules (which items get preference)
+✅ Dynamic targets (different coverage goals by velocity)
+✅ UI improvements and visualizations
+
+### What You CANNOT Change
+
+❌ Physical constraints (pallet size, container size)
+❌ Supplier requirements (lot sizes, single-size pallets)
+❌ Business constraints (lead time, order frequency)
+
+---
+
+## Business Goals (What to Optimize For)
+
+**IMPORTANT**: Before suggesting algorithm changes, understand what this system is actually optimizing for.
+
+### Primary Goal: Prevent Stockouts
+- **King**: 30 units/month (36.88% of business)
+- **Queen**: 41 units/month (51.15% of business)
+- **Together**: 88% of sales volume
+- **Priority**: Keep King/Queen above 2-3 months coverage minimum
+
+### Secondary Goal: Capital Efficiency
+- Don't waste inventory on small sizes that already have good coverage (>4 months)
+- Don't tie up capital in excess slow-moving inventory
+- Free up pallets for critical items when possible
+
+### NOT Goals (Don't Optimize For These):
+- ❌ Perfect runway balance (all sizes deplete at same time)
+- ❌ Equal coverage across all sizes
+- ❌ Minimize variance between sizes
+- ❌ Theoretical perfection
+
+### Success Criteria:
+✅ No stockouts on King/Queen (>2 months coverage after container)
+✅ No wasted pallets on healthy sizes (coverage >4 months)
+✅ Efficient use of limited container capacity
+
+**See GOALS.md for complete documentation of business objectives.**
+
+---
+
 ## Project Overview
 
 This is a **Mattress Order System** - a React-based inventory management and order planning tool for a mattress manufacturing business. The application helps plan container orders for mattress springs and components using sales data, inventory tracking, and demand forecasting.
 
 ## Tech Stack
 
-- **React** with hooks (useState, useEffect, useMemo)
-- **JSX** single-file component architecture
+- **React 19** with hooks (useState, useEffect, useMemo)
+- **Vite** for development and build tooling
+- **Vitest** for unit testing with jsdom environment
+- **TypeScript** for type definitions (mixed JS/TS codebase)
 - Inline CSS-in-JS styling (no external CSS framework)
-- No build system currently configured (vanilla React)
+- **Vercel** deployment with KV storage for save/load functionality
 
-## Running the Application
+## Development Commands
 
-Since this is a standalone JSX file without a build configuration:
-- The application needs to be integrated into a React project with a bundler (Vite, Create React App, etc.)
-- No package.json or build commands currently exist
-- To develop: Set up a React environment and import `MattressOrderSystem` component
+```bash
+npm run dev          # Start Vite dev server (default: http://localhost:5173)
+npm run build        # Build production bundle
+npm run preview      # Preview production build locally
+npm test             # Run tests in watch mode
+npm run test:ui      # Run tests with Vitest UI
+npm run test:coverage # Generate test coverage report
+```
+
+## Running Tests
+
+- Test files: `tests/**/*.test.ts`
+- Use `vitest` for running specific test files
+- Tests cover core algorithms: coverage, critical sizes, N+ optimization
+- Setup file: `tests/setup.ts` (configures jsdom, React Testing Library)
 
 ## Core Architecture
+
+### Directory Structure
+
+```
+src/
+├── App.jsx                      # Main app component with tab navigation
+├── SaveLoadModal.jsx            # Save/load UI for inventory snapshots
+├── main.jsx                     # React entry point
+├── storage.js                   # Storage adapter (localStorage + Vercel KV)
+└── lib/
+    ├── algorithms/              # Core business logic algorithms
+    │   ├── coverage.ts          # Coverage calculation (months remaining)
+    │   ├── criticalSizes.ts     # Identifies small sizes needing pallets
+    │   ├── palletCreation.ts    # Dynamic pallet allocation by firmness
+    │   ├── nPlusOptimization.ts # Main N+0/N+1/N+2 ordering strategy
+    │   ├── componentCalc.ts     # Derive component orders from springs
+    │   ├── exportOptimization.ts # Round to supplier lot sizes
+    │   └── tsvGeneration.ts     # Generate tab-separated export
+    ├── constants/               # Business constants
+    │   ├── business.ts          # Pallet size, lead time, container limits
+    │   ├── sales.ts             # Monthly sales rates per size
+    │   ├── firmness.ts          # Firmness distribution ratios
+    │   ├── seasonality.ts       # Busy/slow season multipliers
+    │   └── components.ts        # Component types and multipliers
+    ├── types/                   # TypeScript type definitions
+    │   ├── inventory.ts         # Spring and component inventory types
+    │   ├── order.ts             # Order and pallet structure types
+    │   └── component.ts         # Component-related types
+    └── utils/
+        └── inventory.ts         # Helper functions for inventory creation
+
+api/
+└── saves.js                     # Vercel serverless function for KV storage
+
+tests/
+└── algorithms/                  # Unit tests for core algorithms
+```
 
 ### Business Constants & Data Models
 
@@ -33,47 +152,52 @@ All business logic is driven by real sales data (960 units/year):
 - **Firmness types**: Firm, Medium, Soft
 - **Component types**: Micro Coils, Thin Latex, Felt, Top Panel, Bottom Panel, Side Panel
 
-### Key Algorithms (Lines 65-436)
+### Core Algorithms
 
-The system implements 7 core algorithms:
+The system implements 7 core algorithms (all in `src/lib/algorithms/`):
 
-1. **Coverage Calculation** (line 66): Calculates months of inventory remaining for a size
-2. **Critical Small Size Detection** (line 79): Identifies small sizes (Double, King Single, Single) with lowest Medium firmness coverage
-3. **Pallet Creation** (line 119): Dynamically allocates springs to pallets based on inventory gaps and firmness distribution
-4. **N+1 or N+2 Optimization** (line 235): Main ordering strategy - allocates 1-2 pallets to critical small sizes, distributes remaining pallets 60/40 between King/Queen based on coverage
-5. **Component Calculation** (line 297): Derives component orders from spring orders with consolidation rules
-6. **Export Optimization** (line 338): Rounds component orders to supplier lot sizes with smart buffers
-7. **TSV Generation** (line 373): Creates tab-separated export format for suppliers
+1. **Coverage Calculation** (`coverage.ts`): Calculates months of inventory remaining for a size
+2. **Critical Small Size Detection** (`criticalSizes.ts`): Identifies small sizes (Double, King Single, Single) with lowest Medium firmness coverage
+3. **Pallet Creation** (`palletCreation.ts`): Dynamically allocates springs to pallets based on inventory gaps and firmness distribution
+4. **N+1 or N+2 Optimization** (`nPlusOptimization.ts`): Main ordering strategy - allocates 0-2 pallets to critical small sizes, distributes remaining pallets 60/40 between King/Queen based on coverage
+5. **Component Calculation** (`componentCalc.ts`): Derives component orders from spring orders with consolidation rules
+6. **Export Optimization** (`exportOptimization.ts`): Rounds component orders to supplier lot sizes with smart buffers
+7. **TSV Generation** (`tsvGeneration.ts`): Creates tab-separated export format for suppliers
 
 ### Component Structure
 
-Main app component: `MattressOrderSystem` (line 439)
+**Main App** (`src/App.jsx`):
 - Manages state for inventory, pallet configuration, and export settings
 - Uses `useMemo` extensively to recalculate orders when inputs change
+- Imports all algorithms from `src/lib/algorithms`
+- Imports all constants from `src/lib/constants`
 
-Tab components:
-- `GoalTab` (line 620): Business context and strategy explanation
-- `OrderBuilderTab` (line 758): Spring inventory input and order generation
-- `ComponentsTab` (line 982): Component inventory and order calculation
-- `RunwayTab` (line 1181): Inventory runway projection with seasonality
-- `ExportTab` (line 1478): TSV export with optimization options
+**Tab Components** (inline in `App.jsx`):
+- `GoalTab`: Business context and strategy explanation
+- `OrderBuilderTab`: Spring inventory input and order generation
+- `ComponentsTab`: Component inventory and order calculation
+- `RunwayTab`: Inventory runway projection with seasonality
+- `ExportTab`: TSV export with optimization options
 
-Helper components:
-- `Card`, `InfoCard`, `StatCard`, `PalletCard` (lines 1632-1725)
+**Save/Load System**:
+- `SaveLoadModal.jsx`: UI for managing 5 save slots
+- `storage.js`: Adapter pattern - localStorage (dev) or Vercel KV (production)
+- `api/saves.js`: Serverless function handling KV operations
 
 ### State Management
 
 All state is local (no Redux/Context):
 - `inventory`: Current spring and component stock levels
 - `palletCount`: Number of pallets in container (4-12)
-- `smallSizePallets`: N+1 (1 pallet) or N+2 (2 pallets) strategy
 - `exportFormat`: 'exact' or 'optimized' export mode
+- `activeTab`: Current tab view ('goal', 'order-builder', 'components', 'runway', 'export')
+- `showSaveModal`: Controls save/load modal visibility
 
 ### Data Flow
 
 1. User enters current inventory (springs & components)
 2. System calculates coverage for each size/firmness
-3. N+1/N+2 algorithm determines optimal pallet allocation
+3. N+0/N+1/N+2 algorithm determines optimal pallet allocation automatically
 4. Component needs are derived from spring order
 5. Consolidation rules applied (e.g., micro coils only for King/Queen)
 6. Export optimization rounds to supplier lot sizes
@@ -81,22 +205,22 @@ All state is local (no Redux/Context):
 
 ## Business Rules & Constraints
 
-### Seasonality (lines 36-39)
+### Seasonality (`src/lib/constants/seasonality.ts`)
 - Busy season (Apr-Aug): 14% above average sales
 - Slow season (Sep-Mar): 12% below average sales
 - Used in Inventory Runway projections
 
-### Firmness Distribution (lines 20-26)
+### Firmness Distribution (`src/lib/constants/firmness.ts`)
 - King/Queen: ~83% Medium, ~13% Firm, ~3% Soft
 - Smaller sizes: More balanced distribution
 - Critical size detection prioritizes Medium firmness coverage
 
-### Component Consolidation (lines 313-325)
+### Component Consolidation (`src/lib/algorithms/componentCalc.ts`)
 - Micro Coils & Thin Latex: King/Queen only (not ordered for small sizes)
 - Side Panels: Single and King Single consolidated into Double size orders
 - Component multipliers vary by type (1.0x to 1.5x per spring)
 
-### Pallet Logic (lines 167-229)
+### Pallet Logic (`src/lib/algorithms/palletCreation.ts`)
 - Pure pallets preferred (single firmness)
 - Mixed pallets created when firmness quantities < 30
 - Critical pallets padded to exactly 30 springs
@@ -104,16 +228,35 @@ All state is local (no Redux/Context):
 ## Key Design Patterns
 
 ### Dynamic Firmness Allocation
-Unlike fixed ratio distribution, springs are allocated based on individual firmness coverage gaps (lines 124-154). Firmnesses with lower coverage receive proportionally more springs.
+Unlike fixed ratio distribution, springs are allocated based on individual firmness coverage gaps (`src/lib/algorithms/palletCreation.ts`). Firmnesses with lower coverage receive proportionally more springs.
 
-### N+1 Strategy Intelligence
-The 60/40 split between King/Queen automatically favors whichever has lower coverage, naturally handling Queen's 37% faster sales rate (lines 249-261).
+### Automatic N+0/N+1/N+2 Selection
+The algorithm automatically determines whether to allocate 0, 1, or 2 pallets to small sizes based on coverage thresholds (`src/lib/algorithms/nPlusOptimization.ts`):
+- **N+0**: Skip small sizes with >4 months coverage (capital efficiency)
+- **N+1**: Allocate 1 pallet to critical small size (<4 months)
+- **N+2**: Allocate 2 pallets if multiple small sizes are critical
+- Remaining pallets distributed 60/40 between King/Queen based on coverage
+- This naturally handles Queen's 37% faster sales rate
+
+### Modular Algorithm Architecture
+Core algorithms are separated into individual TypeScript modules in `src/lib/algorithms/`:
+- Each algorithm is independently testable
+- Pure functions with clear inputs/outputs
+- Type-safe interfaces defined in `src/lib/types/`
+- Centralized export from `index.ts` for clean imports
+
+### Storage Adapter Pattern
+`src/storage.js` implements environment-aware storage:
+- Development: Uses browser localStorage
+- Production: Uses Vercel KV via serverless API
+- Same interface for both environments
+- Automatically detects environment based on hostname
 
 ### Runway Projection
-Two scenarios supported:
+Two scenarios supported in the Runway tab:
 - Average depletion (flat monthly rate)
-- Seasonal depletion (varies by month)
-Projects 14 months forward with container arrival at month 3 (lines 1219-1262)
+- Seasonal depletion (varies by month using `BUSY_MONTHS` and multipliers)
+- Projects 14 months forward with container arrival at month 3
 
 ## Styling Approach
 
@@ -126,8 +269,41 @@ All styles are inline CSS-in-JS objects:
 
 ## Important Invariants
 
-1. Each pallet MUST contain exactly 30 springs (enforced by padding logic)
-2. Container arrival is always at 10-week mark in projections
+**NOTE**: Invariants 1-2 are FIXED CONSTRAINTS (cannot change). Invariants 3-5 are algorithm requirements.
+
+1. Each pallet MUST contain exactly 30 springs (enforced by padding logic) - **FIXED CONSTRAINT**
+2. Container arrival is always at 10-week mark in projections - **FIXED CONSTRAINT**
 3. Component consolidation rules must be applied before optimization
 4. Inventory subtraction happens AFTER component calculation
-5. N+1/N+2 critical size selection based on Medium firmness coverage (primary), total coverage (tiebreaker)
+5. Critical size selection based on Medium firmness coverage (primary), total coverage (tiebreaker)
+
+**Reminder**: See the "FIXED CONSTRAINTS" section at the top of this file for all unchangeable business constraints.
+
+---
+
+## Adding New Features
+
+### Adding a New Algorithm
+1. Create new file in `src/lib/algorithms/` (e.g., `myAlgorithm.ts`)
+2. Define TypeScript types in `src/lib/types/` if needed
+3. Export function from `src/lib/algorithms/index.ts`
+4. Import in `src/App.jsx` and use in `useMemo` hooks
+5. Write tests in `tests/algorithms/myAlgorithm.test.ts`
+
+### Adding New Constants
+1. Add to appropriate file in `src/lib/constants/`
+2. Export from `src/lib/constants/index.ts`
+3. Import where needed
+
+### Modifying Business Logic
+1. Check CONSTRAINTS.md - ensure change doesn't violate fixed constraints
+2. Check GOALS.md - ensure change aligns with business objectives
+3. Update algorithm in `src/lib/algorithms/`
+4. Update or add tests
+5. Run `npm test` to verify no regressions
+
+### Deployment
+- Push to GitHub triggers automatic Vercel deployment
+- Environment variables: Set `KV_REST_API_URL` and `KV_REST_API_TOKEN` in Vercel dashboard
+- Production uses Vercel KV for save/load functionality
+- No additional configuration needed (vercel.json handles API routes)

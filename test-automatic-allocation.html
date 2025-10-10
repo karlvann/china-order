@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Automatic N+0/N+1/N+2/N+3 Allocation Test</title>
+  <style>
+    body { font-family: monospace; padding: 20px; background: #000; color: #fff; }
+    .scenario { margin: 20px 0; padding: 15px; background: #1a1a1a; border: 1px solid #333; }
+    .scenario h3 { margin: 0 0 10px 0; color: #60a5fa; }
+    .result { margin: 10px 0; padding: 10px; background: #0a0a0a; }
+    .pass { border-left: 4px solid #22c55e; }
+    .fail { border-left: 4px solid #ef4444; }
+    .allocation { font-weight: bold; color: #facc15; }
+  </style>
+</head>
+<body>
+  <h1>🤖 Automatic Small Size Allocation Test</h1>
+  <p>Testing if the system correctly determines N+0, N+1, N+2, or N+3 based on coverage...</p>
+
+  <div id="results"></div>
+
+  <script>
+    const SALES_RATES = {
+      King: 30,
+      Queen: 41,
+      Double: 6,
+      'King Single': 3,
+      Single: 1
+    };
+
+    const FIRMNESS_DISTRIBUTION = {
+      King: { firm: 0.1356, medium: 0.8446, soft: 0.0198 },
+      Queen: { firm: 0.1344, medium: 0.8269, soft: 0.0387 },
+      Double: { firm: 0.2121, medium: 0.6061, soft: 0.1818 },
+      'King Single': { firm: 0.1622, medium: 0.6216, soft: 0.2162 },
+      Single: { firm: 0.2500, medium: 0.5833, soft: 0.1667 }
+    };
+
+    function calculateCoverage(stock, size) {
+      const totalStock = stock.firm[size] + stock.medium[size] + stock.soft[size];
+      const monthlySales = SALES_RATES[size];
+      return totalStock / monthlySales;
+    }
+
+    function findCriticalSmallSizes(inventory) {
+      const smallSizes = ['Double', 'King Single', 'Single'];
+      const CRITICAL_THRESHOLD = 4; // months
+
+      const sizesWithCoverage = smallSizes.map(size => {
+        const totalCoverage = calculateCoverage(inventory.springs, size);
+        return { size, totalCoverage };
+      });
+
+      const criticalSizes = sizesWithCoverage.filter(item => item.totalCoverage < CRITICAL_THRESHOLD);
+      criticalSizes.sort((a, b) => a.totalCoverage - b.totalCoverage);
+
+      return criticalSizes.map(item => item.size);
+    }
+
+    const scenarios = [
+      {
+        name: "N+0: All Small Sizes Healthy",
+        description: "Double, King Single, Single all have >4 months coverage",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 15, 'King Single': 10, Single: 5 },
+          medium: { King: 152, Queen: 203, Double: 30, 'King Single': 15, Single: 4 },
+          soft: { King: 12, Queen: 24, Double: 10, 'King Single': 5, Single: 2 }
+        },
+        expected: 0,
+        expectedSizes: []
+      },
+      {
+        name: "N+1: Only Double Critical",
+        description: "Double has 2 months coverage (<4), others healthy",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 4, 'King Single': 10, Single: 5 },
+          medium: { King: 152, Queen: 203, Double: 8, 'King Single': 15, Single: 4 },
+          soft: { King: 12, Queen: 24, Double: 2, 'King Single': 5, Single: 2 }
+        },
+        expected: 1,
+        expectedSizes: ['Double']
+      },
+      {
+        name: "N+2: Double and Single Critical",
+        description: "Double and Single both have <4 months, King Single healthy",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 4, 'King Single': 10, Single: 1 },
+          medium: { King: 152, Queen: 203, Double: 8, 'King Single': 15, Single: 2 },
+          soft: { King: 12, Queen: 24, Double: 2, 'King Single': 5, Single: 1 }
+        },
+        expected: 2,
+        expectedSizes: ['Single', 'Double']
+      },
+      {
+        name: "N+3: All Small Sizes Critical",
+        description: "Double, King Single, and Single all have <4 months coverage",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 2, 'King Single': 1, Single: 0 },
+          medium: { King: 152, Queen: 203, Double: 7, 'King Single': 3, Single: 1 },
+          soft: { King: 12, Queen: 24, Double: 2, 'King Single': 1, Single: 0 }
+        },
+        expected: 3,
+        expectedSizes: ['Single', 'King Single', 'Double']
+      },
+      {
+        name: "Edge Case: Exactly 4 Months",
+        description: "Double has exactly 4.0 months (should NOT be critical)",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 5, 'King Single': 10, Single: 5 },
+          medium: { King: 152, Queen: 203, Double: 15, 'King Single': 15, Single: 4 },
+          soft: { King: 12, Queen: 24, Double: 4, 'King Single': 5, Single: 2 }
+        },
+        expected: 0,
+        expectedSizes: []
+      },
+      {
+        name: "Edge Case: Just Under 4 Months",
+        description: "Double has 3.9 months (should be critical)",
+        springs: {
+          firm: { King: 80, Queen: 110, Double: 5, 'King Single': 10, Single: 5 },
+          medium: { King: 152, Queen: 203, Double: 14, 'King Single': 15, Single: 4 },
+          soft: { King: 12, Queen: 24, Double: 4, 'King Single': 5, Single: 2 }
+        },
+        expected: 1,
+        expectedSizes: ['Double']
+      }
+    ];
+
+    const resultsDiv = document.getElementById('results');
+
+    scenarios.forEach(scenario => {
+      const inventory = { springs: scenario.springs };
+      const criticalSizes = findCriticalSmallSizes(inventory);
+      const palletCount = criticalSizes.length;
+
+      const pass = palletCount === scenario.expected &&
+                   JSON.stringify(criticalSizes.sort()) === JSON.stringify(scenario.expectedSizes.sort());
+
+      // Calculate coverage for display
+      const coverages = {
+        Double: calculateCoverage(scenario.springs, 'Double').toFixed(1),
+        'King Single': calculateCoverage(scenario.springs, 'King Single').toFixed(1),
+        Single: calculateCoverage(scenario.springs, 'Single').toFixed(1)
+      };
+
+      const html = `
+        <div class="scenario">
+          <h3>${pass ? '✅' : '❌'} ${scenario.name}</h3>
+          <p>${scenario.description}</p>
+          <div class="result ${pass ? 'pass' : 'fail'}">
+            <strong>Coverage:</strong> Double: ${coverages.Double}mo, King Single: ${coverages['King Single']}mo, Single: ${coverages.Single}mo<br>
+            <strong>Expected:</strong> <span class="allocation">${scenario.expected} pallet(s)</span> for ${scenario.expectedSizes.length > 0 ? scenario.expectedSizes.join(', ') : 'no small sizes'}<br>
+            <strong>Actual:</strong> <span class="allocation">${palletCount} pallet(s)</span> for ${criticalSizes.length > 0 ? criticalSizes.join(', ') : 'no small sizes'}<br>
+            <strong>Result:</strong> ${pass ? '<span style="color: #22c55e">PASS</span>' : '<span style="color: #ef4444">FAIL</span>'}
+          </div>
+        </div>
+      `;
+
+      resultsDiv.innerHTML += html;
+    });
+
+    // Summary
+    const allScenarios = scenarios.length;
+    const passedScenarios = document.querySelectorAll('.pass').length;
+    const summary = `
+      <div class="scenario" style="border: 2px solid ${passedScenarios === allScenarios ? '#22c55e' : '#ef4444'}">
+        <h3>📊 Test Summary</h3>
+        <p style="font-size: 18px">
+          <strong>${passedScenarios} / ${allScenarios} scenarios passed</strong>
+        </p>
+        ${passedScenarios === allScenarios ?
+          '<p style="color: #22c55e">✅ All tests passed! Automatic allocation is working correctly.</p>' :
+          '<p style="color: #ef4444">❌ Some tests failed. Check the algorithm implementation.</p>'}
+      </div>
+    `;
+
+    resultsDiv.innerHTML += summary;
+  </script>
+</body>
+</html>
