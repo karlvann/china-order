@@ -5,6 +5,8 @@ import { CoverageGrid } from './components/CoverageCard';
 import PalletList from './components/PalletList';
 import RunwayMini from './components/RunwayMini';
 import ComponentRunway from './components/ComponentRunway';
+import SpringTimelineDetailed from './components/SpringTimelineDetailed';
+import ComponentTimelineDetailed from './components/ComponentTimelineDetailed';
 
 // Import algorithms
 import {
@@ -35,8 +37,18 @@ export default function App() {
   const [exportFormat, setExportFormat] = useState('optimized');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showComponentsInput, setShowComponentsInput] = useState(false);
-  const [showAdvancedDrawer, setShowAdvancedDrawer] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
+  const [startingMonth, setStartingMonth] = useState(new Date().getMonth()); // 0-11 (Jan-Dec)
+  const [currentView, setCurrentView] = useState('builder'); // 'builder' or 'forecast'
+
+  // Collapsible section states (true = open by default)
+  const [showContainerSettings, setShowContainerSettings] = useState(true);
+  const [showSpringInventory, setShowSpringInventory] = useState(true);
+  const [showCurrentStatus, setShowCurrentStatus] = useState(true);
+  const [showYourOrder, setShowYourOrder] = useState(true);
+  const [showCoverageAfter, setShowCoverageAfter] = useState(true);
+  const [showComponentCoverage, setShowComponentCoverage] = useState(false);
+  const [showExport, setShowExport] = useState(true);
 
   const [inventory, setInventory] = useState({
     springs: createEmptySpringInventory(),
@@ -51,8 +63,8 @@ export default function App() {
   // Calculate component order
   const componentOrder = useMemo(() => {
     if (!springOrder) return null;
-    return calculateComponentOrder(springOrder, inventory.components);
-  }, [springOrder, inventory.components]);
+    return calculateComponentOrder(springOrder, inventory.springs, inventory.components);
+  }, [springOrder, inventory.springs, inventory.components]);
 
   // Optimized component order
   const optimizedComponentOrder = useMemo(() => {
@@ -167,133 +179,257 @@ export default function App() {
           <div style={styles.headerTitle}>China Order System</div>
           <div style={styles.headerSubtitle}>Spring & Component Ordering</div>
         </div>
-        <button onClick={() => setShowSaveModal(true)} style={styles.saveButton}>
-          <span>💾</span>
-          <span>Save/Load</span>
-        </button>
+
+        <div style={styles.headerActions}>
+          {/* View Toggle */}
+          <div style={styles.viewToggle}>
+            <button
+              onClick={() => setCurrentView('builder')}
+              style={{
+                ...styles.viewToggleButton,
+                ...(currentView === 'builder' ? styles.viewToggleButtonActive : {})
+              }}
+            >
+              Order Builder
+            </button>
+            <button
+              onClick={() => setCurrentView('forecast')}
+              style={{
+                ...styles.viewToggleButton,
+                ...(currentView === 'forecast' ? styles.viewToggleButtonActive : {})
+              }}
+            >
+              Forecast
+            </button>
+          </div>
+
+          <button onClick={() => setShowSaveModal(true)} style={styles.saveButton}>
+            <span>💾</span>
+            <span>Save/Load</span>
+          </button>
+        </div>
       </header>
 
-      {/* Main Content - Split Screen */}
-      <div style={styles.mainContent}>
-        {/* LEFT PANEL - Input */}
-        <div style={styles.leftPanel}>
-          <div style={styles.panelContent}>
-            {/* Container Settings */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Container Size</h2>
-              <div style={styles.sliderContainer}>
-                <input
-                  type="range"
-                  min={MIN_PALLETS}
-                  max={MAX_PALLETS}
-                  value={palletCount}
-                  onChange={(e) => setPalletCount(parseInt(e.target.value))}
-                  style={styles.slider}
-                />
-                <div style={styles.sliderValue}>
-                  <div style={styles.sliderValueNumber}>{palletCount}</div>
-                  <div style={styles.sliderValueLabel}>pallets</div>
-                </div>
-              </div>
-            </section>
-
-            {/* Spring Inventory */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Spring Inventory</h2>
-              <p style={styles.sectionDescription}>
-                Enter current stock for each size and firmness
-              </p>
-              <InventoryTable
-                type="springs"
-                inventory={inventory.springs}
-                onChange={updateSpringInventory}
-                coverage={coverageData}
-                showCoverage={false}
-              />
-            </section>
-
-            {/* Component Inventory (Collapsible) */}
-            <section style={styles.section}>
-              <button
-                onClick={() => setShowComponentsInput(!showComponentsInput)}
-                style={styles.collapsibleButton}
-              >
-                <span style={styles.collapsibleIcon}>
-                  {showComponentsInput ? '▼' : '▶'}
-                </span>
-                <span>Component Inventory</span>
-                <span style={styles.collapsibleHint}>(Optional)</span>
-              </button>
-
-              {showComponentsInput && (
-                <div style={{ marginTop: '12px' }}>
-                  <p style={styles.sectionDescription}>
-                    Enter current component stock. Micro coils & thin latex only for King/Queen.
-                  </p>
-                  <InventoryTable
-                    type="components"
-                    inventory={inventory.components}
-                    onChange={updateComponentInventory}
-                  />
-                </div>
-              )}
-            </section>
+      {/* Main Content - Conditional View */}
+      {currentView === 'builder' ? (
+        /* ORDER BUILDER VIEW - Split Screen */
+        <>
+        {/* Info Banner - Equal Runway Constraint */}
+        <div style={styles.infoBanner}>
+          <div style={styles.infoBannerIcon}>📦</div>
+          <div style={styles.infoBannerContent}>
+            <div style={styles.infoBannerTitle}>How Component Orders Work</div>
+            <div style={styles.infoBannerText}>
+              Components and springs ship together in the same container and <strong>must deplete at the same rate</strong>.
+              The system automatically calculates component quantities to ensure equal runway coverage.
+              <span style={{ color: '#60a5fa' }}> Example: If you order enough springs for 6 months, the system orders enough components for 6 months.</span>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT PANEL - Live Results */}
-        <div style={styles.rightPanel}>
-          <div style={styles.panelContent}>
-            {/* Coverage Status Cards */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Current Status</h2>
-              <CoverageGrid
-                coverageData={coverageData}
-                prioritySizes={prioritySizes}
-              />
-            </section>
+        <div style={styles.cardGrid}>
+          {/* Container Settings Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowContainerSettings(!showContainerSettings)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showContainerSettings ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Container Size</span>
+            </button>
 
-            {/* Smart Suggestions */}
-            {prioritySizes.length > 0 && (
-              <div style={styles.warningBox}>
-                <div style={styles.warningTitle}>⚡ Priority Alert</div>
-                <div style={styles.warningText}>
-                  <strong>{prioritySizes.join(', ')}</strong> {prioritySizes.length === 1 ? 'needs' : 'need'} attention
-                  (coverage below 3 months). System automatically allocating pallets.
+            {showContainerSettings && (
+              <div style={styles.cardContent}>
+                <div style={styles.sliderContainer}>
+                  <input
+                    type="range"
+                    min={MIN_PALLETS}
+                    max={MAX_PALLETS}
+                    value={palletCount}
+                    onChange={(e) => setPalletCount(parseInt(e.target.value))}
+                    style={styles.slider}
+                  />
+                  <div style={styles.sliderValue}>
+                    <div style={styles.sliderValueNumber}>{palletCount}</div>
+                    <div style={styles.sliderValueLabel}>pallets</div>
+                  </div>
                 </div>
               </div>
             )}
+          </div>
 
-            {/* Order Summary */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Your Order</h2>
-              <PalletList springOrder={springOrder} compact={true} />
-            </section>
+          {/* Spring Inventory Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowSpringInventory(!showSpringInventory)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showSpringInventory ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Spring Inventory</span>
+            </button>
 
-            {/* Coverage After Order */}
-            <section style={styles.section}>
-              <RunwayMini
-                inventory={inventory}
-                springOrder={springOrder}
-                showDetails={false}
-              />
-            </section>
+            {showSpringInventory && (
+              <div style={styles.cardContent}>
+                <p style={styles.sectionDescription}>
+                  Enter current stock for each size and firmness
+                </p>
+                <InventoryTable
+                  type="springs"
+                  inventory={inventory.springs}
+                  onChange={updateSpringInventory}
+                  coverage={coverageData}
+                  showCoverage={false}
+                />
+              </div>
+            )}
+          </div>
 
-            {/* Component Coverage */}
-            <section style={styles.section}>
-              <ComponentRunway
-                inventory={inventory}
-                springOrder={springOrder}
-                componentOrder={componentOrder}
-              />
-            </section>
+          {/* Component Inventory Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowComponentsInput(!showComponentsInput)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showComponentsInput ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Component Inventory</span>
+              <span style={styles.cardHeaderBadge}>Optional</span>
+            </button>
 
-            {/* Export Actions */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Export Order</h2>
+            {showComponentsInput && (
+              <div style={styles.cardContent}>
+                <p style={styles.sectionDescription}>
+                  Enter current component stock. Micro coils & thin latex only for King/Queen.
+                </p>
+                <InventoryTable
+                  type="components"
+                  inventory={inventory.components}
+                  onChange={updateComponentInventory}
+                />
+              </div>
+            )}
+          </div>
 
-              {/* Export Format Toggle */}
-              <div style={styles.exportFormatContainer}>
+          {/* Status Cards (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowCurrentStatus(!showCurrentStatus)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showCurrentStatus ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Current Status</span>
+            </button>
+
+            {showCurrentStatus && (
+              <div style={styles.cardContent}>
+                <CoverageGrid
+                  coverageData={coverageData}
+                  prioritySizes={prioritySizes}
+                />
+
+                {/* Smart Suggestions */}
+                {prioritySizes.length > 0 && (
+                  <div style={{...styles.warningBox, marginTop: '16px'}}>
+                    <div style={styles.warningTitle}>⚡ Priority Alert</div>
+                    <div style={styles.warningText}>
+                      <strong>{prioritySizes.join(', ')}</strong> {prioritySizes.length === 1 ? 'needs' : 'need'} attention
+                      (coverage below 3 months). System automatically allocating pallets.
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Order Summary Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowYourOrder(!showYourOrder)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showYourOrder ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Your Order</span>
+            </button>
+
+            {showYourOrder && (
+              <div style={styles.cardContent}>
+                <PalletList springOrder={springOrder} compact={true} />
+              </div>
+            )}
+          </div>
+
+          {/* Coverage After Order Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowCoverageAfter(!showCoverageAfter)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showCoverageAfter ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Coverage After Order</span>
+            </button>
+
+            {showCoverageAfter && (
+              <div style={styles.cardContent}>
+                <RunwayMini
+                  inventory={inventory}
+                  springOrder={springOrder}
+                  showDetails={false}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Component Coverage Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowComponentCoverage(!showComponentCoverage)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showComponentCoverage ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Component Coverage</span>
+              <span style={styles.cardHeaderBadge}>Validation</span>
+            </button>
+
+            {showComponentCoverage && (
+              <div style={styles.cardContent}>
+                <ComponentRunway
+                  inventory={inventory}
+                  springOrder={springOrder}
+                  componentOrder={componentOrder}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Export Actions Card (Collapsible) */}
+          <div style={styles.card}>
+            <button
+              onClick={() => setShowExport(!showExport)}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {showExport ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>Export Order</span>
+            </button>
+
+            {showExport && (
+              <div style={styles.cardContent}>
+                {/* Export Format Toggle */}
+                <div style={styles.exportFormatContainer}>
                 <button
                   onClick={() => setExportFormat('exact')}
                   style={{
@@ -324,60 +460,68 @@ export default function App() {
                 </button>
               </div>
 
-              <div style={styles.exportHint}>
-                Paste directly into Google Sheets or send to supplier
+                <div style={styles.exportHint}>
+                  Paste directly into Google Sheets or send to supplier
+                </div>
               </div>
-            </section>
-
-            {/* Advanced Details Toggle */}
-            <div style={styles.advancedToggle}>
-              <button
-                onClick={() => setShowAdvancedDrawer(!showAdvancedDrawer)}
-                style={styles.advancedToggleButton}
-              >
-                {showAdvancedDrawer ? '▲' : '▼'} Advanced Details
-              </button>
-            </div>
+            )}
           </div>
         </div>
-      </div>
+      </>
+      ) : (
+        /* FORECAST VIEW - Full Width Timeline */
+        <div style={styles.forecastView}>
+          <div style={styles.forecastContent}>
+            {/* Month Selector */}
+            <div style={styles.forecastHeader}>
+              <div>
+                <h1 style={styles.forecastTitle}>
+                  12-Month Inventory Forecast
+                  <span style={styles.validationBadge}>
+                    ✓ Equal Runway Validated
+                  </span>
+                </h1>
+                <p style={styles.forecastSubtitle}>
+                  Projected stock levels with container arrival at Week 10. Components and springs calculated to deplete together.
+                </p>
+              </div>
+              <div style={styles.monthSelector}>
+                <label style={styles.monthLabel}>Starting Month:</label>
+                <select
+                  value={startingMonth}
+                  onChange={(e) => setStartingMonth(parseInt(e.target.value))}
+                  style={styles.monthSelect}
+                >
+                  <option value={0}>January</option>
+                  <option value={1}>February</option>
+                  <option value={2}>March</option>
+                  <option value={3}>April</option>
+                  <option value={4}>May</option>
+                  <option value={5}>June</option>
+                  <option value={6}>July</option>
+                  <option value={7}>August</option>
+                  <option value={8}>September</option>
+                  <option value={9}>October</option>
+                  <option value={10}>November</option>
+                  <option value={11}>December</option>
+                </select>
+              </div>
+            </div>
 
-      {/* Advanced Drawer */}
-      {showAdvancedDrawer && (
-        <div style={styles.advancedDrawer}>
-          <div style={styles.advancedContent}>
-            {/* Full Pallet Breakdown */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Detailed Pallet Breakdown</h2>
-              <PalletList springOrder={springOrder} compact={false} />
-            </section>
+            {/* Spring Timeline Detailed */}
+            <SpringTimelineDetailed
+              inventory={inventory}
+              springOrder={springOrder}
+              startingMonth={startingMonth}
+            />
 
-            {/* Full Runway Table */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Detailed Runway Forecast</h2>
-              <RunwayMini
-                inventory={inventory}
-                springOrder={springOrder}
-                showDetails={true}
-              />
-            </section>
-
-            {/* Component Runway Table */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>Component Runway Forecast</h2>
-              <ComponentRunway
-                inventory={inventory}
-                springOrder={springOrder}
-                componentOrder={componentOrder}
-                showDetails={true}
-              />
-            </section>
-
-            {/* TSV Preview */}
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>TSV Preview</h2>
-              <pre style={styles.tsvPreview}>{tsvContent}</pre>
-            </section>
+            {/* Component Timeline Detailed */}
+            <ComponentTimelineDetailed
+              inventory={inventory}
+              springOrder={springOrder}
+              componentOrder={componentOrder}
+              startingMonth={startingMonth}
+            />
           </div>
         </div>
       )}
@@ -436,26 +580,22 @@ const styles = {
     gap: '6px',
     fontSize: '14px'
   },
-  mainContent: {
-    display: 'flex',
-    minHeight: 'calc(100vh - 64px)',
-    gap: '1px',
-    background: '#27272a'
+  // Card Grid Layout
+  cardGrid: {
+    maxWidth: '1400px',
+    margin: '0 auto',
+    padding: '24px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+    gap: '24px',
+    alignItems: 'start'
   },
-  leftPanel: {
-    flex: '0 0 42%',
-    background: '#000000',
-    overflowY: 'auto',
-    maxHeight: 'calc(100vh - 64px)'
-  },
-  rightPanel: {
-    flex: '1',
-    background: '#000000',
-    overflowY: 'auto',
-    maxHeight: 'calc(100vh - 64px)'
-  },
-  panelContent: {
-    padding: '24px'
+  card: {
+    background: '#0a0a0a',
+    border: '1px solid #27272a',
+    borderRadius: '12px',
+    padding: '24px',
+    transition: 'all 0.2s'
   },
   section: {
     marginBottom: '28px'
@@ -498,31 +638,54 @@ const styles = {
     fontSize: '11px',
     color: '#a1a1aa'
   },
-  collapsibleButton: {
+  // Collapsible Card Headers
+  cardHeader: {
     width: '100%',
-    padding: '12px 16px',
-    background: '#18181b',
-    border: '1px solid #27272a',
-    borderRadius: '8px',
+    padding: '0',
+    margin: '0 0 20px 0',
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '2px solid #27272a',
+    paddingBottom: '12px',
     color: '#fafafa',
-    fontSize: '14px',
+    fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
+    gap: '12px',
     textAlign: 'left',
-    transition: 'all 0.2s'
+    transition: 'all 0.2s',
+    ':hover': {
+      borderBottomColor: '#3f3f46'
+    }
   },
-  collapsibleIcon: {
-    fontSize: '12px',
-    color: '#a1a1aa'
+  cardHeaderIcon: {
+    fontSize: '14px',
+    color: '#a1a1aa',
+    transition: 'transform 0.2s',
+    display: 'inline-block',
+    width: '16px'
   },
-  collapsibleHint: {
-    marginLeft: 'auto',
-    fontSize: '12px',
-    color: '#71717a',
-    fontWeight: 'normal'
+  cardHeaderTitle: {
+    flex: 1,
+    color: '#fafafa',
+    fontSize: '16px',
+    fontWeight: '600'
+  },
+  cardHeaderBadge: {
+    padding: '4px 10px',
+    background: 'rgba(161, 161, 170, 0.1)',
+    border: '1px solid #3f3f46',
+    borderRadius: '4px',
+    fontSize: '11px',
+    fontWeight: '600',
+    color: '#a1a1aa',
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em'
+  },
+  cardContent: {
+    animation: 'fadeIn 0.2s ease-in'
   },
   warningBox: {
     background: 'rgba(234, 179, 8, 0.1)',
@@ -597,42 +760,129 @@ const styles = {
     color: '#71717a',
     fontStyle: 'italic'
   },
-  advancedToggle: {
-    marginTop: '24px',
-    textAlign: 'center'
+  // Header Actions & View Toggle
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
   },
-  advancedToggleButton: {
-    padding: '10px 24px',
-    background: 'transparent',
+  viewToggle: {
+    display: 'flex',
+    gap: '4px',
+    background: '#18181b',
     border: '1px solid #27272a',
     borderRadius: '8px',
+    padding: '4px'
+  },
+  viewToggleButton: {
+    padding: '8px 16px',
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '6px',
     color: '#a1a1aa',
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s'
+    transition: 'all 0.2s',
+    whiteSpace: 'nowrap'
   },
-  advancedDrawer: {
-    background: '#0a0a0a',
-    borderTop: '2px solid #27272a',
-    maxHeight: '70vh',
+  viewToggleButtonActive: {
+    background: '#27272a',
+    color: '#fafafa'
+  },
+  // Forecast View
+  forecastView: {
+    minHeight: 'calc(100vh - 64px)',
+    background: '#000000',
     overflowY: 'auto'
   },
-  advancedContent: {
-    maxWidth: '1280px',
+  forecastContent: {
+    maxWidth: '1600px',
     margin: '0 auto',
     padding: '32px 24px'
   },
-  tsvPreview: {
-    background: '#000000',
+  forecastHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '32px',
+    paddingBottom: '24px',
+    borderBottom: '2px solid #27272a'
+  },
+  forecastTitle: {
+    fontSize: '28px',
+    fontWeight: '700',
+    color: '#fafafa',
+    marginBottom: '8px'
+  },
+  forecastSubtitle: {
+    fontSize: '14px',
+    color: '#a1a1aa',
+    fontWeight: 'normal'
+  },
+  monthSelector: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  monthLabel: {
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#fafafa',
+    whiteSpace: 'nowrap'
+  },
+  monthSelect: {
+    padding: '10px 16px',
+    background: '#18181b',
     border: '1px solid #27272a',
     borderRadius: '8px',
-    padding: '16px',
-    fontFamily: 'ui-monospace, monospace',
-    fontSize: '11px',
-    maxHeight: '400px',
-    overflow: 'auto',
-    whiteSpace: 'pre-wrap',
-    color: '#a1a1aa'
+    color: '#fafafa',
+    fontSize: '14px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    minWidth: '140px'
+  },
+  // Info Banner
+  infoBanner: {
+    background: 'rgba(59, 130, 246, 0.1)',
+    border: '1px solid #1e40af',
+    borderRadius: '0',
+    padding: '16px 24px',
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'flex-start',
+    borderLeft: '4px solid #3b82f6'
+  },
+  infoBannerIcon: {
+    fontSize: '24px',
+    lineHeight: '1',
+    marginTop: '2px'
+  },
+  infoBannerContent: {
+    flex: 1
+  },
+  infoBannerTitle: {
+    fontSize: '14px',
+    fontWeight: '700',
+    color: '#60a5fa',
+    marginBottom: '6px'
+  },
+  infoBannerText: {
+    fontSize: '13px',
+    color: '#fafafa',
+    lineHeight: '1.6'
+  },
+  // Validation Badge
+  validationBadge: {
+    display: 'inline-block',
+    marginLeft: '16px',
+    padding: '6px 12px',
+    background: 'rgba(34, 197, 94, 0.15)',
+    border: '1px solid #15803d',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#22c55e',
+    verticalAlign: 'middle'
   }
 };

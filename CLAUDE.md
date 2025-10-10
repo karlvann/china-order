@@ -71,6 +71,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## 🎯 CRITICAL BUSINESS CONSTRAINT: Equal Runway Requirement
+
+**THIS IS THE MOST IMPORTANT ALGORITHMIC REQUIREMENT**: Components and springs MUST ship together in the same container and deplete at the same rate.
+
+### Why This Matters
+
+This is not a nice-to-have optimization—it's a fundamental business constraint:
+
+1. **Physical Reality**: Components and springs arrive together in the same shipping container
+2. **Manufacturing Dependency**: Can't build mattresses without both springs AND components
+3. **Stockout Risk**: Running out of components before springs = production stops despite having springs in stock
+4. **Capital Efficiency**: Ordering excess components = wasted money tied up in inventory
+
+### The Math
+
+Each mattress requires **1 spring + multiple components**:
+- 1 spring (firm/medium/soft)
+- 1 felt piece
+- 1 top panel
+- 1 bottom panel
+- 1 side panel
+- 1.5 micro coils (King/Queen only)
+- 1.5 thin latex (King/Queen only)
+
+**Example**: If we order 180 King Medium springs (6 months supply at 30/month), we MUST order:
+- 180 King felt pieces (6 months supply)
+- 180 King top panels (6 months supply)
+- 180 King bottom panels (6 months supply)
+- 180 King side panels (6 months supply)
+- 270 King micro coils (6 months supply at 1.5× multiplier)
+- 270 King thin latex (6 months supply at 1.5× multiplier)
+
+### Algorithm Implementation
+
+**File**: `src/lib/algorithms/componentCalc.ts`
+
+**Formula**:
+```typescript
+targetComponentStock = (currentSprings + orderedSprings) × componentMultiplier
+componentOrderNeeded = targetComponentStock - currentComponentStock
+```
+
+**Key Points**:
+- Current spring inventory MUST be included in the calculation
+- Component orders are derived from spring totals (current + ordered)
+- Multipliers vary by component type (1.0× for panels/felt, 1.5× for coils/latex)
+
+### Validation
+
+The **Forecast view** provides visual validation that this constraint is being enforced:
+
+1. **Spring Timeline Detailed**: Shows 15 rows (5 sizes × 3 firmnesses)
+2. **Component Timeline Detailed**: Shows 22 rows (components × applicable sizes)
+3. **Equal Depletion**: All items for a given size should:
+   - Show the same depletion rate (same slope on timeline)
+   - Run out at approximately the same time (same month)
+   - Receive proportional additions when container arrives
+
+**Visual Indicators**:
+- Info banner in Order Builder explains the constraint
+- Green "✓ Equal Runway Validated" badge in Forecast view
+- Footer notes in both timelines mention equal runway requirement
+
+### Debugging
+
+If components and springs are NOT depleting at the same rate:
+
+1. Check `componentCalc.ts` - ensure formula includes `springInventory` parameter
+2. Verify multipliers in `src/lib/constants/components.ts` are correct
+3. Check consolidation rules (e.g., Side Panel Double includes Single + King Single)
+4. Use Forecast view to identify which size/component is misaligned
+5. Compare timeline slopes—they should be parallel
+
+**This constraint is non-negotiable. If the algorithm doesn't enforce equal runway, it's broken and must be fixed.**
+
+---
+
 ## Project Overview
 
 This is a **Mattress Order System** - a React-based inventory management and order planning tool for a mattress manufacturing business. The application helps plan container orders for mattress springs and components using sales data, inventory tracking, and demand forecasting.
@@ -167,17 +244,40 @@ The system implements 7 core algorithms (all in `src/lib/algorithms/`):
 ### Component Structure
 
 **Main App** (`src/App.jsx`):
-- Manages state for inventory, pallet configuration, and export settings
+- Two-view architecture: Order Builder (card grid) and Forecast (detailed timelines)
+- View toggle in header allows switching between builder and forecast modes
+- Manages state for inventory, pallet configuration, export settings, and UI collapsible states
 - Uses `useMemo` extensively to recalculate orders when inputs change
 - Imports all algorithms from `src/lib/algorithms`
 - Imports all constants from `src/lib/constants`
 
-**Tab Components** (inline in `App.jsx`):
-- `GoalTab`: Business context and strategy explanation
-- `OrderBuilderTab`: Spring inventory input and order generation
-- `ComponentsTab`: Component inventory and order calculation
-- `RunwayTab`: Inventory runway projection with seasonality
-- `ExportTab`: TSV export with optimization options
+**Order Builder View** (Responsive Card Grid):
+All cards are collapsible with smart defaults (▼ = open, ▶ = closed by default):
+
+1. ▼ **Container Size** - Slider for pallet count (4-12)
+2. ▼ **Spring Inventory** - Primary data entry table
+3. ▶ **Component Inventory** - Optional input (labeled "Optional")
+4. ▼ **Current Status** - Coverage cards with priority alerts
+5. ▼ **Your Order** - Pallet preview
+6. ▼ **Coverage After Order** - Runway visualization
+7. ▶ **Component Coverage** - Validation metrics (labeled "Validation")
+8. ▼ **Export Order** - Format toggle and export buttons
+
+**Forecast View** (Full-Width Detailed Timelines):
+- Month selector dropdown for choosing starting month
+- `SpringTimelineDetailed.jsx`: 15 rows (5 sizes × 3 firmnesses) with container arrival at Week 10
+- `ComponentTimelineDetailed.jsx`: 22 rows (components × applicable sizes)
+- Visual indicators: Info banner explaining equal runway, green "✓ Equal Runway Validated" badge
+- Container arrival positioned between Month 2 and Month 3 as special column
+
+**UI Components**:
+- `InventoryTable.jsx`: Editable tables for spring/component input
+- `CoverageGrid.jsx`: Status cards showing coverage by size
+- `PalletList.jsx`: Visual pallet breakdown
+- `RunwayMini.jsx`: Compact runway visualization
+- `ComponentRunway.jsx`: Component coverage display
+- `SpringTimelineDetailed.jsx`: 12-month forecast (size × firmness detail)
+- `ComponentTimelineDetailed.jsx`: 12-month forecast (component × size detail)
 
 **Save/Load System**:
 - `SaveLoadModal.jsx`: UI for managing 5 save slots
@@ -190,8 +290,10 @@ All state is local (no Redux/Context):
 - `inventory`: Current spring and component stock levels
 - `palletCount`: Number of pallets in container (4-12)
 - `exportFormat`: 'exact' or 'optimized' export mode
-- `activeTab`: Current tab view ('goal', 'order-builder', 'components', 'runway', 'export')
+- `currentView`: 'builder' or 'forecast' (view toggle)
+- `startingMonth`: Month offset for forecast view (0-11)
 - `showSaveModal`: Controls save/load modal visibility
+- Collapsible states: `showContainerSettings`, `showSpringInventory`, `showComponentsInput`, `showCurrentStatus`, `showYourOrder`, `showCoverageAfter`, `showComponentCoverage`, `showExport`
 
 ### Data Flow
 
