@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Component runway forecast showing months of coverage
-export default function ComponentRunway({ inventory, springOrder, componentOrder }) {
+export default function ComponentRunway({ inventory, springOrder, componentOrder, showDetails = false }) {
   if (!springOrder || !componentOrder) {
     return null;
   }
@@ -87,6 +87,115 @@ export default function ComponentRunway({ inventory, springOrder, componentOrder
     return multipliers[componentId] || 1.0;
   };
 
+  // Detailed table view
+  if (showDetails) {
+    return (
+      <div style={{
+        background: '#18181b',
+        border: '1px solid #27272a',
+        borderRadius: '8px',
+        padding: '20px'
+      }}>
+        <div style={{
+          fontSize: '16px',
+          fontWeight: '600',
+          marginBottom: '16px',
+          color: '#fafafa'
+        }}>
+          Component Runway Forecast
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ background: '#27272a' }}>
+                <th style={headerStyle}>Component</th>
+                <th style={headerStyle}>Current</th>
+                <th style={headerStyle}>Order</th>
+                <th style={headerStyle}>After Container</th>
+                <th style={headerStyle}>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMPONENT_TYPES.map(comp => {
+                const multiplier = getMultiplier(comp.id);
+                const monthlyUsage = calculateMonthlyUsage(comp.id, multiplier);
+                const currentStock = getCurrentStock(comp.id);
+                const orderAmount = getOrderAmount(comp.id);
+
+                // Skip if no usage
+                if (monthlyUsage === 0) {
+                  return null;
+                }
+
+                // Calculate stock after lead time
+                const stockAfterLeadTime = Math.max(0, currentStock - (monthlyUsage * 2.5));
+                const stockAfterContainer = stockAfterLeadTime + orderAmount;
+                const change = stockAfterContainer - currentStock;
+
+                let changeColor = '#22c55e';
+                if (change < 0) changeColor = '#ef4444';
+
+                return (
+                  <tr key={comp.id} style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: '600' }}>
+                      {comp.name}
+                    </td>
+                    <td style={{
+                      padding: '10px 12px',
+                      fontFamily: 'monospace',
+                      textAlign: 'center'
+                    }}>
+                      {currentStock}
+                    </td>
+                    <td style={{
+                      padding: '10px 12px',
+                      fontFamily: 'monospace',
+                      textAlign: 'center',
+                      color: '#60a5fa'
+                    }}>
+                      {orderAmount}
+                    </td>
+                    <td style={{
+                      padding: '10px 12px',
+                      fontFamily: 'monospace',
+                      textAlign: 'center',
+                      fontWeight: 'bold'
+                    }}>
+                      {Math.round(stockAfterContainer)}
+                    </td>
+                    <td style={{
+                      padding: '10px 12px',
+                      fontFamily: 'monospace',
+                      textAlign: 'center',
+                      color: changeColor,
+                      fontWeight: '600'
+                    }}>
+                      {change > 0 ? '+' : ''}{Math.round(change)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div style={{
+          marginTop: '16px',
+          padding: '12px',
+          background: 'rgba(96, 165, 250, 0.1)',
+          border: '1px solid #1e40af',
+          borderRadius: '6px',
+          fontSize: '12px',
+          color: '#a1a1aa'
+        }}>
+          <strong style={{ color: '#60a5fa' }}>Note:</strong> Component usage calculated from spring sales rates × component multipliers. Stock depletes 2.5 months before container arrives, then new order arrives.
+        </div>
+      </div>
+    );
+  }
+
+  // Compact bar view
   return (
     <div style={{
       background: '#18181b',
@@ -181,3 +290,13 @@ export default function ComponentRunway({ inventory, springOrder, componentOrder
     </div>
   );
 }
+
+const headerStyle = {
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: '11px',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+  fontWeight: '600',
+  color: '#a1a1aa'
+};

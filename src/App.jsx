@@ -362,6 +362,17 @@ export default function App() {
               />
             </section>
 
+            {/* Component Runway Table */}
+            <section style={styles.section}>
+              <h2 style={styles.sectionTitle}>Component Runway Forecast</h2>
+              <ComponentRunway
+                inventory={inventory}
+                springOrder={springOrder}
+                componentOrder={componentOrder}
+                showDetails={true}
+              />
+            </section>
+
             {/* TSV Preview */}
             <section style={styles.section}>
               <h2 style={styles.sectionTitle}>TSV Preview</h2>
