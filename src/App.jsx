@@ -7,6 +7,7 @@ import RunwayMini from './components/RunwayMini';
 import ComponentRunway from './components/ComponentRunway';
 import SpringTimelineDetailed from './components/SpringTimelineDetailed';
 import ComponentTimelineDetailed from './components/ComponentTimelineDetailed';
+import ValidationBanner from './components/ValidationBanner';
 
 // Import algorithms
 import {
@@ -16,6 +17,9 @@ import {
   optimizeComponentOrder,
   generateTSV
 } from './lib/algorithms';
+
+// Import validation utilities
+import { validateEqualRunway } from './lib/utils/validation';
 
 // Import constants
 import {
@@ -71,6 +75,12 @@ export default function App() {
     if (!componentOrder) return null;
     return optimizeComponentOrder(componentOrder, exportFormat);
   }, [componentOrder, exportFormat]);
+
+  // Validate equal runway (optional - for displaying warnings)
+  const validation = useMemo(() => {
+    if (!springOrder || !componentOrder) return null;
+    return validateEqualRunway(springOrder, componentOrder, inventory);
+  }, [springOrder, componentOrder, inventory]);
 
   // TSV export
   const tsvContent = useMemo(() => {
@@ -226,6 +236,9 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {/* Validation Banner (only shows if there are warnings/violations) */}
+        <ValidationBanner validation={validation} />
 
         <div style={styles.cardGrid}>
           {/* Container Settings Card (Collapsible) */}
