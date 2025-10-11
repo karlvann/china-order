@@ -114,9 +114,13 @@ export default function InventoryTable({
               <tr key={comp.id} style={{ borderBottom: '1px solid #27272a' }}>
                 <td style={{ padding: '10px 12px', fontWeight: '600' }}>{comp.name}</td>
                 {MATTRESS_SIZES.map(size => {
-                  // Hide inputs for micro coils and thin latex in small sizes
-                  const shouldHide = ['micro_coils', 'thin_latex'].includes(comp.id) &&
-                                    ['Double', 'King Single', 'Single'].includes(size.id);
+                  // Hide inputs for:
+                  // 1. Micro coils and thin latex in small sizes (King/Queen only)
+                  // 2. Side panel for Single and King Single (they use Double side panels)
+                  const shouldHide =
+                    (['micro_coils', 'thin_latex'].includes(comp.id) &&
+                     ['Double', 'King Single', 'Single'].includes(size.id)) ||
+                    (comp.id === 'side_panel' && ['Single', 'King Single'].includes(size.id));
 
                   return (
                     <td key={size.id} style={{ padding: '10px 12px', textAlign: 'center' }}>

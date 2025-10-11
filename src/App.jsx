@@ -12,7 +12,7 @@ import ValidationBanner from './components/ValidationBanner';
 // Import algorithms
 import {
   calculateCoverage,
-  calculateNPlus1Order,
+  calculateKingQueenFirstOrder,
   calculateComponentOrder,
   optimizeComponentOrder,
   generateTSV
@@ -40,28 +40,26 @@ export default function App() {
   const [palletCount, setPalletCount] = useState(DEFAULT_PALLETS);
   const [exportFormat, setExportFormat] = useState('optimized');
   const [showSaveModal, setShowSaveModal] = useState(false);
-  const [showComponentsInput, setShowComponentsInput] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [startingMonth, setStartingMonth] = useState(new Date().getMonth()); // 0-11 (Jan-Dec)
   const [currentView, setCurrentView] = useState('builder'); // 'builder' or 'forecast'
 
-  // Collapsible section states (true = open by default)
-  const [showContainerSettings, setShowContainerSettings] = useState(true);
-  const [showSpringInventory, setShowSpringInventory] = useState(true);
-  const [showCurrentStatus, setShowCurrentStatus] = useState(true);
-  const [showYourOrder, setShowYourOrder] = useState(true);
-  const [showCoverageAfter, setShowCoverageAfter] = useState(true);
-  const [showComponentCoverage, setShowComponentCoverage] = useState(false);
-  const [showExport, setShowExport] = useState(true);
+  // Single-expansion accordion state
+  const [openSection, setOpenSection] = useState('springInventory');
+
+  // Toggle section (single-expansion: clicking same section closes it, clicking different opens that one)
+  const toggleSection = (sectionName) => {
+    setOpenSection(openSection === sectionName ? null : sectionName);
+  };
 
   const [inventory, setInventory] = useState({
     springs: createEmptySpringInventory(),
     components: createEmptyComponentInventory()
   });
 
-  // Calculate spring order
+  // Calculate spring order (NEW: Fill King/Queen First algorithm)
   const springOrder = useMemo(() => {
-    return calculateNPlus1Order(palletCount, inventory);
+    return calculateKingQueenFirstOrder(palletCount, inventory);
   }, [palletCount, inventory]);
 
   // Calculate component order
@@ -183,6 +181,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
+
       {/* Header */}
       <header style={styles.header}>
         <div>
@@ -224,36 +223,20 @@ export default function App() {
       {currentView === 'builder' ? (
         /* ORDER BUILDER VIEW - Split Screen */
         <>
-        {/* Info Banner - Equal Runway Constraint */}
-        <div style={styles.infoBanner}>
-          <div style={styles.infoBannerIcon}>📦</div>
-          <div style={styles.infoBannerContent}>
-            <div style={styles.infoBannerTitle}>How Component Orders Work</div>
-            <div style={styles.infoBannerText}>
-              Components and springs ship together in the same container and <strong>must deplete at the same rate</strong>.
-              The system automatically calculates component quantities to ensure equal runway coverage.
-              <span style={{ color: '#60a5fa' }}> Example: If you order enough springs for 6 months, the system orders enough components for 6 months.</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Validation Banner (only shows if there are warnings/violations) */}
-        <ValidationBanner validation={validation} />
-
-        <div style={styles.cardGrid}>
+        <div style={styles.accordionContainer}>
           {/* Container Settings Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowContainerSettings(!showContainerSettings)}
+              onClick={() => toggleSection('containerSettings')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showContainerSettings ? '▼' : '▶'}
+                {openSection === 'containerSettings' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Container Size</span>
             </button>
 
-            {showContainerSettings && (
+            {openSection === 'containerSettings' && (
               <div style={styles.cardContent}>
                 <div style={styles.sliderContainer}>
                   <input
@@ -276,16 +259,16 @@ export default function App() {
           {/* Spring Inventory Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowSpringInventory(!showSpringInventory)}
+              onClick={() => toggleSection('springInventory')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showSpringInventory ? '▼' : '▶'}
+                {openSection === 'springInventory' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Spring Inventory</span>
             </button>
 
-            {showSpringInventory && (
+            {openSection === 'springInventory' && (
               <div style={styles.cardContent}>
                 <p style={styles.sectionDescription}>
                   Enter current stock for each size and firmness
@@ -304,17 +287,16 @@ export default function App() {
           {/* Component Inventory Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowComponentsInput(!showComponentsInput)}
+              onClick={() => toggleSection('componentInventory')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showComponentsInput ? '▼' : '▶'}
+                {openSection === 'componentInventory' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Component Inventory</span>
-              <span style={styles.cardHeaderBadge}>Optional</span>
             </button>
 
-            {showComponentsInput && (
+            {openSection === 'componentInventory' && (
               <div style={styles.cardContent}>
                 <p style={styles.sectionDescription}>
                   Enter current component stock. Micro coils & thin latex only for King/Queen.
@@ -331,16 +313,16 @@ export default function App() {
           {/* Status Cards (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowCurrentStatus(!showCurrentStatus)}
+              onClick={() => toggleSection('currentStatus')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showCurrentStatus ? '▼' : '▶'}
+                {openSection === 'currentStatus' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Current Status</span>
             </button>
 
-            {showCurrentStatus && (
+            {openSection === 'currentStatus' && (
               <div style={styles.cardContent}>
                 <CoverageGrid
                   coverageData={coverageData}
@@ -364,16 +346,16 @@ export default function App() {
           {/* Order Summary Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowYourOrder(!showYourOrder)}
+              onClick={() => toggleSection('yourOrder')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showYourOrder ? '▼' : '▶'}
+                {openSection === 'yourOrder' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Your Order</span>
             </button>
 
-            {showYourOrder && (
+            {openSection === 'yourOrder' && (
               <div style={styles.cardContent}>
                 <PalletList springOrder={springOrder} compact={true} />
               </div>
@@ -383,16 +365,16 @@ export default function App() {
           {/* Coverage After Order Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowCoverageAfter(!showCoverageAfter)}
+              onClick={() => toggleSection('coverageAfter')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showCoverageAfter ? '▼' : '▶'}
+                {openSection === 'coverageAfter' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Coverage After Order</span>
             </button>
 
-            {showCoverageAfter && (
+            {openSection === 'coverageAfter' && (
               <div style={styles.cardContent}>
                 <RunwayMini
                   inventory={inventory}
@@ -406,17 +388,17 @@ export default function App() {
           {/* Component Coverage Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowComponentCoverage(!showComponentCoverage)}
+              onClick={() => toggleSection('componentCoverage')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showComponentCoverage ? '▼' : '▶'}
+                {openSection === 'componentCoverage' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Component Coverage</span>
               <span style={styles.cardHeaderBadge}>Validation</span>
             </button>
 
-            {showComponentCoverage && (
+            {openSection === 'componentCoverage' && (
               <div style={styles.cardContent}>
                 <ComponentRunway
                   inventory={inventory}
@@ -430,16 +412,16 @@ export default function App() {
           {/* Export Actions Card (Collapsible) */}
           <div style={styles.card}>
             <button
-              onClick={() => setShowExport(!showExport)}
+              onClick={() => toggleSection('export')}
               style={styles.cardHeader}
             >
               <span style={styles.cardHeaderIcon}>
-                {showExport ? '▼' : '▶'}
+                {openSection === 'export' ? '▼' : '▶'}
               </span>
               <span style={styles.cardHeaderTitle}>Export Order</span>
             </button>
 
-            {showExport && (
+            {openSection === 'export' && (
               <div style={styles.cardContent}>
                 {/* Export Format Toggle */}
                 <div style={styles.exportFormatContainer}>
@@ -479,6 +461,56 @@ export default function App() {
               </div>
             )}
           </div>
+
+          {/* How It Works Card (Collapsible) - Info about component orders */}
+          <div style={styles.card}>
+            <button
+              onClick={() => toggleSection('howItWorks')}
+              style={styles.cardHeader}
+            >
+              <span style={styles.cardHeaderIcon}>
+                {openSection === 'howItWorks' ? '▼' : '▶'}
+              </span>
+              <span style={styles.cardHeaderTitle}>📦 How Component Orders Work</span>
+              <span style={styles.cardHeaderBadge}>Info</span>
+            </button>
+
+            {openSection === 'howItWorks' && (
+              <div style={styles.cardContent}>
+                <p style={styles.infoCardText}>
+                  Components and springs ship together in the same container and <strong>must deplete at the same rate</strong>.
+                </p>
+                <p style={styles.infoCardText}>
+                  The system automatically calculates component quantities to ensure equal runway coverage.
+                </p>
+                <div style={styles.infoCardExample}>
+                  <strong>Example:</strong> If you order enough springs for 6 months, the system orders enough components for 6 months.
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Validation Warnings Card (Collapsible) - Only show if there are issues */}
+          {validation && !validation.allValid && (
+            <div style={styles.card}>
+              <button
+                onClick={() => toggleSection('validationWarnings')}
+                style={styles.cardHeader}
+              >
+                <span style={styles.cardHeaderIcon}>
+                  {openSection === 'validationWarnings' ? '▼' : '▶'}
+                </span>
+                <span style={styles.cardHeaderTitle}>⚠️ Validation Warnings</span>
+                <span style={{...styles.cardHeaderBadge, background: 'rgba(234, 179, 8, 0.2)', borderColor: '#a16207', color: '#facc15'}}>Alert</span>
+              </button>
+
+              {openSection === 'validationWarnings' && (
+                <div style={styles.cardContent}>
+                  <ValidationBanner validation={validation} />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </>
       ) : (
@@ -593,22 +625,25 @@ const styles = {
     gap: '6px',
     fontSize: '14px'
   },
-  // Card Grid Layout
-  cardGrid: {
-    maxWidth: '1400px',
+  // Accordion Container - Single column full-width layout
+  accordionContainer: {
+    maxWidth: '900px',
     margin: '0 auto',
     padding: '24px',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-    gap: '24px',
-    alignItems: 'start'
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0'
   },
   card: {
-    background: '#0a0a0a',
-    border: '1px solid #27272a',
-    borderRadius: '12px',
-    padding: '24px',
-    transition: 'all 0.2s'
+    background: 'transparent',
+    border: 'none',
+    borderBottom: '1px solid #27272a',
+    borderRadius: '0',
+    padding: '12px 0',
+    transition: 'all 0.2s',
+    width: '100%',
+    minWidth: 0,
+    overflow: 'hidden'
   },
   section: {
     marginBottom: '28px'
@@ -622,7 +657,7 @@ const styles = {
   sectionDescription: {
     fontSize: '13px',
     color: '#a1a1aa',
-    marginBottom: '12px'
+    marginBottom: '10px'
   },
   sliderContainer: {
     display: 'flex',
@@ -654,58 +689,56 @@ const styles = {
   // Collapsible Card Headers
   cardHeader: {
     width: '100%',
-    padding: '0',
-    margin: '0 0 20px 0',
+    padding: '12px 0',
+    margin: '0',
     background: 'transparent',
     border: 'none',
-    borderBottom: '2px solid #27272a',
-    paddingBottom: '12px',
+    borderBottom: 'none',
     color: '#fafafa',
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '600',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
+    gap: '10px',
     textAlign: 'left',
-    transition: 'all 0.2s',
-    ':hover': {
-      borderBottomColor: '#3f3f46'
-    }
+    transition: 'all 0.2s'
   },
   cardHeaderIcon: {
-    fontSize: '14px',
+    fontSize: '12px',
     color: '#a1a1aa',
     transition: 'transform 0.2s',
     display: 'inline-block',
-    width: '16px'
+    width: '14px'
   },
   cardHeaderTitle: {
     flex: 1,
     color: '#fafafa',
-    fontSize: '16px',
+    fontSize: '15px',
     fontWeight: '600'
   },
   cardHeaderBadge: {
-    padding: '4px 10px',
+    padding: '2px 8px',
     background: 'rgba(161, 161, 170, 0.1)',
     border: '1px solid #3f3f46',
     borderRadius: '4px',
-    fontSize: '11px',
+    fontSize: '10px',
     fontWeight: '600',
     color: '#a1a1aa',
     textTransform: 'uppercase',
     letterSpacing: '0.05em'
   },
   cardContent: {
+    paddingTop: '12px',
+    paddingBottom: '12px',
     animation: 'fadeIn 0.2s ease-in'
   },
   warningBox: {
     background: 'rgba(234, 179, 8, 0.1)',
     border: '1px solid #a16207',
-    borderRadius: '8px',
-    padding: '14px',
-    marginBottom: '20px'
+    borderRadius: '6px',
+    padding: '10px',
+    marginBottom: '12px'
   },
   warningTitle: {
     fontSize: '13px',
@@ -772,6 +805,22 @@ const styles = {
     fontSize: '12px',
     color: '#71717a',
     fontStyle: 'italic'
+  },
+  // Info Card Styles
+  infoCardText: {
+    fontSize: '14px',
+    color: '#d4d4d8',
+    lineHeight: '1.6',
+    marginBottom: '12px'
+  },
+  infoCardExample: {
+    padding: '12px',
+    background: 'rgba(96, 165, 250, 0.1)',
+    border: '1px solid rgba(96, 165, 250, 0.3)',
+    borderRadius: '6px',
+    fontSize: '13px',
+    color: '#60a5fa',
+    lineHeight: '1.5'
   },
   // Header Actions & View Toggle
   headerActions: {
@@ -854,36 +903,6 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     minWidth: '140px'
-  },
-  // Info Banner
-  infoBanner: {
-    background: 'rgba(59, 130, 246, 0.1)',
-    border: '1px solid #1e40af',
-    borderRadius: '0',
-    padding: '16px 24px',
-    display: 'flex',
-    gap: '12px',
-    alignItems: 'flex-start',
-    borderLeft: '4px solid #3b82f6'
-  },
-  infoBannerIcon: {
-    fontSize: '24px',
-    lineHeight: '1',
-    marginTop: '2px'
-  },
-  infoBannerContent: {
-    flex: 1
-  },
-  infoBannerTitle: {
-    fontSize: '14px',
-    fontWeight: '700',
-    color: '#60a5fa',
-    marginBottom: '6px'
-  },
-  infoBannerText: {
-    fontSize: '13px',
-    color: '#fafafa',
-    lineHeight: '1.6'
   },
   // Validation Badge
   validationBadge: {

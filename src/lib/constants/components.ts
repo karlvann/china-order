@@ -36,6 +36,13 @@ export const COMPONENT_TYPES: ComponentType[] = [
 export const KING_QUEEN_ONLY_COMPONENTS = ['micro_coils', 'thin_latex'] as const;
 
 /**
+ * Side Panel consolidation: Single and King Single use Double side panels.
+ * These sizes don't have separate side panel SKUs - they're physically identical to Double.
+ * The algorithm consolidates Single + King Single quantities into Double orders.
+ */
+export const SIDE_PANEL_CONSOLIDATED_SIZES = ['Single', 'King Single'] as const;
+
+/**
  * Number of save slots available.
  * Used by localStorage and Vercel KV storage adapters.
  */

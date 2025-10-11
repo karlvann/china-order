@@ -1,0 +1,77 @@
+{
+  "name": "High Stock Sample",
+  "description": "Well-stocked inventory (7-8 months coverage). Some sizes may not need reordering.",
+  "inventory": {
+    "springs": {
+      "firm": {
+        "King": 32,
+        "Queen": 43,
+        "Double": 13,
+        "King Single": 8,
+        "Single": 3
+      },
+      "medium": {
+        "King": 200,
+        "Queen": 272,
+        "Double": 35,
+        "King Single": 16,
+        "Single": 5
+      },
+      "soft": {
+        "King": 8,
+        "Queen": 13,
+        "Double": 4,
+        "King Single": 2,
+        "Single": 1
+      }
+    },
+    "components": {
+      "micro_coils": {
+        "King": 360,
+        "Queen": 492,
+        "Double": 0,
+        "King Single": 0,
+        "Single": 0
+      },
+      "thin_latex": {
+        "King": 360,
+        "Queen": 492,
+        "Double": 0,
+        "King Single": 0,
+        "Single": 0
+      },
+      "felt": {
+        "King": 240,
+        "Queen": 328,
+        "Double": 52,
+        "King Single": 26,
+        "Single": 9
+      },
+      "top_panel": {
+        "King": 240,
+        "Queen": 328,
+        "Double": 52,
+        "King Single": 26,
+        "Single": 9
+      },
+      "bottom_panel": {
+        "King": 240,
+        "Queen": 328,
+        "Double": 52,
+        "King Single": 26,
+        "Single": 9
+      },
+      "side_panel": {
+        "King": 240,
+        "Queen": 328,
+        "Double": 87,
+        "King Single": 0,
+        "Single": 0
+      }
+    }
+  },
+  "settings": {
+    "palletCount": 8,
+    "exportFormat": "optimized"
+  }
+}

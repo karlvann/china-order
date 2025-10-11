@@ -129,6 +129,84 @@ export default function SaveLoadModal({ isOpen, onClose, currentData, onLoad }) 
     });
   };
 
+  const loadLowStockSample = () => {
+    const sampleData = {
+      inventory: {
+        springs: {
+          firm: { King: 8, Queen: 10, Double: 3, 'King Single': 2, Single: 1 },
+          medium: { King: 50, Queen: 65, Double: 8, 'King Single': 4, Single: 1 },
+          soft: { King: 2, Queen: 3, Double: 1, 'King Single': 0, Single: 0 }
+        },
+        components: {
+          micro_coils: { King: 90, Queen: 120, Double: 0, 'King Single': 0, Single: 0 },
+          thin_latex: { King: 90, Queen: 120, Double: 0, 'King Single': 0, Single: 0 },
+          felt: { King: 60, Queen: 80, Double: 12, 'King Single': 6, Single: 2 },
+          top_panel: { King: 60, Queen: 80, Double: 12, 'King Single': 6, Single: 2 },
+          bottom_panel: { King: 60, Queen: 80, Double: 12, 'King Single': 6, Single: 2 },
+          side_panel: { King: 60, Queen: 80, Double: 20, 'King Single': 0, Single: 0 }
+        }
+      },
+      settings: {
+        palletCount: 8,
+        exportFormat: 'optimized'
+      }
+    };
+    onLoad(sampleData);
+    onClose();
+  };
+
+  const loadMediumStockSample = () => {
+    const sampleData = {
+      inventory: {
+        springs: {
+          firm: { King: 20, Queen: 27, Double: 8, 'King Single': 5, Single: 2 },
+          medium: { King: 125, Queen: 170, Double: 22, 'King Single': 10, Single: 3 },
+          soft: { King: 5, Queen: 8, Double: 3, 'King Single': 1, Single: 1 }
+        },
+        components: {
+          micro_coils: { King: 225, Queen: 310, Double: 0, 'King Single': 0, Single: 0 },
+          thin_latex: { King: 225, Queen: 310, Double: 0, 'King Single': 0, Single: 0 },
+          felt: { King: 150, Queen: 205, Double: 33, 'King Single': 16, Single: 6 },
+          top_panel: { King: 150, Queen: 205, Double: 33, 'King Single': 16, Single: 6 },
+          bottom_panel: { King: 150, Queen: 205, Double: 33, 'King Single': 16, Single: 6 },
+          side_panel: { King: 150, Queen: 205, Double: 55, 'King Single': 0, Single: 0 }
+        }
+      },
+      settings: {
+        palletCount: 8,
+        exportFormat: 'optimized'
+      }
+    };
+    onLoad(sampleData);
+    onClose();
+  };
+
+  const loadHighStockSample = () => {
+    const sampleData = {
+      inventory: {
+        springs: {
+          firm: { King: 32, Queen: 43, Double: 13, 'King Single': 8, Single: 3 },
+          medium: { King: 200, Queen: 272, Double: 35, 'King Single': 16, Single: 5 },
+          soft: { King: 8, Queen: 13, Double: 4, 'King Single': 2, Single: 1 }
+        },
+        components: {
+          micro_coils: { King: 360, Queen: 492, Double: 0, 'King Single': 0, Single: 0 },
+          thin_latex: { King: 360, Queen: 492, Double: 0, 'King Single': 0, Single: 0 },
+          felt: { King: 240, Queen: 328, Double: 52, 'King Single': 26, Single: 9 },
+          top_panel: { King: 240, Queen: 328, Double: 52, 'King Single': 26, Single: 9 },
+          bottom_panel: { King: 240, Queen: 328, Double: 52, 'King Single': 26, Single: 9 },
+          side_panel: { King: 240, Queen: 328, Double: 87, 'King Single': 0, Single: 0 }
+        }
+      },
+      settings: {
+        palletCount: 8,
+        exportFormat: 'optimized'
+      }
+    };
+    onLoad(sampleData);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -383,6 +461,117 @@ export default function SaveLoadModal({ isOpen, onClose, currentData, onLoad }) 
               </div>
             );
           })}
+        </div>
+
+        {/* Load Sample Data Section */}
+        <div style={{
+          marginTop: '24px',
+          padding: '20px',
+          background: 'rgba(34, 197, 94, 0.1)',
+          border: '1px solid #15803d',
+          borderRadius: '8px'
+        }}>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ color: '#22c55e', fontWeight: '600', marginBottom: '6px', fontSize: '14px' }}>
+              🧪 Load Sample Data
+            </div>
+            <div style={{ fontSize: '13px', color: '#a1a1aa' }}>
+              Populate with realistic inventory for testing
+            </div>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '12px'
+          }}>
+            {/* Low Stock Button */}
+            <button
+              onClick={loadLowStockSample}
+              disabled={loading}
+              style={{
+                padding: '16px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '2px solid #991b1b',
+                borderRadius: '8px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '13px',
+                opacity: loading ? 0.5 : 1,
+                color: '#fafafa',
+                textAlign: 'left',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+              }}
+            >
+              <div style={{ fontSize: '16px', marginBottom: '4px' }}>🔴 Low Stock</div>
+              <div style={{ fontSize: '11px', color: '#a1a1aa' }}>1-2 months</div>
+              <div style={{ fontSize: '11px', color: '#f87171' }}>Critical levels</div>
+            </button>
+
+            {/* Medium Stock Button */}
+            <button
+              onClick={loadMediumStockSample}
+              disabled={loading}
+              style={{
+                padding: '16px',
+                background: 'rgba(234, 179, 8, 0.15)',
+                border: '2px solid #a16207',
+                borderRadius: '8px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '13px',
+                opacity: loading ? 0.5 : 1,
+                color: '#fafafa',
+                textAlign: 'left',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.background = 'rgba(234, 179, 8, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(234, 179, 8, 0.15)';
+              }}
+            >
+              <div style={{ fontSize: '16px', marginBottom: '4px' }}>🟡 Medium Stock</div>
+              <div style={{ fontSize: '11px', color: '#a1a1aa' }}>4-5 months</div>
+              <div style={{ fontSize: '11px', color: '#facc15' }}>Healthy levels</div>
+            </button>
+
+            {/* High Stock Button */}
+            <button
+              onClick={loadHighStockSample}
+              disabled={loading}
+              style={{
+                padding: '16px',
+                background: 'rgba(34, 197, 94, 0.15)',
+                border: '2px solid #15803d',
+                borderRadius: '8px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                fontWeight: '600',
+                fontSize: '13px',
+                opacity: loading ? 0.5 : 1,
+                color: '#fafafa',
+                textAlign: 'left',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) e.currentTarget.style.background = 'rgba(34, 197, 94, 0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(34, 197, 94, 0.15)';
+              }}
+            >
+              <div style={{ fontSize: '16px', marginBottom: '4px' }}>🟢 High Stock</div>
+              <div style={{ fontSize: '11px', color: '#a1a1aa' }}>7-8 months</div>
+              <div style={{ fontSize: '11px', color: '#22c55e' }}>Well-stocked</div>
+            </button>
+          </div>
         </div>
 
         {/* Footer Info */}

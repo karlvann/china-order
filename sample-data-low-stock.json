@@ -1,0 +1,77 @@
+{
+  "name": "Low Stock Sample",
+  "description": "Critical inventory levels (1-2 months coverage). Urgent ordering needed for King/Queen.",
+  "inventory": {
+    "springs": {
+      "firm": {
+        "King": 8,
+        "Queen": 10,
+        "Double": 3,
+        "King Single": 2,
+        "Single": 1
+      },
+      "medium": {
+        "King": 50,
+        "Queen": 65,
+        "Double": 8,
+        "King Single": 4,
+        "Single": 1
+      },
+      "soft": {
+        "King": 2,
+        "Queen": 3,
+        "Double": 1,
+        "King Single": 0,
+        "Single": 0
+      }
+    },
+    "components": {
+      "micro_coils": {
+        "King": 90,
+        "Queen": 120,
+        "Double": 0,
+        "King Single": 0,
+        "Single": 0
+      },
+      "thin_latex": {
+        "King": 90,
+        "Queen": 120,
+        "Double": 0,
+        "King Single": 0,
+        "Single": 0
+      },
+      "felt": {
+        "King": 60,
+        "Queen": 80,
+        "Double": 12,
+        "King Single": 6,
+        "Single": 2
+      },
+      "top_panel": {
+        "King": 60,
+        "Queen": 80,
+        "Double": 12,
+        "King Single": 6,
+        "Single": 2
+      },
+      "bottom_panel": {
+        "King": 60,
+        "Queen": 80,
+        "Double": 12,
+        "King Single": 6,
+        "Single": 2
+      },
+      "side_panel": {
+        "King": 60,
+        "Queen": 80,
+        "Double": 20,
+        "King Single": 0,
+        "Single": 0
+      }
+    }
+  },
+  "settings": {
+    "palletCount": 8,
+    "exportFormat": "optimized"
+  }
+}

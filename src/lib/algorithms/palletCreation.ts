@@ -1,27 +1,31 @@
 /**
  * Algorithm 3: Create Pallets for Size
  *
- * Creates pallets for a specific mattress size with dynamic firmness allocation.
- * Unlike fixed ratio distribution, this algorithm allocates springs based on
- * individual firmness coverage gaps.
+ * Creates pallets for a specific mattress size with equal depletion firmness allocation.
+ * This algorithm allocates springs to ensure all firmnesses (Firm/Medium/Soft) deplete
+ * at approximately the same rate, with a 10% priority boost to Medium.
  */
 
 import type { Inventory, MattressSize, Pallet, PalletType, FirmnessBreakdown } from '../types';
 import { SPRINGS_PER_PALLET, TARGET_COVERAGE, MONTHLY_SALES_RATE, FIRMNESS_TYPES, FIRMNESS_DISTRIBUTION } from '../constants';
 
 /**
- * Create pallets for a specific size with smart firmness allocation.
+ * Create pallets for a specific size with equal depletion firmness allocation.
  *
  * **Algorithm**:
- * 1. Calculate firmness needs (based on coverage gaps, not fixed ratios)
- * 2. Distribute springs proportionally to needs
- * 3. Create pure pallets first (single firmness, most efficient)
- * 4. Create mixed pallets for remainders
- * 5. Pad critical pallets to exactly 30 springs
+ * 1. Calculate current coverage for each firmness
+ * 2. Calculate allocation needed for each firmness to reach 6 months coverage (equal depletion time)
+ * 3. Apply 10% priority boost to Medium (not 84% dominance)
+ * 4. Distribute springs proportionally based on equal depletion needs
+ * 5. Create pure pallets first (single firmness, most efficient)
+ * 6. Create mixed pallets for remainders
+ * 7. Pad critical pallets to exactly 30 springs
  *
- * **Why dynamic allocation?**
- * If Medium has 2 months coverage but Firm has 6 months, we should
- * allocate more to Medium, not follow fixed 84%/14% ratios.
+ * **Why equal depletion?**
+ * If Soft has 2 months coverage and Medium has 5 months, Soft would run out
+ * 3 months earlier. This causes lost sales when customers want Soft firmness.
+ * Equal depletion ensures all firmnesses run out at approximately the same time,
+ * maintaining customer choice throughout the inventory cycle.
  *
  * @param size - Mattress size (e.g., 'King')
  * @param numPallets - Number of pallets to create
@@ -36,7 +40,7 @@ import { SPRINGS_PER_PALLET, TARGET_COVERAGE, MONTHLY_SALES_RATE, FIRMNESS_TYPES
  * const pallets = createPalletsForSize('King', 2, 1, 'Mixed', inventory);
  * // Returns: [
  * //   { id: 1, size: 'King', type: 'Pure', firmness_breakdown: { medium: 30 }, total: 30 },
- * //   { id: 2, size: 'King', type: 'Mixed', firmness_breakdown: { medium: 20, firm: 10 }, total: 30 }
+ * //   { id: 2, size: 'King', type: 'Mixed', firmness_breakdown: { firm: 10, medium: 15, soft: 5 }, total: 30 }
  * // ]
  * ```
  */
@@ -66,27 +70,90 @@ export function createPalletsForSize(
     totalNeed += need;
   });
 
-  // Step 2: Distribute springs based on need (or default ratios if no need)
+  // Step 2: Distribute springs to equalize depletion times (equal runway for all firmnesses)
   let firmUnits: number, mediumUnits: number, softUnits: number;
 
-  if (totalNeed === 0) {
-    // No coverage gap - use default firmness ratios
-    const firmRatios = FIRMNESS_DISTRIBUTION[size];
-    firmUnits = Math.round(totalUnits * firmRatios.firm);
-    mediumUnits = Math.round(totalUnits * firmRatios.medium);
-    softUnits = Math.round(totalUnits * firmRatios.soft);
-  } else {
-    // Allocate based on proportional need
-    firmUnits = Math.round((firmnessNeeds.firm / totalNeed) * totalUnits);
-    mediumUnits = Math.round((firmnessNeeds.medium / totalNeed) * totalUnits);
-    softUnits = Math.round((firmnessNeeds.soft / totalNeed) * totalUnits);
-  }
+  // Calculate monthly depletion rates for each firmness
+  const monthlyDepletion: Record<string, number> = {};
+  const currentStock: Record<string, number> = {};
 
-  // Step 3: Adjust for rounding errors (ensure total = numPallets * 30)
-  const total = firmUnits + mediumUnits + softUnits;
-  if (total !== totalUnits) {
-    const diff = totalUnits - total;
-    mediumUnits += diff; // Add difference to Medium (most common firmness)
+  FIRMNESS_TYPES.forEach((firmness) => {
+    currentStock[firmness] = inventory.springs[firmness][size];
+    const firmRatio = FIRMNESS_DISTRIBUTION[size][firmness];
+    monthlyDepletion[firmness] = monthlySales * firmRatio;
+  });
+
+  // Calculate the target coverage that equalizes all firmnesses given totalUnits available
+  // Goal: Firm and Soft reach coverage T, Medium reaches coverage T * 1.1 (10% boost)
+  // Formula: T = (totalUnits + Σ currentStock) / (depletion_firm + 1.1 * depletion_medium + depletion_soft)
+  const mediumBoost = 1.1;
+  const CONTAINER_LEAD_TIME_MONTHS = 2.5; // 10 weeks
+
+  const numerator = totalUnits + currentStock.firm + currentStock.medium + currentStock.soft;
+  const denominator = monthlyDepletion.firm + mediumBoost * monthlyDepletion.medium + monthlyDepletion.soft;
+
+  let targetCoverageMonths = numerator / denominator;
+
+  // CRITICAL: Ensure ALL firmnesses last until container arrives (2.5 months minimum)
+  // If any firmness would run out before container arrives, we need emergency allocation
+  let minRequiredTarget = CONTAINER_LEAD_TIME_MONTHS;
+  FIRMNESS_TYPES.forEach((firmness) => {
+    if (monthlyDepletion[firmness] > 0) {
+      const currentCoverage = currentStock[firmness] / monthlyDepletion[firmness];
+      // If this firmness runs out before container, set target to ensure it survives + some buffer
+      if (currentCoverage < CONTAINER_LEAD_TIME_MONTHS) {
+        const requiredTarget = CONTAINER_LEAD_TIME_MONTHS + 3; // Survive until container + 3 months after
+        minRequiredTarget = Math.max(minRequiredTarget, requiredTarget);
+      }
+    }
+  });
+
+  // Ensure target is at least high enough to keep all firmnesses alive until container arrives
+  targetCoverageMonths = Math.max(targetCoverageMonths, minRequiredTarget);
+
+  // Calculate allocation for each firmness
+  // Firm and Soft: target = T months coverage
+  // Medium: target = T * 1.1 months coverage (10% priority boost)
+  const equalDepletionNeeds: Record<string, number> = {};
+
+  FIRMNESS_TYPES.forEach((firmness) => {
+    const targetCoverage = firmness === 'medium' ? targetCoverageMonths * mediumBoost : targetCoverageMonths;
+    const targetStock = monthlyDepletion[firmness] * targetCoverage;
+    const need = targetStock - currentStock[firmness];
+    equalDepletionNeeds[firmness] = Math.max(0, need);
+  });
+
+  const totalEqualNeed = equalDepletionNeeds.firm + equalDepletionNeeds.medium + equalDepletionNeeds.soft;
+
+  if (totalEqualNeed === 0) {
+    // All firmnesses already have sufficient coverage
+    // Distribute evenly with 10% boost to Medium
+    const baseUnits = totalUnits / 3.1; // 1 + 1.1 + 1 = 3.1
+    firmUnits = Math.round(baseUnits);
+    mediumUnits = Math.round(baseUnits * 1.1);
+    softUnits = totalUnits - firmUnits - mediumUnits;
+  } else {
+    // Distribute proportionally based on equal depletion needs (already includes Medium boost)
+    // IMPORTANT: Ensure every firmness gets at least 2 springs (minimum allocation for equal depletion)
+    const minAllocation = 2;
+
+    firmUnits = Math.max(minAllocation, Math.round((equalDepletionNeeds.firm / totalEqualNeed) * totalUnits));
+    mediumUnits = Math.max(minAllocation, Math.round((equalDepletionNeeds.medium / totalEqualNeed) * totalUnits));
+    softUnits = Math.max(minAllocation, Math.round((equalDepletionNeeds.soft / totalEqualNeed) * totalUnits));
+
+    // Adjust for rounding errors (may exceed totalUnits due to minimum allocations)
+    let total = firmUnits + mediumUnits + softUnits;
+    if (total !== totalUnits) {
+      const diff = totalUnits - total;
+      // Adjust the firmness with the largest allocation (usually Medium)
+      if (mediumUnits >= firmUnits && mediumUnits >= softUnits) {
+        mediumUnits = Math.max(minAllocation, mediumUnits + diff);
+      } else if (firmUnits >= softUnits) {
+        firmUnits = Math.max(minAllocation, firmUnits + diff);
+      } else {
+        softUnits = Math.max(minAllocation, softUnits + diff);
+      }
+    }
   }
 
   const remaining = { firm: firmUnits, medium: mediumUnits, soft: softUnits };
@@ -138,16 +205,18 @@ export function createPalletsForSize(
     if (lastPallet.total < SPRINGS_PER_PALLET) {
       const needed = SPRINGS_PER_PALLET - lastPallet.total;
 
-      // Distribute padding based on need ratios
+      // Distribute padding based on equal depletion ratios (with 10% Medium boost)
       let addFirm: number, addMedium: number, addSoft: number;
-      if (totalNeed === 0) {
-        const firmRatios = FIRMNESS_DISTRIBUTION[size];
-        addFirm = Math.round(needed * firmRatios.firm);
-        addMedium = Math.round(needed * firmRatios.medium);
+      if (totalEqualNeed === 0) {
+        // Distribute evenly with 10% boost to Medium
+        const baseUnits = needed / 3.1;
+        addFirm = Math.round(baseUnits);
+        addMedium = Math.round(baseUnits * 1.1);
         addSoft = needed - addFirm - addMedium;
       } else {
-        addFirm = Math.round((firmnessNeeds.firm / totalNeed) * needed);
-        addMedium = Math.round((firmnessNeeds.medium / totalNeed) * needed);
+        // Use equal depletion needs (already includes Medium boost in calculation)
+        addFirm = Math.round((equalDepletionNeeds.firm / totalEqualNeed) * needed);
+        addMedium = Math.round((equalDepletionNeeds.medium / totalEqualNeed) * needed);
         addSoft = needed - addFirm - addMedium;
       }
 
