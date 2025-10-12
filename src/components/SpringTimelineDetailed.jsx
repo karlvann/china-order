@@ -80,6 +80,9 @@ export default function SpringTimelineDetailed({ inventory, springOrder, startin
             <th style={{ ...headerStyle, position: 'sticky', left: 0, background: '#18181b', zIndex: 3 }}>
               Size / Firmness
             </th>
+            <th style={{ ...headerStyle, ...orderNowHeaderStyle }}>
+              ORDER<br/>HERE
+            </th>
             <th style={headerStyle}>Now</th>
             <th style={headerStyle}>{getMonthName(1)}</th>
             <th style={headerStyle}>{getMonthName(2)}</th>
@@ -96,7 +99,7 @@ export default function SpringTimelineDetailed({ inventory, springOrder, startin
             <React.Fragment key={size}>
               {/* Size header row */}
               <tr style={{ background: '#18181b' }}>
-                <td colSpan={14} style={{
+                <td colSpan={15} style={{
                   padding: '8px 12px',
                   fontWeight: '700',
                   fontSize: '13px',
@@ -127,6 +130,9 @@ export default function SpringTimelineDetailed({ inventory, springOrder, startin
                       textTransform: 'capitalize'
                     }}>
                       {firmness}
+                    </td>
+                    <td style={orderNowCellStyle}>
+                      {/* Empty cell - visual marker for order point */}
                     </td>
                     <td style={cellStyle}>
                       {Math.round(currentStock)}
@@ -197,6 +203,17 @@ const headerStyle = {
   borderRight: '1px solid #27272a'
 };
 
+const orderNowHeaderStyle = {
+  background: '#14532d',
+  color: '#22c55e',
+  fontWeight: '700',
+  borderLeft: '2px solid #22c55e',
+  borderRight: '2px solid #22c55e',
+  width: '40px',
+  minWidth: '40px',
+  maxWidth: '40px'
+};
+
 const arrivalHeaderStyle = {
   background: '#1e3a8a',
   color: '#60a5fa',
@@ -212,6 +229,17 @@ const cellStyle = {
   fontSize: '12px',
   color: '#fafafa',
   borderRight: '1px solid #27272a'
+};
+
+const orderNowCellStyle = {
+  background: 'rgba(20, 83, 45, 0.3)',
+  borderLeft: '2px solid #22c55e',
+  borderRight: '2px solid #22c55e',
+  padding: '10px 4px',
+  textAlign: 'center',
+  width: '40px',
+  minWidth: '40px',
+  maxWidth: '40px'
 };
 
 const arrivalCellStyle = {
