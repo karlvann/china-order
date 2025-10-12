@@ -9,7 +9,7 @@ A React-based inventory management and order planning tool for mattress manufact
 ```bash
 npm install
 npm run dev          # Start development server (http://localhost:5173)
-npm test             # Run test suite (99 tests)
+npm test             # Run test suite (129 tests)
 npm run build        # Build for production
 ```
 
@@ -18,15 +18,15 @@ npm run build        # Build for production
 The system helps you plan container orders by:
 - Analyzing current inventory across 5 mattress sizes and 3 firmness levels
 - Automatically detecting critical stockouts (sizes with <4 months coverage)
-- Allocating 4-12 pallets intelligently (N+0, N+1, N+2, or N+3 strategy)
+- Allocating 4-12 pallets intelligently using Fill King/Queen First algorithm
 - Calculating component orders to match spring inventory (equal runway)
 - Generating TSV export for suppliers
 
 ### Key Features
 
-✅ **Automatic N+ Strategy** - Allocates 0-3 pallets to critical small sizes, rest to King/Queen
+✅ **Fill King/Queen First** - Prioritizes high-volume sizes, allocates remainder to small sizes
 ✅ **Equal Runway Enforcement** - Springs and components deplete at the same rate
-✅ **Dynamic Firmness Allocation** - Distributes springs based on coverage gaps, not fixed ratios
+✅ **Equal Depletion Firmness Allocation** - All firmnesses (Firm/Medium/Soft) deplete together
 ✅ **Component Consolidation** - Smart rules (micro coils King/Queen only, side panel merging)
 ✅ **Real-time Validation** - Ensures all business constraints are met
 ✅ **Export Optimization** - Rounds to supplier lot sizes (10 or 20 units)
@@ -50,11 +50,13 @@ See `GOALS.md` and `CONSTRAINTS.md` for detailed documentation.
 
 ### Test Suite Overview
 
-**99 tests across 7 test files:**
+**129 tests across 15 test files:**
 - ✅ Algorithm tests (48 tests)
 - ✅ Integration tests (29 tests)
 - ✅ Performance tests (11 tests)
-- ✅ Edge case tests (11 tests)
+- ✅ Business validation tests (11 tests)
+- ✅ Real-world analysis tests (10 tests)
+- ✅ Firmness depletion tests (20 tests)
 
 ### Run Tests
 
@@ -106,8 +108,8 @@ src/
     ├── algorithms/              # Core business logic
     │   ├── coverage.ts          # Coverage calculation
     │   ├── criticalSizes.ts     # Critical size detection
-    │   ├── palletCreation.ts    # Dynamic pallet allocation
-    │   ├── nPlusOptimization.ts # Main N+ strategy
+    │   ├── palletCreation.ts    # Equal depletion pallet allocation
+    │   ├── fillKingQueenFirst.ts # Main King/Queen priority algorithm
     │   ├── componentCalc.ts     # Component calculation
     │   ├── exportOptimization.ts # Lot size rounding
     │   └── tsvGeneration.ts     # TSV export
@@ -139,18 +141,19 @@ api/
 ### Tech Stack
 - **React 19** with hooks
 - **Vite** for build tooling
-- **Vitest** for testing (99 tests)
+- **Vitest** for testing (129 tests)
 - **TypeScript** for types (mixed JS/TS)
 - **Vercel** for deployment + KV storage
 
 ### Key Algorithms
 
-#### 1. N+ Pallet Optimization
-Automatically determines optimal pallet allocation:
-- **N+0**: All small sizes healthy → all pallets to King/Queen
-- **N+1**: 1 critical small size → 1 pallet to it, rest to King/Queen
-- **N+2**: 2 critical small sizes → 1 pallet each, rest to King/Queen
-- **N+3**: 3 critical small sizes → 1 pallet each, rest to King/Queen
+#### 1. Fill King/Queen First
+Prioritizes high-volume sizes to prevent stockouts:
+- Calculate how many pallets King/Queen need to reach 6 months coverage
+- Allocate those pallets first
+- Use remaining pallets for small sizes (up to 2 pallets each)
+- **Crisis mode**: King/Queen get 100% when critical (<6 months)
+- **Normal mode**: Fill King/Queen to target, remainder to small sizes
 
 #### 2. Component Calculation
 Ensures equal runway (springs and components deplete together):
@@ -159,19 +162,20 @@ targetComponentStock = (currentSprings + orderedSprings) × multiplier
 componentOrder = targetComponentStock - currentComponentStock
 ```
 
-#### 3. Dynamic Firmness Allocation
-Allocates springs based on coverage gaps, not fixed ratios:
-- Calculates need for each firmness: `targetStock - currentStock`
-- Distributes springs proportionally to needs
-- Falls back to default ratios if all firmnesses healthy
+#### 3. Equal Depletion Firmness Allocation
+Ensures all firmnesses deplete at the same rate:
+- Calculates target coverage that equalizes all firmnesses
+- Applies 10% priority boost to Medium (not 84% dominance)
+- Minimum 2 springs per firmness to prevent starvation
+- Emergency allocation ensures survival until container arrives (2.5 months)
 
 ## 📚 Documentation
 
 - **CLAUDE.md** - Project overview and AI assistant guidance
 - **GOALS.md** - Business objectives and optimization priorities
 - **CONSTRAINTS.md** - Fixed business constraints
-- **OPTIMIZATION_ANALYSIS.md** - Performance analysis and bottlenecks
 - **TEST_AND_OPTIMIZATION_SUMMARY.md** - Complete test suite documentation
+- **SAMPLE_DATA_README.md** - Sample data usage guide
 
 ## 🚢 Deployment
 

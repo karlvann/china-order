@@ -3,8 +3,6 @@ import SaveLoadModal from './SaveLoadModal';
 import InventoryTable from './components/InventoryTable';
 import { CoverageGrid } from './components/CoverageCard';
 import PalletList from './components/PalletList';
-import RunwayMini from './components/RunwayMini';
-import ComponentRunway from './components/ComponentRunway';
 import SpringTimelineDetailed from './components/SpringTimelineDetailed';
 import ComponentTimelineDetailed from './components/ComponentTimelineDetailed';
 import ValidationBanner from './components/ValidationBanner';
@@ -358,53 +356,6 @@ export default function App() {
             {openSection === 'yourOrder' && (
               <div style={styles.cardContent}>
                 <PalletList springOrder={springOrder} compact={true} />
-              </div>
-            )}
-          </div>
-
-          {/* Coverage After Order Card (Collapsible) */}
-          <div style={styles.card}>
-            <button
-              onClick={() => toggleSection('coverageAfter')}
-              style={styles.cardHeader}
-            >
-              <span style={styles.cardHeaderIcon}>
-                {openSection === 'coverageAfter' ? '▼' : '▶'}
-              </span>
-              <span style={styles.cardHeaderTitle}>Coverage After Order</span>
-            </button>
-
-            {openSection === 'coverageAfter' && (
-              <div style={styles.cardContent}>
-                <RunwayMini
-                  inventory={inventory}
-                  springOrder={springOrder}
-                  showDetails={false}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Component Coverage Card (Collapsible) */}
-          <div style={styles.card}>
-            <button
-              onClick={() => toggleSection('componentCoverage')}
-              style={styles.cardHeader}
-            >
-              <span style={styles.cardHeaderIcon}>
-                {openSection === 'componentCoverage' ? '▼' : '▶'}
-              </span>
-              <span style={styles.cardHeaderTitle}>Component Coverage</span>
-              <span style={styles.cardHeaderBadge}>Validation</span>
-            </button>
-
-            {openSection === 'componentCoverage' && (
-              <div style={styles.cardContent}>
-                <ComponentRunway
-                  inventory={inventory}
-                  springOrder={springOrder}
-                  componentOrder={componentOrder}
-                />
               </div>
             )}
           </div>
