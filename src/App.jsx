@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import SaveLoadModal from './SaveLoadModal';
 import InventoryTable from './components/InventoryTable';
-import { CoverageGrid } from './components/CoverageCard';
 import PalletList from './components/PalletList';
 import SpringTimelineDetailed from './components/SpringTimelineDetailed';
 import ComponentTimelineDetailed from './components/ComponentTimelineDetailed';
@@ -99,13 +98,6 @@ export default function App() {
 
     return coverage;
   }, [inventory.springs]);
-
-  // Identify priority sizes (low coverage)
-  const prioritySizes = useMemo(() => {
-    return Object.entries(coverageData)
-      .filter(([_, months]) => months < 3)
-      .map(([size, _]) => size);
-  }, [coverageData]);
 
   // Update functions
   const updateSpringInventory = (firmness, size, value) => {
@@ -304,39 +296,6 @@ export default function App() {
                   inventory={inventory.components}
                   onChange={updateComponentInventory}
                 />
-              </div>
-            )}
-          </div>
-
-          {/* Status Cards (Collapsible) */}
-          <div style={styles.card}>
-            <button
-              onClick={() => toggleSection('currentStatus')}
-              style={styles.cardHeader}
-            >
-              <span style={styles.cardHeaderIcon}>
-                {openSection === 'currentStatus' ? '▼' : '▶'}
-              </span>
-              <span style={styles.cardHeaderTitle}>Current Status</span>
-            </button>
-
-            {openSection === 'currentStatus' && (
-              <div style={styles.cardContent}>
-                <CoverageGrid
-                  coverageData={coverageData}
-                  prioritySizes={prioritySizes}
-                />
-
-                {/* Smart Suggestions */}
-                {prioritySizes.length > 0 && (
-                  <div style={{...styles.warningBox, marginTop: '16px'}}>
-                    <div style={styles.warningTitle}>⚡ Priority Alert</div>
-                    <div style={styles.warningText}>
-                      <strong>{prioritySizes.join(', ')}</strong> {prioritySizes.length === 1 ? 'needs' : 'need'} attention
-                      (coverage below 3 months). System automatically allocating pallets.
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
