@@ -25,6 +25,7 @@ This file documents the **UNCHANGEABLE** constraints of this mattress ordering s
 - **Value**: 4-12 pallets per container
 - **Why Fixed**: Shipping container standard sizes
 - **Cannot**: Order 3 pallets or 15 pallets
+- **CRITICAL**: Container MUST be completely filled - if you order an 8-pallet container, you MUST allocate all 8 pallets (you pay for full container regardless)
 
 ### Pallet Composition
 - **Value**: Each pallet = single size only (no mixing)

@@ -29,3 +29,16 @@ export type {
   SaveData,
   SaveSlot
 } from './component';
+
+export type {
+  OrderUrgency,
+  SizeProjection,
+  OrderRecommendation,
+  OrderTimingCalendar
+} from './calendar';
+
+export type {
+  InventorySnapshot,
+  ContainerOrder,
+  AnnualProjection
+} from './projection';

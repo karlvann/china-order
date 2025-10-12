@@ -1,10 +1,13 @@
 /**
- * CLEAN ALGORITHM: Fill King/Queen First
+ * CLEAN ALGORITHM: Fill King/Queen First (WITH LEAD TIME ADJUSTMENT)
  *
- * Simple business logic:
- * 1. Calculate how many pallets King/Queen need to reach target coverage (6 months)
- * 2. Allocate those pallets first
- * 3. Use any remaining pallets for small sizes
+ * Business logic:
+ * 1. Calculate projected stock at container arrival (current - depletion during 10 weeks)
+ * 2. Calculate how many pallets needed to reach target coverage AT ARRIVAL
+ * 3. Allocate King/Queen pallets first
+ * 4. Use any remaining pallets for small sizes
+ *
+ * KEY FIX: Accounts for stock depletion during 10-week lead time
  *
  * This naturally handles:
  * - Crisis mode: King/Queen get everything (100% of pallets)
@@ -13,11 +16,32 @@
  */
 
 import type { Inventory, Pallet } from '../types';
-import { MONTHLY_SALES_RATE, SPRINGS_PER_PALLET } from '../constants';
+import { MONTHLY_SALES_RATE, SPRINGS_PER_PALLET, LEAD_TIME_WEEKS, FIRMNESS_DISTRIBUTION } from '../constants';
 import { calculateCoverage } from './coverage';
 import { createPalletsForSize } from './palletCreation';
 
-const TARGET_COVERAGE_MONTHS = 6; // Target 6 months coverage for all sizes
+/**
+ * PREDICTIVE STRATEGY: Queen Medium-Driven Ordering
+ *
+ * Target: 60 Queen Medium units at arrival (midpoint of 50-70 range)
+ * - Queen Medium = 51% of business (most critical item)
+ * - Trigger fires when we predict QM will be 50-70 at arrival
+ * - Order sizing ensures we hit the target exactly
+ */
+const TARGET_QUEEN_MEDIUM_AT_ARRIVAL = 60; // Units at arrival
+
+// Lead time calculation (10 weeks = 2.5 months)
+const LEAD_TIME_MONTHS = LEAD_TIME_WEEKS / 4;
+
+// Depletion during JUST the lead time (trigger already accounts for "when to order")
+// We only need to account for the 2.5 months from order to arrival
+const TOTAL_DEPLETION_TIME = LEAD_TIME_MONTHS; // 2.5 months
+
+// Derive target coverage for each size based on Queen Medium target
+// Queen Medium: 60 units / 34/month = 1.76 months
+// Queen total: 60 / 0.83 = 72 Queen springs / 41/month = 1.76 months
+// Round up to 2 months for safety margin
+const TARGET_COVERAGE_AT_ARRIVAL = 2.0; // Months of coverage at arrival
 
 interface AllocationPlan {
   King: number;    // Number of pallets
@@ -28,29 +52,45 @@ interface AllocationPlan {
 }
 
 /**
- * Calculate how many pallets a size needs to reach target coverage
+ * Calculate how many pallets a size needs to reach target coverage AT ARRIVAL
+ *
+ * KEY IMPROVEMENT: Accounts for stock depletion during 10-week lead time
+ *
+ * Formula:
+ *   1. Current stock = current inventory
+ *   2. Depletion during lead time = monthly_sales × LEAD_TIME_MONTHS
+ *   3. Projected stock at arrival = current - depletion
+ *   4. Target stock at arrival = monthly_sales × TARGET_COVERAGE_AT_ARRIVAL
+ *   5. Springs needed = target - projected
+ *   6. Pallets needed = ceil(springs_needed / 30)
  */
 function calculatePalletsNeeded(
   size: 'King' | 'Queen' | 'Double' | 'King Single' | 'Single',
   inventory: Inventory
 ): number {
-  const currentCoverage = calculateCoverage(inventory, size);
-
-  if (currentCoverage >= TARGET_COVERAGE_MONTHS) {
-    return 0; // Already at or above target
-  }
-
   const monthlySales = MONTHLY_SALES_RATE[size];
+
+  // Current stock
   const currentTotalSprings =
     inventory.springs.firm[size] +
     inventory.springs.medium[size] +
     inventory.springs.soft[size];
 
-  const targetTotalSprings = monthlySales * TARGET_COVERAGE_MONTHS;
-  const springsNeeded = targetTotalSprings - currentTotalSprings;
+  // Stock depletion from when we ORDER to when container ARRIVES
+  // = current month (1) + lead time (2.5) = 3.5 months total
+  const depletionDuringLeadTime = monthlySales * TOTAL_DEPLETION_TIME;
+
+  // Projected stock when container arrives
+  const projectedStockAtArrival = currentTotalSprings - depletionDuringLeadTime;
+
+  // Target stock at arrival (e.g., 2 months coverage)
+  const targetStockAtArrival = monthlySales * TARGET_COVERAGE_AT_ARRIVAL;
+
+  // How many springs do we need to order?
+  const springsNeeded = targetStockAtArrival - projectedStockAtArrival;
 
   if (springsNeeded <= 0) {
-    return 0;
+    return 0; // Already at or above target (even after depletion)
   }
 
   // Round up to full pallets
@@ -58,16 +98,55 @@ function calculatePalletsNeeded(
 }
 
 /**
- * Main algorithm: Fill King/Queen first, then small sizes
+ * SIMPLIFIED: Queen Medium-Driven Allocation
+ *
+ * Only calculate based on Queen Medium needs, then distribute proportionally
  */
 export function fillKingQueenFirst(
   totalPallets: number,
-  inventory: Inventory
+  inventory: Inventory,
+  pendingArrivals?: Array<{ arrivalMonth: number; order: any }>,
+  currentMonthOffset?: number
 ): AllocationPlan {
-  // Step 1: Calculate King/Queen needs
-  const kingNeed = calculatePalletsNeeded('King', inventory);
-  const queenNeed = calculatePalletsNeeded('Queen', inventory);
-  const kingQueenNeed = kingNeed + queenNeed;
+  // Step 1: Calculate ONLY Queen Medium needs (the driver of all ordering)
+  const qmCurrent = inventory.springs.medium['Queen'] || 0;
+
+  // Calculate how much QM is coming from pending containers
+  // CRITICAL: Only count containers arriving BEFORE or WHEN the new order would arrive
+  // KEY FIX: Account for floor() operation in arrival timing
+  let pendingQM = 0;
+  let actualMonthsOfDepletion = TOTAL_DEPLETION_TIME; // Default 2.5 months
+
+  if (pendingArrivals && currentMonthOffset !== undefined) {
+    // Calculate ACTUAL arrival month (accounting for floor operation)
+    const newOrderArrivalFloat = currentMonthOffset + LEAD_TIME_MONTHS;
+    const actualArrivalMonth = Math.floor(newOrderArrivalFloat);
+    actualMonthsOfDepletion = actualArrivalMonth - currentMonthOffset; // e.g., 2 months not 2.5
+
+    for (const pa of pendingArrivals) {
+      const paActualArrival = Math.floor(pa.arrivalMonth);
+      if (paActualArrival > currentMonthOffset && paActualArrival <= actualArrivalMonth) {
+        // This container hasn't arrived yet AND will arrive before/when new order arrives
+        const queenPallets = pa.order.springOrder.pallets.filter((p: any) => p.size === 'Queen').length;
+        const qmInContainer = queenPallets * SPRINGS_PER_PALLET * FIRMNESS_DISTRIBUTION['Queen']['medium'];
+        pendingQM += qmInContainer;
+      }
+    }
+  }
+
+  // Project QM at arrival INCLUDING pending containers (using ACTUAL depletion time)
+  const actualDepletion = MONTHLY_SALES_RATE['Queen'] * FIRMNESS_DISTRIBUTION['Queen']['medium'] * actualMonthsOfDepletion;
+  const qmAtArrival = qmCurrent - actualDepletion + pendingQM;
+  const qmNeeded = Math.max(0, TARGET_QUEEN_MEDIUM_AT_ARRIVAL - qmAtArrival);
+
+  // Convert QM needed to Queen pallets (QM is 83% of Queen total)
+  const queenPalletsNeeded = Math.ceil(qmNeeded / (SPRINGS_PER_PALLET * FIRMNESS_DISTRIBUTION['Queen']['medium']));
+
+  // King gets proportional allocation based on sales velocity
+  // King: 30/month, Queen: 41/month → King = 73% of Queen
+  const kingPalletsNeeded = Math.round(queenPalletsNeeded * (MONTHLY_SALES_RATE['King'] / MONTHLY_SALES_RATE['Queen']));
+
+  console.log(`[ORDER CALC] Total pallets=${totalPallets}, QM current=${qmCurrent.toFixed(0)}, pending QM=${pendingQM.toFixed(0)}, QM at arrival=${qmAtArrival.toFixed(0)}, Queen needs ${queenPalletsNeeded} pallets, King needs ${kingPalletsNeeded} pallets`);
 
   let allocation: AllocationPlan = {
     King: 0,
@@ -77,42 +156,32 @@ export function fillKingQueenFirst(
     Single: 0
   };
 
-  // Step 2: Do King/Queen need all available pallets?
-  if (kingQueenNeed >= totalPallets) {
-    // CRISIS MODE: Not enough pallets for King/Queen, give them everything
-    // Split proportionally based on who needs more
-    if (kingQueenNeed === 0) {
-      // Both at target, split 60/40 (Queen sells 37% faster)
-      allocation.Queen = Math.round(totalPallets * 0.6);
-      allocation.King = totalPallets - allocation.Queen;
-    } else {
-      // Distribute based on proportional need
-      const kingRatio = kingNeed / kingQueenNeed;
-      const queenRatio = queenNeed / kingQueenNeed;
+  const kingQueenTotal = kingPalletsNeeded + queenPalletsNeeded;
+  console.log(`[ORDER CALC] King+Queen need ${kingQueenTotal} pallets total (King: ${kingPalletsNeeded}, Queen: ${queenPalletsNeeded})`);
 
-      allocation.King = Math.round(totalPallets * kingRatio);
-      allocation.Queen = totalPallets - allocation.King;
-
-      // Ensure both get at least 1 pallet if they had any need
-      if (kingNeed > 0 && allocation.King === 0) {
-        allocation.King = 1;
-        allocation.Queen = totalPallets - 1;
-      }
-      if (queenNeed > 0 && allocation.Queen === 0) {
-        allocation.Queen = 1;
-        allocation.King = totalPallets - 1;
-      }
-    }
+  // Step 2: Allocate King/Queen pallets
+  if (kingQueenTotal >= totalPallets) {
+    // CRISIS MODE: Need more than available, give everything to King/Queen
+    // Split proportionally
+    const kingRatio = kingPalletsNeeded / kingQueenTotal;
+    allocation.King = Math.round(totalPallets * kingRatio);
+    allocation.Queen = totalPallets - allocation.King;
 
     return allocation;
   }
 
-  // Step 3: NORMAL/HEALTHY MODE: King/Queen needs less than total pallets
-  // Fill King/Queen to target, use remainder for small sizes
-  allocation.King = kingNeed;
-  allocation.Queen = queenNeed;
+  // NORMAL MODE: King/Queen need less than total
+  allocation.King = kingPalletsNeeded;
+  allocation.Queen = queenPalletsNeeded;
 
-  const remainingPallets = totalPallets - kingQueenNeed;
+  // MINIMUM ALLOCATION: Queen is 51% of business, should never get 0 pallets
+  // Ensure at least 1 pallet for Queen when ordering (unless container is tiny)
+  if (allocation.Queen === 0 && totalPallets >= 3) {
+    allocation.Queen = 1;
+    // Don't adjust King - take from small sizes instead
+  }
+
+  const remainingPallets = totalPallets - (allocation.King + allocation.Queen);
 
   if (remainingPallets === 0) {
     return allocation;
@@ -146,14 +215,56 @@ export function fillKingQueenFirst(
     }
   }
 
-  // Step 5: If still pallets left, give them back to King/Queen (better than wasting)
+  // Step 5: If still pallets left, give to small sizes that need them
+  // Don't waste pallets, but don't over-order King/Queen either
   if (palletsLeft > 0) {
-    // Split remaining between King/Queen (60/40, Queen sells faster)
-    const queenExtra = Math.round(palletsLeft * 0.6);
-    const kingExtra = palletsLeft - queenExtra;
+    // Try to distribute remaining pallets to small sizes again (up to their needs)
+    for (const { size, need } of smallSizeNeeds) {
+      if (palletsLeft === 0) break;
 
-    allocation.Queen += queenExtra;
-    allocation.King += kingExtra;
+      const currentAllocation = allocation[size];
+      const stillNeeds = need - currentAllocation;
+
+      if (stillNeeds > 0) {
+        const toAdd = Math.min(stillNeeds, palletsLeft);
+        allocation[size] += toAdd;
+        palletsLeft -= toAdd;
+      }
+    }
+  }
+
+  // Step 6: CRITICAL CONSTRAINT - Container MUST be completely filled
+  // We can't send a partially empty container (you pay for full container regardless)
+  // Distribute any remaining pallets to King/Queen based on current coverage
+  if (palletsLeft > 0) {
+    // Calculate projected coverage after current allocation
+    let kingCoverageAfter = calculateCoverage(inventory, 'King') + (allocation.King * SPRINGS_PER_PALLET / MONTHLY_SALES_RATE['King']);
+    let queenCoverageAfter = calculateCoverage(inventory, 'Queen') + (allocation.Queen * SPRINGS_PER_PALLET / MONTHLY_SALES_RATE['Queen']);
+
+    // Allocate remaining pallets to whoever has lower coverage
+    while (palletsLeft > 0) {
+      if (queenCoverageAfter <= kingCoverageAfter) {
+        // Queen has lower coverage - give her the remaining pallets (or at least 60%)
+        const toQueen = Math.min(palletsLeft, Math.max(1, Math.ceil(palletsLeft * 0.6)));
+        allocation.Queen += toQueen;
+        palletsLeft -= toQueen;
+        queenCoverageAfter += (toQueen * SPRINGS_PER_PALLET / MONTHLY_SALES_RATE['Queen']);
+      } else {
+        // King has lower coverage - give him the remaining pallets (or at least 60%)
+        const toKing = Math.min(palletsLeft, Math.max(1, Math.ceil(palletsLeft * 0.6)));
+        allocation.King += toKing;
+        palletsLeft -= toKing;
+        kingCoverageAfter += (toKing * SPRINGS_PER_PALLET / MONTHLY_SALES_RATE['King']);
+      }
+    }
+  }
+
+  // Final validation: ensure we allocated exactly totalPallets
+  const totalAllocated = allocation.King + allocation.Queen + allocation.Double + allocation['King Single'] + allocation.Single;
+  console.log(`[ORDER CALC] FINAL ALLOCATION: King=${allocation.King}, Queen=${allocation.Queen}, Double=${allocation.Double}, KS=${allocation['King Single']}, Single=${allocation.Single} | Total=${totalAllocated}/${totalPallets}`);
+
+  if (totalAllocated !== totalPallets) {
+    console.error(`[ORDER CALC] ERROR: Allocated ${totalAllocated} pallets but container size is ${totalPallets}!`);
   }
 
   return allocation;
@@ -198,10 +309,12 @@ export function createPalletsFromAllocation(
  */
 export function calculateKingQueenFirstOrder(
   totalPallets: number,
-  inventory: Inventory
+  inventory: Inventory,
+  pendingArrivals?: Array<{ arrivalMonth: number; order: any }>,
+  currentMonthOffset?: number
 ): any {  // Using 'any' for now, but returns SpringOrder structure
   // Calculate allocation plan
-  const allocation = fillKingQueenFirst(totalPallets, inventory);
+  const allocation = fillKingQueenFirst(totalPallets, inventory, pendingArrivals, currentMonthOffset);
 
   // Create actual pallets with firmness breakdown
   const pallets = createPalletsFromAllocation(allocation, inventory);

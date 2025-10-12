@@ -8,7 +8,7 @@
  */
 
 import type { SpringOrder, ComponentOrder, ComponentInventory, SpringInventory } from '../types';
-import { COMPONENT_TYPES, MATTRESS_SIZES, FIRMNESS_TYPES, KING_QUEEN_ONLY_COMPONENTS } from '../constants';
+import { COMPONENT_TYPES, MATTRESS_SIZES, FIRMNESS_TYPES, KING_QUEEN_ONLY_COMPONENTS, MONTHLY_SALES_RATE } from '../constants';
 
 /**
  * Calculate component order from spring order.

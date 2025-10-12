@@ -10,3 +10,6 @@ export { calculateKingQueenFirstOrder, fillKingQueenFirst, createPalletsFromAllo
 export { calculateComponentOrder } from './componentCalc';
 export { optimizeComponentOrder } from './exportOptimization';
 export { generateTSV } from './tsvGeneration';
+export { calculateOrderTimingCalendar } from './orderTimingCalendar';
+export { calculateAnnualProjection } from './multiContainerProjection';
+export { createRepeatOrderProjection } from './repeatOrderProjection';

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import SaveLoadModal from './SaveLoadModal';
 import OrderBuilderView from './views/OrderBuilderView';
 import ForecastView from './views/ForecastView';
+import ForecastV2View from './views/ForecastV2View';
 
 // Import algorithms
 import {
@@ -9,7 +10,8 @@ import {
   calculateKingQueenFirstOrder,
   calculateComponentOrder,
   optimizeComponentOrder,
-  generateTSV
+  generateTSV,
+  calculateAnnualProjection
 } from './lib/algorithms';
 
 // Import validation utilities
@@ -95,6 +97,24 @@ export default function App() {
 
     return coverage;
   }, [inventory.springs]);
+
+  // Calculate annual projection for Forecast V2 (uses Order Builder order with smart timing)
+  const annualProjection = useMemo(() => {
+    if (!springOrder || !componentOrder) return null;
+    try {
+      // Pass Order Builder order to projection - it will use YOUR order but time it smartly
+      return calculateAnnualProjection(
+        inventory,
+        startingMonth,
+        springOrder,        // Use YOUR spring order
+        componentOrder,     // Use YOUR component order
+        palletCount         // Use YOUR pallet count
+      );
+    } catch (error) {
+      console.error('Error calculating annual projection:', error);
+      return null;
+    }
+  }, [inventory, startingMonth, springOrder, componentOrder, palletCount]);
 
   // Update functions
   const updateSpringInventory = (firmness, size, value) => {
@@ -195,7 +215,16 @@ export default function App() {
                 ...(currentView === 'forecast' ? styles.viewToggleButtonActive : {})
               }}
             >
-              Forecast
+              Forecast 1
+            </button>
+            <button
+              onClick={() => setCurrentView('forecastv2')}
+              style={{
+                ...styles.viewToggleButton,
+                ...(currentView === 'forecastv2' ? styles.viewToggleButtonActive : {})
+              }}
+            >
+              Forecast 2
             </button>
           </div>
 
@@ -226,13 +255,20 @@ export default function App() {
           validation={validation}
           styles={styles}
         />
-      ) : (
+      ) : currentView === 'forecast' ? (
         <ForecastView
           startingMonth={startingMonth}
           setStartingMonth={setStartingMonth}
           inventory={inventory}
           springOrder={springOrder}
           componentOrder={componentOrder}
+          styles={styles}
+        />
+      ) : (
+        <ForecastV2View
+          startingMonth={startingMonth}
+          setStartingMonth={setStartingMonth}
+          projection={annualProjection}
           styles={styles}
         />
       )}
