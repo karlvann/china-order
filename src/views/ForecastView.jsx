@@ -1,6 +1,7 @@
 import React from 'react';
 import SpringTimelineDetailed from '../components/SpringTimelineDetailed';
 import ComponentTimelineDetailed from '../components/ComponentTimelineDetailed';
+import DecisionSummary from '../components/DecisionSummary';
 
 export default function ForecastView({
   startingMonth,
@@ -69,6 +70,13 @@ export default function ForecastView({
           springOrder={springOrder}
           componentOrder={componentOrder}
           startingMonth={startingMonth}
+          usageRates={usageRates}
+        />
+
+        {/* Decision Summary - Shows order breakdown and coverage changes */}
+        <DecisionSummary
+          inventory={inventory}
+          springOrder={springOrder}
           usageRates={usageRates}
         />
       </div>
