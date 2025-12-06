@@ -8,6 +8,7 @@ export default function ForecastView({
   inventory,
   springOrder,
   componentOrder,
+  usageRates,
   styles
 }) {
   return (
@@ -24,6 +25,11 @@ export default function ForecastView({
             </h1>
             <p style={styles.forecastSubtitle}>
               Projected stock levels with container arrival at Week 10. Components and springs calculated to deplete together.
+              {usageRates && (
+                <span style={{ marginLeft: '12px', color: '#38bdf8' }}>
+                  ({usageRates.TOTAL_MONTHLY_SALES} units/month)
+                </span>
+              )}
             </p>
           </div>
           <div style={styles.monthSelector}>
@@ -54,6 +60,7 @@ export default function ForecastView({
           inventory={inventory}
           springOrder={springOrder}
           startingMonth={startingMonth}
+          usageRates={usageRates}
         />
 
         {/* Component Timeline Detailed */}
@@ -62,6 +69,7 @@ export default function ForecastView({
           springOrder={springOrder}
           componentOrder={componentOrder}
           startingMonth={startingMonth}
+          usageRates={usageRates}
         />
       </div>
     </div>

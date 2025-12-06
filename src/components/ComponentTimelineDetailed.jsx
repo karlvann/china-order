@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Detailed 12-month forecast showing all component × size combinations (22 rows)
-export default function ComponentTimelineDetailed({ inventory, springOrder, componentOrder, startingMonth = 0 }) {
+export default function ComponentTimelineDetailed({ inventory, springOrder, componentOrder, startingMonth = 0, usageRates }) {
   if (!componentOrder) {
     return null;
   }
@@ -15,7 +15,8 @@ export default function ComponentTimelineDetailed({ inventory, springOrder, comp
     { id: 'side_panel', name: 'Side Panel', multiplier: 1.0, sizes: ['King', 'Queen', 'Double'] }
   ];
 
-  const MONTHLY_SALES_RATE = {
+  // Use scaled rates from usageRates if provided, otherwise use defaults
+  const MONTHLY_SALES_RATE = usageRates?.MONTHLY_SALES_RATE || {
     'King': 30,
     'Queen': 41,
     'Double': 6,
@@ -236,11 +237,11 @@ const orderNowHeaderStyle = {
 };
 
 const arrivalHeaderStyle = {
-  background: '#1e3a8a',
-  color: '#60a5fa',
+  background: 'rgba(14, 165, 233, 0.2)',
+  color: '#38bdf8',
   fontWeight: '700',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6'
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9'
 };
 
 const cellStyle = {
@@ -264,8 +265,8 @@ const orderNowCellStyle = {
 };
 
 const arrivalCellStyle = {
-  background: 'rgba(30, 58, 138, 0.3)',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6',
+  background: 'rgba(14, 165, 233, 0.15)',
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9',
   fontWeight: '600'
 };

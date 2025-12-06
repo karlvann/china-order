@@ -1,14 +1,16 @@
 import React from 'react';
 
 // Detailed 12-month forecast showing all size × firmness combinations (15 rows)
-export default function SpringTimelineDetailed({ inventory, springOrder, startingMonth = 0 }) {
+export default function SpringTimelineDetailed({ inventory, springOrder, startingMonth = 0, usageRates }) {
   if (!springOrder) {
     return null;
   }
 
   const MATTRESS_SIZES = ['King', 'Queen', 'Double', 'King Single', 'Single'];
   const FIRMNESS_TYPES = ['firm', 'medium', 'soft'];
-  const MONTHLY_SALES_RATE = {
+
+  // Use scaled rates from usageRates if provided, otherwise use defaults
+  const MONTHLY_SALES_RATE = usageRates?.MONTHLY_SALES_RATE || {
     'King': 30,
     'Queen': 41,
     'Double': 6,
@@ -103,7 +105,7 @@ export default function SpringTimelineDetailed({ inventory, springOrder, startin
                   padding: '8px 12px',
                   fontWeight: '700',
                   fontSize: '13px',
-                  color: '#60a5fa',
+                  color: '#38bdf8',
                   position: 'sticky',
                   left: 0,
                   background: '#18181b',
@@ -177,13 +179,13 @@ export default function SpringTimelineDetailed({ inventory, springOrder, startin
       <div style={{
         marginTop: '16px',
         padding: '12px',
-        background: 'rgba(96, 165, 250, 0.1)',
-        border: '1px solid #1e40af',
+        background: 'rgba(14, 165, 233, 0.1)',
+        border: '1px solid #0ea5e9',
         borderRadius: '6px',
         fontSize: '12px',
         color: '#a1a1aa'
       }}>
-        <strong style={{ color: '#60a5fa' }}>Note:</strong> Container arrives at Week 10 (2.5 months).
+        <strong style={{ color: '#38bdf8' }}>Note:</strong> Container arrives at Week 10 (2.5 months).
         Stock depletes at monthly sales rate based on firmness distribution.
         Components below are calculated to deplete at the same rate as springs.
         Red values indicate stockout risk.
@@ -215,11 +217,11 @@ const orderNowHeaderStyle = {
 };
 
 const arrivalHeaderStyle = {
-  background: '#1e3a8a',
-  color: '#60a5fa',
+  background: 'rgba(14, 165, 233, 0.2)',
+  color: '#38bdf8',
   fontWeight: '700',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6'
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9'
 };
 
 const cellStyle = {
@@ -243,8 +245,8 @@ const orderNowCellStyle = {
 };
 
 const arrivalCellStyle = {
-  background: 'rgba(30, 58, 138, 0.3)',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6',
+  background: 'rgba(14, 165, 233, 0.15)',
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9',
   fontWeight: '600'
 };

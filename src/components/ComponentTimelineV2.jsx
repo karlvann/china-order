@@ -1,14 +1,15 @@
 import React from 'react';
 
 // V2: Shows component inventory with multiple container arrivals
-export default function ComponentTimelineV2({ projection, startingMonth = 0, placedOrders = {}, toggleOrderStatus }) {
+export default function ComponentTimelineV2({ projection, startingMonth = 0, placedOrders = {}, toggleOrderStatus, usageRates }) {
   if (!projection || !projection.orders) {
     return null;
   }
 
   const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  const MONTHLY_SALES_RATE = {
+  // Use scaled rates from usageRates if provided, otherwise use defaults
+  const MONTHLY_SALES_RATE = usageRates?.MONTHLY_SALES_RATE || {
     'King': 30,
     'Queen': 41,
     'Double': 6,
@@ -466,11 +467,11 @@ const orderHeaderStyle = {
 };
 
 const arrivalHeaderStyle = {
-  background: '#1e3a8a',
-  color: '#60a5fa',
+  background: 'rgba(14, 165, 233, 0.3)',
+  color: '#38bdf8',
   fontWeight: '700',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6',
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9',
   width: '80px',
   minWidth: '80px'
 };
@@ -495,9 +496,9 @@ const orderCellStyle = {
 };
 
 const arrivalCellStyle = {
-  background: 'rgba(30, 58, 138, 0.3)',
-  borderLeft: '2px solid #3b82f6',
-  borderRight: '2px solid #3b82f6'
+  background: 'rgba(14, 165, 233, 0.2)',
+  borderLeft: '2px solid #0ea5e9',
+  borderRight: '2px solid #0ea5e9'
 };
 
 const placedOrderHeaderStyle = {
@@ -513,11 +514,11 @@ const placedOrderCellStyle = {
 };
 
 const unplacedArrivalHeaderStyle = {
-  background: 'rgba(30, 58, 138, 0.2)',
+  background: 'rgba(14, 165, 233, 0.15)',
   opacity: 0.6
 };
 
 const unplacedArrivalCellStyle = {
-  background: 'rgba(30, 58, 138, 0.15)',
+  background: 'rgba(14, 165, 233, 0.1)',
   opacity: 0.6
 };

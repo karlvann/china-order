@@ -9,6 +9,7 @@ export default function ForecastV2View({
   startingMonth,
   setStartingMonth,
   projection,
+  usageRates,
   styles
 }) {
   // Track which orders have been placed (order ID -> boolean)
@@ -53,6 +54,11 @@ export default function ForecastV2View({
             </h1>
             <p style={styles.forecastSubtitle}>
               Weekly view with {projection.totalContainers} container arrival{projection.totalContainers !== 1 ? 's' : ''} scheduled throughout the year.
+              {usageRates && (
+                <span style={{ marginLeft: '12px', color: '#38bdf8' }}>
+                  ({usageRates.TOTAL_MONTHLY_SALES} units/month)
+                </span>
+              )}
             </p>
           </div>
           <div style={styles.monthSelector}>
@@ -84,6 +90,7 @@ export default function ForecastV2View({
           startingMonth={startingMonth}
           placedOrders={placedOrders}
           toggleOrderStatus={toggleOrderStatus}
+          usageRates={usageRates}
         />
 
         {/* Component Timeline Detailed */}
@@ -92,6 +99,7 @@ export default function ForecastV2View({
           startingMonth={startingMonth}
           placedOrders={placedOrders}
           toggleOrderStatus={toggleOrderStatus}
+          usageRates={usageRates}
         />
       </div>
     </div>
