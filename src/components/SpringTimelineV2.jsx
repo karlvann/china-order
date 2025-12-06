@@ -1,5 +1,13 @@
 import React from 'react';
 
+// Get stock health color based on level
+const getStockColor = (stock) => {
+  if (stock < 0) return '#ef4444';      // Red - stockout
+  if (stock < 10) return '#f97316';     // Orange - critical
+  if (stock < 30) return '#eab308';     // Yellow - low
+  return '#22c55e';                     // Green - healthy
+};
+
 // V2: Shows multiple container arrivals throughout the year
 export default function SpringTimelineV2({ projection, startingMonth = 0, placedOrders = {}, toggleOrderStatus, usageRates }) {
   if (!projection || !projection.orders) {
@@ -298,16 +306,18 @@ export default function SpringTimelineV2({ projection, startingMonth = 0, placed
             {MATTRESS_SIZES.map(size => (
               <React.Fragment key={size}>
                 {/* Size header row */}
-                <tr style={{ background: '#18181b' }}>
+                <tr style={{ background: '#1e293b' }}>
                   <td colSpan={totalColumns} style={{
-                    padding: '8px 12px',
+                    padding: '10px 14px',
                     fontWeight: '700',
-                    fontSize: '13px',
-                    color: '#fafafa',
-                    borderBottom: '1px solid #27272a',
+                    fontSize: '14px',
+                    color: '#38bdf8',
+                    borderBottom: '2px solid #0ea5e9',
                     position: 'sticky',
                     left: 0,
-                    zIndex: 2
+                    background: '#1e293b',
+                    zIndex: 2,
+                    letterSpacing: '0.02em'
                   }}>
                     {size}
                   </td>
@@ -333,8 +343,12 @@ export default function SpringTimelineV2({ projection, startingMonth = 0, placed
                         if (col.type === 'week') {
                           const stock = getStockAtWeek(size, firmness, col.weekOffset);
                           return (
-                            <td key={`cell-${idx}`} style={cellStyle}>
-                              {Math.round(stock)}
+                            <td key={`cell-${idx}`} style={{
+                              ...cellStyle,
+                              color: getStockColor(stock),
+                              fontWeight: stock < 30 ? '600' : '400'
+                            }}>
+                              {Math.round(Math.max(0, stock))}
                             </td>
                           );
                         } else if (col.type === 'order') {
@@ -367,7 +381,12 @@ export default function SpringTimelineV2({ projection, startingMonth = 0, placed
                                 ...(isPlaced ? {} : unplacedArrivalCellStyle)
                               }}
                             >
-                              <div style={{ fontWeight: '700', fontSize: '13px', opacity: isPlaced ? 1 : 0.5 }}>
+                              <div style={{
+                                fontWeight: '700',
+                                fontSize: '13px',
+                                opacity: isPlaced ? 1 : 0.5,
+                                color: getStockColor(stockAtArrival)
+                              }}>
                                 {Math.round(Math.max(0, stockAtArrival))}
                               </div>
                               {addedSprings > 0 && (
@@ -388,8 +407,20 @@ export default function SpringTimelineV2({ projection, startingMonth = 0, placed
         </table>
       </div>
 
-      <div style={styles.footnote}>
-        Weekly granularity showing actual calendar dates. Container arrivals shown as sky blue columns (10 weeks after green order columns). Scroll horizontally to view full year.
+      {/* Color Legend */}
+      <div style={{
+        marginTop: '12px',
+        display: 'flex',
+        gap: '24px',
+        alignItems: 'center',
+        fontSize: '11px',
+        color: '#a1a1aa'
+      }}>
+        <span style={{ fontWeight: '600', color: '#71717a' }}>Stock Health:</span>
+        <span><span style={{ color: '#22c55e', fontWeight: '600' }}>●</span> Healthy (30+)</span>
+        <span><span style={{ color: '#eab308', fontWeight: '600' }}>●</span> Low (10-29)</span>
+        <span><span style={{ color: '#f97316', fontWeight: '600' }}>●</span> Critical (&lt;10)</span>
+        <span><span style={{ color: '#ef4444', fontWeight: '600' }}>●</span> Stockout</span>
       </div>
     </div>
   );
@@ -421,12 +452,6 @@ const styles = {
     borderCollapse: 'collapse',
     fontSize: '13px',
     fontFamily: 'monospace'
-  },
-  footnote: {
-    marginTop: '12px',
-    fontSize: '12px',
-    color: '#71717a',
-    fontStyle: 'italic'
   }
 };
 

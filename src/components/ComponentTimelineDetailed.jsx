@@ -1,5 +1,13 @@
 import React from 'react';
 
+// Get stock health color based on level
+const getStockColor = (stock) => {
+  if (stock < 0) return '#ef4444';      // Red - stockout
+  if (stock < 10) return '#f97316';     // Orange - critical
+  if (stock < 30) return '#eab308';     // Yellow - low
+  return '#22c55e';                     // Green - healthy
+};
+
 // Detailed 12-month forecast showing all component × size combinations (22 rows)
 export default function ComponentTimelineDetailed({ inventory, springOrder, componentOrder, startingMonth = 0, usageRates }) {
   if (!componentOrder) {
@@ -110,16 +118,18 @@ export default function ComponentTimelineDetailed({ inventory, springOrder, comp
           {COMPONENT_TYPES.map(comp => (
             <React.Fragment key={comp.id}>
               {/* Component header row */}
-              <tr style={{ background: '#18181b' }}>
+              <tr style={{ background: '#14532d' }}>
                 <td colSpan={15} style={{
-                  padding: '8px 12px',
+                  padding: '10px 14px',
                   fontWeight: '700',
-                  fontSize: '13px',
+                  fontSize: '14px',
                   color: '#22c55e',
                   position: 'sticky',
                   left: 0,
-                  background: '#18181b',
-                  zIndex: 2
+                  background: '#14532d',
+                  zIndex: 2,
+                  borderBottom: '2px solid #22c55e',
+                  letterSpacing: '0.02em'
                 }}>
                   {comp.name}
                 </td>
@@ -156,17 +166,33 @@ export default function ComponentTimelineDetailed({ inventory, springOrder, comp
                     <td style={orderNowCellStyle}>
                       {/* Empty cell - visual marker for order point */}
                     </td>
-                    <td style={cellStyle}>
+                    <td style={{
+                      ...cellStyle,
+                      color: getStockColor(currentStock),
+                      fontWeight: currentStock < 30 ? '600' : '400'
+                    }}>
                       {Math.round(currentStock)}
                     </td>
-                    <td style={cellStyle}>
+                    <td style={{
+                      ...cellStyle,
+                      color: getStockColor(getStockAtMonth(comp.id, size, comp.multiplier, 1)),
+                      fontWeight: getStockAtMonth(comp.id, size, comp.multiplier, 1) < 30 ? '600' : '400'
+                    }}>
                       {Math.round(getStockAtMonth(comp.id, size, comp.multiplier, 1))}
                     </td>
-                    <td style={cellStyle}>
+                    <td style={{
+                      ...cellStyle,
+                      color: getStockColor(getStockAtMonth(comp.id, size, comp.multiplier, 2)),
+                      fontWeight: getStockAtMonth(comp.id, size, comp.multiplier, 2) < 30 ? '600' : '400'
+                    }}>
                       {Math.round(getStockAtMonth(comp.id, size, comp.multiplier, 2))}
                     </td>
                     <td style={{ ...cellStyle, ...arrivalCellStyle }}>
-                      <div style={{ fontWeight: '700', fontSize: '13px' }}>
+                      <div style={{
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        color: getStockColor(getStockAtMonth(comp.id, size, comp.multiplier, 2.5))
+                      }}>
                         {Math.round(Math.max(0, getStockAtMonth(comp.id, size, comp.multiplier, 2.5)))}
                       </div>
                       {orderedComponents > 0 && (
@@ -177,12 +203,12 @@ export default function ComponentTimelineDetailed({ inventory, springOrder, comp
                     </td>
                     {[3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(offset => {
                       const stock = getStockAtMonth(comp.id, size, comp.multiplier, offset);
-                      const isNegative = stock < 0;
 
                       return (
                         <td key={offset} style={{
                           ...cellStyle,
-                          color: isNegative ? '#ef4444' : '#fafafa'
+                          color: getStockColor(stock),
+                          fontWeight: stock < 30 ? '600' : '400'
                         }}>
                           {Math.round(Math.max(0, stock))}
                         </td>
@@ -196,26 +222,27 @@ export default function ComponentTimelineDetailed({ inventory, springOrder, comp
         </tbody>
       </table>
 
+      {/* Color Legend */}
       <div style={{
         marginTop: '16px',
-        padding: '12px',
-        background: 'rgba(34, 197, 94, 0.1)',
-        border: '1px solid #15803d',
-        borderRadius: '6px',
-        fontSize: '12px',
+        display: 'flex',
+        gap: '24px',
+        alignItems: 'center',
+        fontSize: '11px',
         color: '#a1a1aa'
       }}>
-        <strong style={{ color: '#22c55e' }}>Note:</strong> Component usage based on spring sales rates × multipliers.
-        Component orders are calculated to ensure equal runway with springs (same depletion timeline).
-        Side Panel "Double (+S/KS)" includes consolidated Single and King Single sales.
-        Red values indicate stockout risk.
+        <span style={{ fontWeight: '600', color: '#71717a' }}>Stock Health:</span>
+        <span><span style={{ color: '#22c55e', fontWeight: '600' }}>●</span> Healthy (30+)</span>
+        <span><span style={{ color: '#eab308', fontWeight: '600' }}>●</span> Low (10-29)</span>
+        <span><span style={{ color: '#f97316', fontWeight: '600' }}>●</span> Critical (&lt;10)</span>
+        <span><span style={{ color: '#ef4444', fontWeight: '600' }}>●</span> Stockout</span>
       </div>
     </div>
   );
 }
 
 const headerStyle = {
-  padding: '10px 8px',
+  padding: '12px 10px',
   textAlign: 'center',
   fontSize: '10px',
   textTransform: 'uppercase',
@@ -231,9 +258,9 @@ const orderNowHeaderStyle = {
   fontWeight: '700',
   borderLeft: '2px solid #22c55e',
   borderRight: '2px solid #22c55e',
-  width: '40px',
-  minWidth: '40px',
-  maxWidth: '40px'
+  width: '50px',
+  minWidth: '50px',
+  maxWidth: '50px'
 };
 
 const arrivalHeaderStyle = {
@@ -245,10 +272,10 @@ const arrivalHeaderStyle = {
 };
 
 const cellStyle = {
-  padding: '10px 12px',
+  padding: '12px 14px',
   textAlign: 'center',
   fontFamily: 'monospace',
-  fontSize: '12px',
+  fontSize: '13px',
   color: '#fafafa',
   borderRight: '1px solid #27272a'
 };
@@ -257,11 +284,11 @@ const orderNowCellStyle = {
   background: 'rgba(20, 83, 45, 0.3)',
   borderLeft: '2px solid #22c55e',
   borderRight: '2px solid #22c55e',
-  padding: '10px 4px',
+  padding: '12px 6px',
   textAlign: 'center',
-  width: '40px',
-  minWidth: '40px',
-  maxWidth: '40px'
+  width: '50px',
+  minWidth: '50px',
+  maxWidth: '50px'
 };
 
 const arrivalCellStyle = {
