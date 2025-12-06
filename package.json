@@ -19,7 +19,7 @@
   "license": "ISC",
   "description": "China Order System - Spring and Component Inventory Management",
   "dependencies": {
-    "@vercel/kv": "^3.0.0",
+    "@neondatabase/serverless": "^1.0.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
