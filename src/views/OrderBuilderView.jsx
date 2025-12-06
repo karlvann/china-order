@@ -4,7 +4,6 @@ import PalletList from '../components/PalletList';
 import ValidationBanner from '../components/ValidationBanner';
 import HealthAlert from '../components/HealthAlert';
 import OrderHero from '../components/OrderHero';
-import { MIN_PALLETS, MAX_PALLETS } from '../lib/constants';
 
 export default function OrderBuilderView({
   openSection,
@@ -16,8 +15,6 @@ export default function OrderBuilderView({
   updateComponentInventory,
   coverageData,
   springOrder,
-  exportFormat,
-  setExportFormat,
   copyToClipboard,
   downloadTSV,
   copyFeedback,
@@ -40,39 +37,52 @@ export default function OrderBuilderView({
       />
 
       <div style={styles.accordionContainer}>
-      {/* Container Settings Card (Collapsible) */}
+      {/* RESULTS SECTION - Show order details first */}
+
+      {/* Validation Warnings - Prominent if issues exist */}
+      {validation && !validation.allValid && (
+        <div style={styles.card}>
+          <button
+            onClick={() => toggleSection('validationWarnings')}
+            style={styles.cardHeader}
+          >
+            <span style={styles.cardHeaderIcon}>
+              {openSection === 'validationWarnings' ? '▼' : '▶'}
+            </span>
+            <span style={styles.cardHeaderTitle}>⚠️ Validation Warnings</span>
+            <span style={{...styles.cardHeaderBadge, background: 'rgba(234, 179, 8, 0.2)', borderColor: '#a16207', color: '#facc15'}}>Alert</span>
+          </button>
+
+          {openSection === 'validationWarnings' && (
+            <div style={styles.cardContent}>
+              <ValidationBanner validation={validation} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Detailed Order Breakdown - Pallet-by-pallet view */}
       <div style={styles.card}>
         <button
-          onClick={() => toggleSection('containerSettings')}
+          onClick={() => toggleSection('yourOrder')}
           style={styles.cardHeader}
         >
           <span style={styles.cardHeaderIcon}>
-            {openSection === 'containerSettings' ? '▼' : '▶'}
+            {openSection === 'yourOrder' ? '▼' : '▶'}
           </span>
-          <span style={styles.cardHeaderTitle}>Container Size</span>
+          <span style={styles.cardHeaderTitle}>Detailed Order Breakdown</span>
         </button>
 
-        {openSection === 'containerSettings' && (
+        {openSection === 'yourOrder' && (
           <div style={styles.cardContent}>
-            <div style={styles.sliderContainer}>
-              <input
-                type="range"
-                min={MIN_PALLETS}
-                max={MAX_PALLETS}
-                value={palletCount}
-                onChange={(e) => setPalletCount(parseInt(e.target.value))}
-                style={styles.slider}
-              />
-              <div style={styles.sliderValue}>
-                <div style={styles.sliderValueNumber}>{palletCount}</div>
-                <div style={styles.sliderValueLabel}>pallets</div>
-              </div>
-            </div>
+            <PalletList springOrder={springOrder} compact={true} />
           </div>
         )}
       </div>
 
-      {/* Spring Inventory Card (Collapsible) */}
+      {/* INPUTS SECTION - Inventory management */}
+
+      {/* Spring Inventory Card */}
       <div style={styles.card}>
         <button
           onClick={() => toggleSection('springInventory')}
@@ -100,7 +110,7 @@ export default function OrderBuilderView({
         )}
       </div>
 
-      {/* Component Inventory Card (Collapsible) */}
+      {/* Component Inventory Card */}
       <div style={styles.card}>
         <button
           onClick={() => toggleSection('componentInventory')}
@@ -126,79 +136,9 @@ export default function OrderBuilderView({
         )}
       </div>
 
-      {/* Order Summary Card (Collapsible) */}
-      <div style={styles.card}>
-        <button
-          onClick={() => toggleSection('yourOrder')}
-          style={styles.cardHeader}
-        >
-          <span style={styles.cardHeaderIcon}>
-            {openSection === 'yourOrder' ? '▼' : '▶'}
-          </span>
-          <span style={styles.cardHeaderTitle}>Your Order</span>
-        </button>
+      {/* INFO SECTION */}
 
-        {openSection === 'yourOrder' && (
-          <div style={styles.cardContent}>
-            <PalletList springOrder={springOrder} compact={true} />
-          </div>
-        )}
-      </div>
-
-      {/* Export Actions Card (Collapsible) */}
-      <div style={styles.card}>
-        <button
-          onClick={() => toggleSection('export')}
-          style={styles.cardHeader}
-        >
-          <span style={styles.cardHeaderIcon}>
-            {openSection === 'export' ? '▼' : '▶'}
-          </span>
-          <span style={styles.cardHeaderTitle}>Export Order</span>
-        </button>
-
-        {openSection === 'export' && (
-          <div style={styles.cardContent}>
-            {/* Export Format Toggle */}
-            <div style={styles.exportFormatContainer}>
-            <button
-              onClick={() => setExportFormat('exact')}
-              style={{
-                ...styles.exportFormatButton,
-                ...(exportFormat === 'exact' ? styles.exportFormatButtonActive : {})
-              }}
-            >
-              Exact
-            </button>
-            <button
-              onClick={() => setExportFormat('optimized')}
-              style={{
-                ...styles.exportFormatButton,
-                ...(exportFormat === 'optimized' ? styles.exportFormatButtonActive : {})
-              }}
-            >
-              Optimized
-            </button>
-          </div>
-
-          {/* Export Buttons */}
-          <div style={styles.exportActions}>
-            <button onClick={copyToClipboard} style={styles.exportButtonPrimary}>
-              {copyFeedback ? '✓ Copied!' : '📋 Copy TSV'}
-            </button>
-            <button onClick={downloadTSV} style={styles.exportButtonSecondary}>
-              💾 Download
-            </button>
-          </div>
-
-            <div style={styles.exportHint}>
-              Paste directly into Google Sheets or send to supplier
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* How It Works Card (Collapsible) - Info about component orders */}
+      {/* How It Works Card - Info about component orders */}
       <div style={styles.card}>
         <button
           onClick={() => toggleSection('howItWorks')}
@@ -225,28 +165,6 @@ export default function OrderBuilderView({
           </div>
         )}
       </div>
-
-      {/* Validation Warnings Card (Collapsible) - Only show if there are issues */}
-      {validation && !validation.allValid && (
-        <div style={styles.card}>
-          <button
-            onClick={() => toggleSection('validationWarnings')}
-            style={styles.cardHeader}
-          >
-            <span style={styles.cardHeaderIcon}>
-              {openSection === 'validationWarnings' ? '▼' : '▶'}
-            </span>
-            <span style={styles.cardHeaderTitle}>⚠️ Validation Warnings</span>
-            <span style={{...styles.cardHeaderBadge, background: 'rgba(234, 179, 8, 0.2)', borderColor: '#a16207', color: '#facc15'}}>Alert</span>
-          </button>
-
-          {openSection === 'validationWarnings' && (
-            <div style={styles.cardContent}>
-              <ValidationBanner validation={validation} />
-            </div>
-          )}
-        </div>
-      )}
       </div>
     </div>
   );

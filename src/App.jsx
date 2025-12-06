@@ -251,8 +251,6 @@ export default function App() {
           updateComponentInventory={updateComponentInventory}
           coverageData={coverageData}
           springOrder={springOrder}
-          exportFormat={exportFormat}
-          setExportFormat={setExportFormat}
           copyToClipboard={copyToClipboard}
           downloadTSV={downloadTSV}
           copyFeedback={copyFeedback}
