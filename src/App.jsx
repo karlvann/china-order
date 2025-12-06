@@ -195,9 +195,11 @@ export default function App() {
           <div style={styles.brandRow}>
             <span style={styles.brandName}>AusBeds</span>
             <span style={styles.brandDivider}>|</span>
-            <span style={styles.appName}>China Order</span>
+            <span style={styles.countryBadge}>CHINA</span>
+            <span style={styles.brandDivider}>|</span>
+            <span style={styles.appName}>Spring Order</span>
           </div>
-          <div style={styles.headerSubtitle}>Spring & Component Ordering</div>
+          <div style={styles.headerSubtitle}>Springs & Components | Coverage-Equalized Ordering</div>
         </div>
 
         <div style={styles.headerActions}>
@@ -316,13 +318,23 @@ const styles = {
   brandName: {
     fontSize: '18px',
     fontWeight: '700',
-    color: '#3b82f6',
+    color: '#0ea5e9',
     letterSpacing: '-0.3px'
   },
   brandDivider: {
     fontSize: '18px',
     color: '#3f3f46',
     fontWeight: '300'
+  },
+  countryBadge: {
+    padding: '3px 10px',
+    background: 'rgba(14, 165, 233, 0.2)',
+    border: '1px solid rgba(14, 165, 233, 0.4)',
+    borderRadius: '4px',
+    fontSize: '10px',
+    fontWeight: '700',
+    letterSpacing: '0.8px',
+    color: '#38bdf8'
   },
   appName: {
     fontSize: '18px',
@@ -345,7 +357,7 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     background: '#18181b',
-    color: '#60a5fa',
+    color: '#38bdf8',
     transition: 'all 0.2s',
     display: 'flex',
     alignItems: 'center',
