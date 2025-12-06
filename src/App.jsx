@@ -3,6 +3,7 @@ import SaveLoadModal from './SaveLoadModal';
 import OrderBuilderView from './views/OrderBuilderView';
 import ForecastView from './views/ForecastView';
 import ForecastV2View from './views/ForecastV2View';
+import ForecastTable from './components/ForecastTable';
 
 // Import algorithms
 import {
@@ -279,6 +280,15 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* 12-Month Forecast - Primary view (only on builder) */}
+      {currentView === 'builder' && (
+        <ForecastTable
+          inventory={inventory.springs}
+          springOrder={springOrder}
+          usageRates={usageRates}
+        />
+      )}
 
       {/* Main Content - Conditional View */}
       {currentView === 'builder' ? (
