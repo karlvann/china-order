@@ -192,7 +192,11 @@ export default function App() {
       {/* Header */}
       <header style={styles.header}>
         <div>
-          <div style={styles.headerTitle}>China Order System</div>
+          <div style={styles.brandRow}>
+            <span style={styles.brandName}>AusBeds</span>
+            <span style={styles.brandDivider}>|</span>
+            <span style={styles.appName}>China Order</span>
+          </div>
           <div style={styles.headerSubtitle}>Spring & Component Ordering</div>
         </div>
 
@@ -288,30 +292,53 @@ export default function App() {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: '#000000',
-    color: '#fafafa',
+    background: '#0a0a0b',
+    color: '#e5e5e5',
     fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
   },
   header: {
     position: 'sticky',
     top: 0,
     height: '64px',
-    background: 'rgba(24, 24, 27, 0.95)',
+    background: 'rgba(17, 17, 19, 0.95)',
     backdropFilter: 'blur(8px)',
-    borderBottom: '1px solid #27272a',
+    borderBottom: '1px solid #1f1f23',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 24px',
     zIndex: 1000
   },
+  brandRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '2px'
+  },
+  brandName: {
+    fontSize: '18px',
+    fontWeight: '700',
+    color: '#3b82f6',
+    letterSpacing: '-0.3px'
+  },
+  brandDivider: {
+    fontSize: '18px',
+    color: '#3f3f46',
+    fontWeight: '300'
+  },
+  appName: {
+    fontSize: '18px',
+    fontWeight: '600',
+    color: '#e5e5e5',
+    letterSpacing: '-0.3px'
+  },
   headerTitle: {
     fontSize: '18px',
     fontWeight: 'bold'
   },
   headerSubtitle: {
-    fontSize: '12px',
-    color: '#a1a1aa'
+    fontSize: '11px',
+    color: '#71717a'
   },
   saveButton: {
     padding: '8px 16px',
@@ -557,7 +584,7 @@ const styles = {
   // Forecast View
   forecastView: {
     minHeight: 'calc(100vh - 64px)',
-    background: '#000000',
+    background: '#0a0a0b',
     overflowY: 'auto'
   },
   forecastContent: {
