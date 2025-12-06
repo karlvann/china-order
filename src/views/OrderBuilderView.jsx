@@ -3,6 +3,7 @@ import InventoryTable from '../components/InventoryTable';
 import PalletList from '../components/PalletList';
 import ValidationBanner from '../components/ValidationBanner';
 import HealthAlert from '../components/HealthAlert';
+import OrderHero from '../components/OrderHero';
 import { MIN_PALLETS, MAX_PALLETS } from '../lib/constants';
 
 export default function OrderBuilderView({
@@ -27,6 +28,16 @@ export default function OrderBuilderView({
     <div style={{ maxWidth: '900px', margin: '0 auto', padding: '24px' }}>
       {/* Health Alert - Shows inventory status at top */}
       <HealthAlert inventory={inventory.springs} />
+
+      {/* Order Hero - Prominent order summary */}
+      <OrderHero
+        palletCount={palletCount}
+        onPalletChange={setPalletCount}
+        springOrder={springOrder}
+        onCopyToClipboard={copyToClipboard}
+        onDownload={downloadTSV}
+        copyFeedback={copyFeedback}
+      />
 
       <div style={styles.accordionContainer}>
       {/* Container Settings Card (Collapsible) */}
