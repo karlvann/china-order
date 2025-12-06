@@ -22,7 +22,11 @@ import {
   DEFAULT_PALLETS,
   MIN_PALLETS,
   MAX_PALLETS,
-  MONTHLY_SALES_RATE
+  MONTHLY_SALES_RATE,
+  MATTRESS_AVERAGE_PRICE,
+  ANNUAL_REVENUE_OPTIONS,
+  DEFAULT_ANNUAL_REVENUE,
+  getScaledUsageRates
 } from './lib/constants';
 
 // Import utilities
@@ -34,11 +38,17 @@ import {
 export default function App() {
   // State
   const [palletCount, setPalletCount] = useState(DEFAULT_PALLETS);
+  const [annualRevenue, setAnnualRevenue] = useState(DEFAULT_ANNUAL_REVENUE);
   const [exportFormat, setExportFormat] = useState('optimized');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [startingMonth, setStartingMonth] = useState(new Date().getMonth()); // 0-11 (Jan-Dec)
   const [currentView, setCurrentView] = useState('builder'); // 'builder' or 'forecast'
+
+  // Calculate scaled usage rates based on selected annual revenue
+  const usageRates = useMemo(() => {
+    return getScaledUsageRates(annualRevenue);
+  }, [annualRevenue]);
 
   // Single-expansion accordion state
   const [openSection, setOpenSection] = useState('springInventory');
@@ -241,6 +251,35 @@ export default function App() {
         </div>
       </header>
 
+      {/* Weekly Sales Selector - Same pattern as Latex Order */}
+      <div style={styles.revenueSection}>
+        <div style={styles.revenueHeader}>
+          <label style={styles.revenueLabel}>Weekly Sales</label>
+          <div style={styles.revenueInfo}>
+            = ${(annualRevenue / 1000000).toFixed(annualRevenue % 1000000 === 0 ? 0 : 2)}M/year | {usageRates.TOTAL_MONTHLY_SALES} springs/month
+          </div>
+        </div>
+        <div style={styles.revenueSelector}>
+          <select
+            value={annualRevenue}
+            onChange={(e) => setAnnualRevenue(parseInt(e.target.value))}
+            style={styles.revenueDropdown}
+          >
+            {ANNUAL_REVENUE_OPTIONS.map(value => {
+              const rates = getScaledUsageRates(value);
+              return (
+                <option key={value} value={value}>
+                  ${(rates.weeklyRevenue / 1000).toFixed(0)}K/wk → {Math.round(rates.weeklyMattresses)} springs
+                </option>
+              );
+            })}
+          </select>
+          <div style={styles.revenueNote}>
+            @ ${MATTRESS_AVERAGE_PRICE.toLocaleString()} avg
+          </div>
+        </div>
+      </div>
+
       {/* Main Content - Conditional View */}
       {currentView === 'builder' ? (
         <OrderBuilderView
@@ -363,6 +402,51 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     fontSize: '14px'
+  },
+  // Weekly Sales Selector Styles
+  revenueSection: {
+    background: '#18181b',
+    border: '1px solid #27272a',
+    borderRadius: '12px',
+    padding: '20px',
+    margin: '24px auto',
+    maxWidth: '900px'
+  },
+  revenueHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '12px'
+  },
+  revenueLabel: {
+    fontSize: '16px',
+    fontWeight: '600',
+    color: '#fafafa'
+  },
+  revenueInfo: {
+    fontSize: '14px',
+    color: '#22c55e',
+    fontWeight: '500'
+  },
+  revenueSelector: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px'
+  },
+  revenueDropdown: {
+    padding: '12px 16px',
+    fontSize: '16px',
+    fontWeight: '600',
+    background: '#0a0a0a',
+    border: '2px solid #0ea5e9',
+    borderRadius: '8px',
+    color: '#fafafa',
+    cursor: 'pointer',
+    minWidth: '260px'
+  },
+  revenueNote: {
+    fontSize: '13px',
+    color: '#71717a'
   },
   // Accordion Container - Single column full-width layout
   accordionContainer: {

@@ -48,3 +48,58 @@ export const SMALL_SIZES: MattressSize[] = ['Double', 'King Single', 'Single'] a
  * These represent 88% of sales and are prioritized for stockout prevention.
  */
 export const HIGH_VELOCITY_SIZES: MattressSize[] = ['King', 'Queen'] as const;
+
+/**
+ * REVENUE-BASED SCALING
+ *
+ * Same system as Latex Order - scales all rates based on annual revenue target.
+ * Base: 960 units/year at ~$2.688M (80 units/month × 12 × $2,800 avg)
+ */
+export const MATTRESS_AVERAGE_PRICE = 2800;
+export const WEEKS_PER_YEAR = 52;
+export const BASELINE_ANNUAL_REVENUE = 2688000; // 80 units/month × 12 × $2,800
+export const BASE_TOTAL_MONTHLY_SALES = 81; // Actual from 960/year
+
+/**
+ * Annual revenue options for the dropdown.
+ * Range from $3M to $4.5M in $375K increments.
+ */
+export const ANNUAL_REVENUE_OPTIONS = [
+  3000000,   // $3.0M
+  3375000,   // $3.375M
+  3750000,   // $3.75M
+  4125000,   // $4.125M
+  4500000    // $4.5M
+] as const;
+
+export const DEFAULT_ANNUAL_REVENUE = 3000000;
+
+/**
+ * Get scaled usage rates based on selected annual revenue.
+ * Scales all sales rates proportionally.
+ */
+export function getScaledUsageRates(annualRevenue: number) {
+  const scaleFactor = annualRevenue / BASELINE_ANNUAL_REVENUE;
+  const weeklyRevenue = Math.round(annualRevenue / WEEKS_PER_YEAR);
+  const weeklyMattresses = Math.round(weeklyRevenue / MATTRESS_AVERAGE_PRICE * 10) / 10;
+
+  // Scale monthly sales rates
+  const scaledMonthlySalesRate: Record<MattressSize, number> = {
+    'King': Math.round(30 * scaleFactor * 10) / 10,
+    'Queen': Math.round(41 * scaleFactor * 10) / 10,
+    'Double': Math.round(6 * scaleFactor * 10) / 10,
+    'King Single': Math.round(3 * scaleFactor * 10) / 10,
+    'Single': Math.round(1 * scaleFactor * 10) / 10
+  };
+
+  const totalMonthlySales = Math.round(BASE_TOTAL_MONTHLY_SALES * scaleFactor * 10) / 10;
+
+  return {
+    MONTHLY_SALES_RATE: scaledMonthlySalesRate,
+    TOTAL_MONTHLY_SALES: totalMonthlySales,
+    weeklyRevenue,
+    weeklyMattresses,
+    annualRevenue,
+    scaleFactor
+  };
+}
