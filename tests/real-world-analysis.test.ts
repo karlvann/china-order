@@ -10,9 +10,9 @@ import {
   calculateNPlus1Order,
   calculateComponentOrder,
   optimizeComponentOrder
-} from '../src/lib/algorithms';
-import { validateEqualRunway } from '../src/lib/utils/validation';
-import type { Inventory } from '../src/lib/types';
+} from '@/lib/algorithms';
+import { validateEqualRunway } from '@/lib/utils/validation';
+import type { Inventory } from '@/lib/types';
 
 describe('Real-World Mattress Factory Analysis', () => {
   const MONTHLY_SALES = { King: 30, Queen: 41, Double: 6, 'King Single': 3, Single: 1 };

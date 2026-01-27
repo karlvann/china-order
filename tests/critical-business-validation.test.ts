@@ -11,9 +11,9 @@ import {
   calculateComponentOrder,
   optimizeComponentOrder,
   generateTSV
-} from '../src/lib/algorithms';
-import { validateEqualRunway } from '../src/lib/utils/validation';
-import type { Inventory } from '../src/lib/types';
+} from '@/lib/algorithms';
+import { validateEqualRunway } from '@/lib/utils/validation';
+import type { Inventory } from '@/lib/types';
 
 describe('🏭 CRITICAL BUSINESS VALIDATION', () => {
 

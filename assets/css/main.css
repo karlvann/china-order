@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  html {
+    @apply bg-background text-zinc-200;
+  }
+
+  body {
+    @apply font-sans antialiased;
+  }
+
+  /* Custom scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-zinc-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-zinc-600;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Input fields */
+  .input-field {
+    @apply w-[70px] bg-surface border border-border rounded-md px-2 py-1.5
+           text-center font-mono text-zinc-50 text-sm
+           focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-transparent border-b border-border;
+  }
+
+  /* Button styles */
+  .btn-primary {
+    @apply px-5 py-3 bg-white text-black font-semibold rounded-lg
+           hover:bg-zinc-100 transition-colors;
+  }
+
+  .btn-secondary {
+    @apply px-5 py-3 bg-surface text-zinc-50 border border-border font-semibold rounded-lg
+           hover:bg-surfaceHover transition-colors;
+  }
+
+  /* Toggle button styles */
+  .toggle-btn {
+    @apply px-4 py-2 bg-transparent border-none rounded-md text-zinc-400 text-sm font-semibold
+           cursor-pointer transition-colors;
+  }
+
+  .toggle-btn-active {
+    @apply bg-surfaceHover text-zinc-50;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply px-2 py-0.5 text-xs font-semibold uppercase tracking-wide rounded;
+  }
+
+  .badge-info {
+    @apply bg-zinc-800 border border-zinc-700 text-zinc-400;
+  }
+
+  .badge-success {
+    @apply bg-green-900/20 border border-green-800 text-green-400;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-900/20 border border-yellow-800 text-yellow-400;
+  }
+
+  .badge-error {
+    @apply bg-red-900/20 border border-red-800 text-red-400;
+  }
+
+  /* Table styles */
+  .table-header {
+    @apply px-3 py-2.5 text-left text-xs uppercase tracking-wide font-semibold text-zinc-400 bg-surfaceHover;
+  }
+
+  .table-cell {
+    @apply px-3 py-2.5 border-b border-border;
+  }
+
+  /* Accordion header */
+  .accordion-header {
+    @apply w-full py-3 bg-transparent border-none text-zinc-50 text-[15px] font-semibold
+           cursor-pointer flex items-center gap-2.5 text-left transition-colors;
+  }
+
+  .accordion-icon {
+    @apply text-xs text-zinc-400 transition-transform w-3.5;
+  }
+
+  /* Section container */
+  .section-container {
+    @apply max-w-[900px] mx-auto px-6;
+  }
+}

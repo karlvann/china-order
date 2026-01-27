@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateKingQueenFirstOrder, fillKingQueenFirst } from '../src/lib/algorithms/fillKingQueenFirst';
-import type { Inventory } from '../src/lib/types';
+import { calculateKingQueenFirstOrder, fillKingQueenFirst } from '@/lib/algorithms/fillKingQueenFirst';
+import type { Inventory } from '@/lib/types';
 
 describe('Fill King/Queen First Algorithm', () => {
 

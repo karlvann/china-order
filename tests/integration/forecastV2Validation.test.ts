@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateAnnualProjection } from '../../src/lib/algorithms/multiContainerProjection';
-import { createEmptySpringInventory, createEmptyComponentInventory } from '../../src/lib/utils/inventory';
-import type { Inventory } from '../../src/lib/types';
+import { calculateAnnualProjection } from '@/lib/algorithms/multiContainerProjection';
+import { createEmptySpringInventory, createEmptyComponentInventory } from '@/lib/utils/inventory';
+import type { Inventory } from '@/lib/types';
 
 function createEmptyInventory(): Inventory {
   return {

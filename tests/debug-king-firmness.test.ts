@@ -1,6 +1,6 @@
 import { describe, it } from 'vitest';
-import { calculateKingQueenFirstOrder } from '../src/lib/algorithms/fillKingQueenFirst';
-import type { Inventory } from '../src/lib/types';
+import { calculateKingQueenFirstOrder } from '@/lib/algorithms/fillKingQueenFirst';
+import type { Inventory } from '@/lib/types';
 
 describe('Debug King Firmness', () => {
   it('should show King firmness breakdown in Low Stock', () => {

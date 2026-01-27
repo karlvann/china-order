@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { calculateAnnualProjection } from '../../src/lib/algorithms/multiContainerProjection';
-import { MONTHLY_SALES_RATE } from '../../src/lib/constants/sales';
-import { FIRMNESS_DISTRIBUTION } from '../../src/lib/constants/firmness';
+import { calculateAnnualProjection } from '@/lib/algorithms/multiContainerProjection';
+import { MONTHLY_SALES_RATE } from '@/lib/constants/sales';
+import { FIRMNESS_DISTRIBUTION } from '@/lib/constants/firmness';
 
 /**
  * VALIDATION TEST: Queen Medium Arrival Timing (Unit Test Version)

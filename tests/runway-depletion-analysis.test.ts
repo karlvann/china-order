@@ -10,8 +10,8 @@ import { describe, it, expect } from 'vitest';
 import {
   calculateNPlus1Order,
   calculateComponentOrder
-} from '../src/lib/algorithms';
-import type { Inventory, SpringOrder, ComponentOrder } from '../src/lib/types';
+} from '@/lib/algorithms';
+import type { Inventory, SpringOrder, ComponentOrder } from '@/lib/types';
 
 describe('Runway Depletion Analysis', () => {
   // Monthly sales rates

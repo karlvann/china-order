@@ -1,38 +1,33 @@
 {
   "name": "china-order",
-  "version": "1.0.0",
+  "description": "China Order System - Spring and Component Inventory Management (Nuxt 4)",
+  "version": "2.0.0",
   "type": "module",
+  "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report"
+    "test:coverage": "vitest --coverage"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "China Order System - Spring and Component Inventory Management",
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@nuxt/icon": "^2.2.1",
+    "@pinia/nuxt": "^0.11.3",
+    "nuxt": "^4.3.0",
+    "nuxt-directus": "^5.7.0",
+    "pinia": "^3.0.1",
+    "pinia-plugin-persistedstate": "4.7.1",
+    "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.1",
-    "@vitejs/plugin-react": "^5.0.4",
-    "@vitest/ui": "^3.2.4",
+    "@nuxtjs/tailwindcss": "^6.13.2",
+    "@vitest/ui": "^4.0.18",
     "jsdom": "^27.0.0",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.9",
-    "vitest": "^3.2.4"
-  }
+    "vitest": "^4.0.18"
+  },
+  "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

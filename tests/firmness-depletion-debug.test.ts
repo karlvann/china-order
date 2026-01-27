@@ -4,8 +4,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { createPalletsForSize } from '../src/lib/algorithms/palletCreation';
-import type { Inventory } from '../src/lib/types';
+import { createPalletsForSize } from '@/lib/algorithms/palletCreation';
+import type { Inventory } from '@/lib/types';
 
 describe('Firmness Equal Depletion Debug', () => {
   it('should allocate King springs for equal depletion (Medium Stock)', () => {
