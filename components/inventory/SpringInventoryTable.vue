@@ -2,30 +2,33 @@
 import { MATTRESS_SIZES, FIRMNESS_TYPES } from '~/lib/constants/index.js'
 
 const inventoryStore = useInventoryStore()
-const orderStore = useOrderStore()
+const { weeklyRates } = useWeeklySales()
 
 // Get spring value for a firmness/size
 const getSpringValue = (firmness, sizeId) => {
   return inventoryStore.springs[firmness]?.[sizeId] || 0
 }
 
-// Get total for a size
-const getSizeTotal = (sizeId) => {
-  return FIRMNESS_TYPES.reduce((sum, firmness) =>
-    sum + getSpringValue(firmness, sizeId), 0
-  )
+// Get monthly demand for a firmness/size
+const getMonthlyDemand = (firmness, sizeId) => {
+  const weeklyRate = weeklyRates.value[sizeId]?.[firmness] || 0
+  return weeklyRate * (30 / 7)
 }
 
-// Get coverage indicator
-const getCoverageIndicator = (sizeId) => {
-  const coverage = orderStore.coverageData?.[sizeId] || 0
+// Get coverage in months for a firmness/size
+const getCoverage = (firmness, sizeId) => {
+  const inventory = getSpringValue(firmness, sizeId)
+  const monthlyDemand = getMonthlyDemand(firmness, sizeId)
+  if (monthlyDemand === 0) return null
+  return inventory / monthlyDemand
+}
 
-  if (coverage < 2) {
-    return { color: 'text-red-400', emoji: '⚠️', label: 'Critical' }
-  } else if (coverage < 3) {
-    return { color: 'text-yellow-400', emoji: '⚡', label: 'Low' }
-  }
-  return { color: 'text-green-400', emoji: '✓', label: 'Healthy' }
+// Get coverage color class
+const getCoverageColor = (coverage) => {
+  if (coverage === null) return 'text-zinc-500'
+  if (coverage < 2) return 'text-red-400'
+  if (coverage < 3) return 'text-yellow-400'
+  return 'text-green-400'
 }
 </script>
 
@@ -38,8 +41,6 @@ const getCoverageIndicator = (sizeId) => {
           <th class="table-header text-center">Firm</th>
           <th class="table-header text-center">Medium</th>
           <th class="table-header text-center">Soft</th>
-          <th class="table-header text-center">Total</th>
-          <th class="table-header text-center">Coverage</th>
         </tr>
       </thead>
       <tbody>
@@ -54,20 +55,18 @@ const getCoverageIndicator = (sizeId) => {
             :key="firmness"
             class="table-cell text-center"
           >
-            <span class="font-mono text-zinc-300 bg-background px-3 py-1.5 rounded">
+            <span class="font-mono text-zinc-300">
               {{ getSpringValue(firmness, size.id) }}
             </span>
-          </td>
-          <td class="table-cell text-center font-mono font-bold text-brand-light">
-            {{ getSizeTotal(size.id) }}
-          </td>
-          <td class="table-cell text-center">
-            <div class="flex items-center justify-center gap-1.5">
-              <span>{{ getCoverageIndicator(size.id).emoji }}</span>
-              <span :class="['font-mono font-semibold', getCoverageIndicator(size.id).color]">
-                {{ (orderStore.coverageData?.[size.id] || 0).toFixed(1) }}mo
-              </span>
-            </div>
+            <span
+              v-if="getCoverage(firmness, size.id) !== null"
+              :class="['text-xs ml-1', getCoverageColor(getCoverage(firmness, size.id))]"
+            >
+              ({{ getCoverage(firmness, size.id).toFixed(1) }}mo)
+            </span>
+            <span v-else class="text-xs text-zinc-600 ml-1">
+              (-)
+            </span>
           </td>
         </tr>
       </tbody>

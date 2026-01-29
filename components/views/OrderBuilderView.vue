@@ -37,7 +37,7 @@ const orderStore = useOrderStore()
         title="Spring Inventory"
       >
         <p class="text-sm text-zinc-400 mb-3">
-          Current stock loaded from Directus (read-only)
+          In brackets is the calculated monthly depletion based on weekly sales data.
         </p>
         <InventorySpringInventoryTable />
       </UiAccordionSection>

@@ -30,13 +30,18 @@ const getBarWidth = (value, max) => {
 const maxWeeklyRate = computed(() => {
   return Math.max(...Object.values(weeklyRates.value).map(r => r.total), 1)
 })
+
+// Calculate monthly rate for a firmness (weekly * 30/7)
+const getMonthlyRate = (weeklyRate) => {
+  return Math.round(weeklyRate * (30 / 7) * 10) / 10
+}
 </script>
 
 <template>
   <div class="bg-surface border border-border rounded-lg p-4">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h3 class="text-lg font-semibold text-zinc-50">Weekly Sales (Live Data)</h3>
+        <h3 class="text-lg font-semibold text-zinc-50">Last 6 weeks of sales</h3>
         <p v-if="dateRange.start" class="text-xs text-zinc-500">
           {{ formatDate(dateRange.start) }} - {{ formatDate(dateRange.end) }} (6 weeks)
         </p>
@@ -97,11 +102,18 @@ const maxWeeklyRate = computed(() => {
         <thead>
           <tr class="bg-surfaceHover">
             <th class="table-header text-left">Size</th>
-            <th class="table-header text-center">Firm</th>
-            <th class="table-header text-center">Medium</th>
-            <th class="table-header text-center">Soft</th>
-            <th class="table-header text-center">Total</th>
-            <th class="table-header text-center">Weekly</th>
+            <th class="table-header text-center">
+              <span class="text-amber-400">Firm</span>
+              <div class="text-[10px] text-zinc-500 font-normal">wk / mo</div>
+            </th>
+            <th class="table-header text-center">
+              <span class="text-green-400">Medium</span>
+              <div class="text-[10px] text-zinc-500 font-normal">wk / mo</div>
+            </th>
+            <th class="table-header text-center">
+              <span class="text-purple-400">Soft</span>
+              <div class="text-[10px] text-zinc-500 font-normal">wk / mo</div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -112,22 +124,19 @@ const maxWeeklyRate = computed(() => {
           >
             <td class="table-cell font-semibold">{{ size.name }}</td>
             <td class="table-cell text-center font-mono text-amber-400">
-              {{ demandBySize[size.id]?.firm || 0 }}
+              <span>{{ weeklyRates[size.id]?.firm || 0 }}</span>
+              <span class="text-zinc-500 mx-1">/</span>
+              <span class="text-amber-300">{{ getMonthlyRate(weeklyRates[size.id]?.firm || 0) }}</span>
             </td>
             <td class="table-cell text-center font-mono text-green-400">
-              {{ demandBySize[size.id]?.medium || 0 }}
+              <span>{{ weeklyRates[size.id]?.medium || 0 }}</span>
+              <span class="text-zinc-500 mx-1">/</span>
+              <span class="text-green-300">{{ getMonthlyRate(weeklyRates[size.id]?.medium || 0) }}</span>
             </td>
             <td class="table-cell text-center font-mono text-purple-400">
-              {{ demandBySize[size.id]?.soft || 0 }}
-            </td>
-            <td class="table-cell text-center font-mono font-bold text-zinc-50">
-              {{ demandBySize[size.id]?.total || 0 }}
-            </td>
-            <td class="table-cell text-center">
-              <span class="font-mono text-brand-light">
-                {{ weeklyRates[size.id]?.total || 0 }}
-              </span>
-              <span class="text-xs text-zinc-500">/wk</span>
+              <span>{{ weeklyRates[size.id]?.soft || 0 }}</span>
+              <span class="text-zinc-500 mx-1">/</span>
+              <span class="text-purple-300">{{ getMonthlyRate(weeklyRates[size.id]?.soft || 0) }}</span>
             </td>
           </tr>
         </tbody>
