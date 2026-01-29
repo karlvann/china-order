@@ -35,7 +35,11 @@ export default defineNuxtConfig({
   ssr: true,
 
   directus: {
-    url: process.env.DIRECTUS_URL
+    url: process.env.DIRECTUS_URL,
+    autoRefresh: true,
+    cookieNameToken: 'directus_token',
+    cookieNameRefreshToken: 'directus_refresh_token',
+    cookieMaxAge: 60 * 60 * 24 * 30 // 30 days
   },
 
   // Alias for lib folder

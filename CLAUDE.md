@@ -77,14 +77,13 @@ Each mattress requires **1 spring + multiple components**:
 
 ## Tech Stack
 
-- **Nuxt 4** (Vue 3 with Composition API)
-- **Pinia** for state management
+- **Nuxt 4** (Vue 3 with Composition API, `future.compatibilityVersion: 4`)
+- **Pinia** for state management (with persisted state plugin)
 - **Tailwind CSS** for styling
-- **Directus** for spring inventory data
+- **Directus** for spring inventory and sales data
 - **Vitest** for unit testing
-- **JavaScript** (no TypeScript in app code; tests use TypeScript)
+- **JavaScript** (app code) / **TypeScript** (tests only)
 - **Yarn** as package manager
-- **Vercel** deployment
 
 ## Development Commands
 
@@ -99,6 +98,11 @@ yarn test:coverage    # Generate test coverage report
 yarn vitest tests/algorithms/coverage.test.ts
 yarn vitest tests/algorithms/coverage.test.ts --watch
 ```
+
+## Environment Variables
+
+Set in `.env` for local development:
+- `DIRECTUS_URL` - Directus API endpoint
 
 ---
 
@@ -142,48 +146,46 @@ Components auto-import with path-based names:
 ### Directory Structure
 
 ```
-lib/                         # Business logic (MUST be imported)
+lib/                         # Business logic (MUST manually import)
 ├── algorithms/              # Core ordering algorithms
+│   ├── fillKingQueenFirst.js # Main ordering algorithm (King/Queen priority)
+│   ├── componentCalc.js     # Derive component orders from springs
 │   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── criticalSizes.js     # Detect critical small sizes
-│   ├── palletCreation.js    # Allocate springs to pallets
-│   ├── fillKingQueenFirst.js # NEW: Main ordering algorithm
-│   ├── nPlusOptimization.js # OLD: N+1/N+2 algorithm (compatibility)
-│   ├── componentCalc.js     # Derive component orders from springs
 │   ├── exportOptimization.js # Round to supplier lot sizes
-│   ├── tsvGeneration.js     # Export format for suppliers
 │   ├── multiContainerProjection.js # Annual forecast
+│   ├── palletCreation.js    # Allocate springs to pallets
+│   ├── tsvGeneration.js     # Export format for suppliers
 │   └── index.js             # Central exports
 ├── constants/               # Business constants
 │   ├── business.js          # Lead time, pallet size, thresholds
 │   ├── sales.js             # Mattress sizes, monthly rates
 │   ├── firmness.js          # Firm/Medium/Soft distribution
 │   ├── seasonality.js       # Busy/slow season multipliers
-│   ├── components.js        # Component types, lot sizes
-│   └── index.js             # Central exports
+│   └── components.js        # Component types, lot sizes
 └── utils/
-    ├── inventory.js
     └── validation.js        # Equal runway validation
 
 stores/                      # Pinia stores (auto-imported)
 ├── inventory.js             # Springs (Directus) + Components (localStorage)
 ├── order.js                 # Computed order data (getters only)
-├── settings.js              # App settings (palletCount, view, etc.)
+├── settings.js              # App settings (palletCount, startingMonth, etc.)
 └── ui.js                    # UI state (accordion, modals)
+
+pages/                       # Nuxt pages (file-based routing)
+├── index.vue                # Home/login page
+└── dashboard.vue            # Main dashboard
 
 composables/                 # Auto-imported composables
 ├── useSpringInventory.js    # Fetch springs from Directus
 ├── useWeeklySales.js        # Fetch sales data from Directus
 ├── useComponentStorage.js   # localStorage for components
-├── useClipboard.js
-├── useDownload.js
-├── useMonthNames.js
-└── useErrorHandler.js
+└── useErrorHandler.js       # Error handling
 
 components/
-├── app/                     # App-level (AppHeader, AppSaveLoadModal)
+├── app/                     # App-level (AppHeader)
 ├── order/                   # Order Builder (OrderHero, PalletCard, PalletList, etc.)
-├── inventory/               # Inventory tables (SpringInventoryTable, ComponentInventoryTable)
+├── inventory/               # Tables (SpringInventoryTable, ComponentInventoryTable, WeeklySalesPanel)
 ├── forecast/                # Forecast views (SpringTimelineDetailed, MonthSelector, etc.)
 ├── views/                   # Main views (OrderBuilderView, ForecastView, ForecastV2View)
 └── ui/                      # Reusable UI (AccordionSection)
@@ -272,5 +274,4 @@ tests/
 
 ### Deployment
 - Push to GitHub triggers automatic Vercel deployment
-- Environment variables in Vercel: `DIRECTUS_URL`, `DIRECTUS_TOKEN`
-- Local development: Set in `.env` file
+- Environment variables in Vercel: `DIRECTUS_URL`

@@ -3,7 +3,7 @@ import { MATTRESS_SIZES, COMPONENT_TYPES } from '~/lib/constants/index.js'
 
 const inventoryStore = useInventoryStore()
 
-// Check if cell should be hidden
+// Check if cell should be hidden (N/A for this component/size)
 const shouldHideCell = (componentId, sizeId) => {
   // Micro coils and thin latex are only for King/Queen
   if (['micro_coils', 'thin_latex'].includes(componentId) &&
@@ -24,22 +24,12 @@ const getComponentValue = (componentId, sizeId) => {
   return inventoryStore.components[componentId]?.[sizeId] || 0
 }
 
-// Update component value
-const handleUpdate = (componentId, sizeId, event) => {
-  const value = parseInt(event.target.value) || 0
-  inventoryStore.updateComponent(componentId, sizeId, value)
-}
-
 // Get total for a component
 const getComponentTotal = (componentId) => {
-  return MATTRESS_SIZES.reduce((sum, size) =>
-    sum + getComponentValue(componentId, size.id), 0
-  )
-}
-
-// Select all text on focus
-const handleFocus = (event) => {
-  event.target.select()
+  return MATTRESS_SIZES.reduce((sum, size) => {
+    if (shouldHideCell(componentId, size.id)) return sum
+    return sum + getComponentValue(componentId, size.id)
+  }, 0)
 }
 </script>
 
@@ -71,20 +61,14 @@ const handleFocus = (event) => {
             :key="size.id"
             class="table-cell text-center"
           >
-            <!-- Hidden cell -->
+            <!-- Hidden cell (N/A) -->
             <div v-if="shouldHideCell(comp.id, size.id)" class="text-zinc-600">
               -
             </div>
-            <!-- Editable input -->
-            <input
-              v-else
-              type="number"
-              :value="getComponentValue(comp.id, size.id)"
-              @input="handleUpdate(comp.id, size.id, $event)"
-              @focus="handleFocus"
-              class="input-field"
-              min="0"
-            />
+            <!-- Read-only display -->
+            <span v-else class="font-mono text-zinc-300 bg-background px-3 py-1.5 rounded">
+              {{ getComponentValue(comp.id, size.id) }}
+            </span>
           </td>
           <td class="table-cell text-center font-mono font-bold text-brand-light">
             {{ getComponentTotal(comp.id) }}
@@ -93,9 +77,9 @@ const handleFocus = (event) => {
       </tbody>
     </table>
 
-    <!-- Editable notice -->
+    <!-- Read-only notice -->
     <p class="text-xs text-zinc-500 mt-3 italic">
-      Component inventory is stored locally and auto-saved.
+      Component inventory is loaded from Directus and cannot be edited here.
     </p>
   </div>
 </template>

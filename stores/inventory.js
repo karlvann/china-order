@@ -10,6 +10,8 @@ export const useInventoryStore = defineStore('inventory', () => {
   const components = ref(createEmptyComponentInventory())
   const springsLoading = ref(true)
   const springsError = ref(null)
+  const componentsLoading = ref(true)
+  const componentsError = ref(null)
 
   // Getters
   const fullInventory = computed(() => ({
@@ -17,9 +19,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     components: components.value
   }))
 
-  const isLoaded = computed(() => !springsLoading.value)
+  const isLoaded = computed(() => !springsLoading.value && !componentsLoading.value)
 
-  const hasError = computed(() => springsError.value !== null)
+  const hasError = computed(() => springsError.value !== null || componentsError.value !== null)
 
   // Actions
   const getTotalSpringsForSize = (size) => {
@@ -49,39 +51,20 @@ export const useInventoryStore = defineStore('inventory', () => {
     springsError.value = error
   }
 
-  const saveComponentsToStorage = () => {
-    try {
-      localStorage.setItem('china_order_components', JSON.stringify(components.value))
-    } catch (e) {
-      console.error('Failed to save components:', e)
-    }
+  const setComponents = (componentData) => {
+    components.value = componentData
   }
 
-  const updateComponent = (componentId, size, value) => {
-    if (components.value[componentId]) {
-      components.value[componentId][size] = parseInt(value) || 0
-      saveComponentsToStorage()
-    }
+  const setComponentsLoading = (loading) => {
+    componentsLoading.value = loading
   }
 
-  const setComponents = (newComponents) => {
-    components.value = newComponents
-  }
-
-  const loadComponentsFromStorage = () => {
-    try {
-      const saved = localStorage.getItem('china_order_components')
-      if (saved) {
-        components.value = JSON.parse(saved)
-      }
-    } catch (e) {
-      console.error('Failed to load components:', e)
-    }
+  const setComponentsError = (error) => {
+    componentsError.value = error
   }
 
   const resetComponents = () => {
     components.value = createEmptyComponentInventory()
-    saveComponentsToStorage()
   }
 
   return {
@@ -90,6 +73,8 @@ export const useInventoryStore = defineStore('inventory', () => {
     components,
     springsLoading,
     springsError,
+    componentsLoading,
+    componentsError,
     // Getters
     fullInventory,
     isLoaded,
@@ -100,10 +85,9 @@ export const useInventoryStore = defineStore('inventory', () => {
     setSprings,
     setSpringsLoading,
     setSpringsError,
-    updateComponent,
     setComponents,
-    loadComponentsFromStorage,
-    saveComponentsToStorage,
+    setComponentsLoading,
+    setComponentsError,
     resetComponents
   }
 })

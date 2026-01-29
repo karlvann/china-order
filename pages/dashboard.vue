@@ -8,25 +8,46 @@ const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
 
 // Initialize composables
-const { springs, loading, error, refresh } = useSpringInventory()
+const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory()
+const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory()
 const { loading: salesLoading } = useWeeklySales()
+
+// Combined loading/error state
+const loading = computed(() => springsLoading.value || componentsLoading.value)
+const error = computed(() => springsError.value || componentsError.value)
+const refresh = () => {
+  refreshSprings()
+  refreshComponents()
+}
 
 // Watch for spring inventory changes and update store
 watch(springs, (newSprings) => {
   inventoryStore.setSprings(newSprings)
 }, { immediate: true, deep: true })
 
-watch(loading, (isLoading) => {
+watch(springsLoading, (isLoading) => {
   inventoryStore.setSpringsLoading(isLoading)
 }, { immediate: true })
 
-watch(error, (err) => {
+watch(springsError, (err) => {
   inventoryStore.setSpringsError(err)
 }, { immediate: true })
 
-// Load saved components and settings on mount
+// Watch for component inventory changes and update store
+watch(components, (newComponents) => {
+  inventoryStore.setComponents(newComponents)
+}, { immediate: true, deep: true })
+
+watch(componentsLoading, (isLoading) => {
+  inventoryStore.setComponentsLoading(isLoading)
+}, { immediate: true })
+
+watch(componentsError, (err) => {
+  inventoryStore.setComponentsError(err)
+}, { immediate: true })
+
+// Load settings on mount
 onMounted(() => {
-  inventoryStore.loadComponentsFromStorage()
   settingsStore.loadFromStorage()
 })
 
@@ -64,7 +85,7 @@ useHead({
       <!-- Error State -->
       <div v-else-if="error" class="section-container py-8">
         <div class="bg-red-900/20 border border-red-800 rounded-lg p-6 text-center">
-          <p class="text-red-400 font-semibold mb-2">Failed to load spring inventory</p>
+          <p class="text-red-400 font-semibold mb-2">Failed to load inventory</p>
           <p class="text-zinc-400 text-sm mb-4">{{ error }}</p>
           <button
             @click="refresh"
