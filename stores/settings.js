@@ -12,6 +12,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const palletCount = ref(DEFAULT_PALLETS)
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
+  const orderWeekOffset = ref(0) // 0-6 weeks from current week
   const currentView = ref('builder') // 'builder', 'forecast', 'forecastv2'
   const liveSalesRates = ref({
     MONTHLY_SALES_RATE: {
@@ -49,6 +50,20 @@ export const useSettingsStore = defineStore('settings', () => {
   const isForecastView = computed(() => currentView.value === 'forecast')
 
   const isForecastV2View = computed(() => currentView.value === 'forecastv2')
+
+  // Get current ISO week number (1-52)
+  const currentWeekNumber = computed(() => {
+    const now = new Date()
+    const startOfYear = new Date(now.getFullYear(), 0, 1)
+    const days = Math.floor((now - startOfYear) / (24 * 60 * 60 * 1000))
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7)
+  })
+
+  // Get the order week number (current + offset, wraps at 52)
+  const orderWeekNumber = computed(() => {
+    const week = currentWeekNumber.value + orderWeekOffset.value
+    return week > 52 ? week - 52 : week
+  })
 
   // Actions
   const saveToStorage = () => {
@@ -93,6 +108,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const setStartingMonth = (month) => {
     startingMonth.value = month
+  }
+
+  const setOrderWeekOffset = (offset) => {
+    orderWeekOffset.value = Math.max(0, Math.min(6, offset))
   }
 
   const setCurrentView = (view) => {
@@ -144,6 +163,7 @@ export const useSettingsStore = defineStore('settings', () => {
     palletCount,
     exportFormat,
     startingMonth,
+    orderWeekOffset,
     currentView,
     liveSalesRates,
     liveSalesLoaded,
@@ -155,6 +175,8 @@ export const useSettingsStore = defineStore('settings', () => {
     isBuilderView,
     isForecastView,
     isForecastV2View,
+    currentWeekNumber,
+    orderWeekNumber,
     // Actions
     setPalletCount,
     incrementPallets,
@@ -162,6 +184,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setExportFormat,
     toggleExportFormat,
     setStartingMonth,
+    setOrderWeekOffset,
     setCurrentView,
     loadFromStorage,
     saveToStorage,

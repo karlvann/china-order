@@ -116,6 +116,26 @@ export function useWeeklySales() {
     Single: { firm: 0, medium: 0, soft: 0 }
   })
 
+  // Model (range) distribution by size - needed for accurate component demand
+  // Cloud uses 2 micros, Aurora uses 1, Cooper uses 0
+  const modelDistribution = ref({
+    King: { cloud: 0, aurora: 0, cooper: 0 },
+    Queen: { cloud: 0, aurora: 0, cooper: 0 },
+    Double: { cloud: 0, aurora: 0, cooper: 0 },
+    'King Single': { cloud: 0, aurora: 0, cooper: 0 },
+    Single: { cloud: 0, aurora: 0, cooper: 0 }
+  })
+
+  // Micro coils multiplier per size (weighted by model mix)
+  // Cloud=2, Aurora=1, Cooper=0
+  const microMultiplier = ref({
+    King: 1.5,
+    Queen: 1.5,
+    Double: 0,
+    'King Single': 0,
+    Single: 0
+  })
+
   const totalSales = ref(0)
   const dateRange = ref({ start: null, end: null })
 
@@ -187,15 +207,46 @@ export function useWeeklySales() {
         Single: { firm: 0, medium: 0, soft: 0, total: 0 }
       }
 
-      // Aggregate sales by size and firmness
+      // Track model counts by size
+      const modelCounts = {
+        King: { cloud: 0, aurora: 0, cooper: 0 },
+        Queen: { cloud: 0, aurora: 0, cooper: 0 },
+        Double: { cloud: 0, aurora: 0, cooper: 0 },
+        'King Single': { cloud: 0, aurora: 0, cooper: 0 },
+        Single: { cloud: 0, aurora: 0, cooper: 0 }
+      }
+
+      // Aggregate sales by size, firmness, and model
       for (const sale of sales) {
         if (demand[sale.size]) {
           demand[sale.size][sale.firmnessType]++
           demand[sale.size].total++
+
+          // Track model distribution
+          if (modelCounts[sale.size] && sale.range) {
+            modelCounts[sale.size][sale.range]++
+          }
         }
       }
 
       demandBySize.value = demand
+      modelDistribution.value = modelCounts
+
+      // Calculate micro multiplier based on model mix
+      // Cloud=2 micros, Aurora=1 micro, Cooper=0 micros
+      const microMult = {}
+      for (const size of Object.keys(modelCounts)) {
+        const total = demand[size].total
+        if (total > 0) {
+          const cloudCount = modelCounts[size].cloud
+          const auroraCount = modelCounts[size].aurora
+          // Weighted average: (cloud*2 + aurora*1 + cooper*0) / total
+          microMult[size] = Math.round(((cloudCount * 2) + (auroraCount * 1)) / total * 100) / 100
+        } else {
+          microMult[size] = 0
+        }
+      }
+      microMultiplier.value = microMult
 
       // Calculate weekly rates (divide by 6 weeks)
       const weeks = LOOKBACK_DAYS / 7
@@ -255,6 +306,8 @@ export function useWeeklySales() {
     weeklyRates: readonly(weeklyRates),
     monthlyRates: readonly(monthlyRates),
     firmnessDistribution: readonly(firmnessDistribution),
+    modelDistribution: readonly(modelDistribution),
+    microMultiplier: readonly(microMultiplier),
     totalSales: readonly(totalSales),
     dateRange: readonly(dateRange),
     refresh: fetchSalesData
