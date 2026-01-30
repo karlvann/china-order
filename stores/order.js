@@ -6,7 +6,6 @@ import {
   calculateAnnualProjection
 } from '~/lib/algorithms/index.js'
 
-import { validateEqualRunway } from '~/lib/utils/validation.js'
 import { MONTHLY_SALES_RATE } from '~/lib/constants/index.js'
 
 export const useOrderStore = defineStore('order', () => {
@@ -44,18 +43,6 @@ export const useOrderStore = defineStore('order', () => {
     return optimizeComponentOrder(
       componentOrder.value,
       settingsStore.exportFormat
-    )
-  })
-
-  const validation = computed(() => {
-    const inventoryStore = useInventoryStore()
-
-    if (!springOrder.value || !componentOrder.value) return null
-
-    return validateEqualRunway(
-      springOrder.value,
-      componentOrder.value,
-      inventoryStore.fullInventory
     )
   })
 
@@ -107,10 +94,6 @@ export const useOrderStore = defineStore('order', () => {
     }
   })
 
-  const hasValidationIssues = computed(() => {
-    return validation.value && !validation.value.allValid
-  })
-
   const totalSprings = computed(() => {
     if (!springOrder.value) return 0
     return springOrder.value.metadata.total_springs
@@ -125,11 +108,9 @@ export const useOrderStore = defineStore('order', () => {
     springOrder,
     componentOrder,
     optimizedComponentOrder,
-    validation,
     tsvContent,
     coverageData,
     annualProjection,
-    hasValidationIssues,
     totalSprings,
     totalPallets
   }

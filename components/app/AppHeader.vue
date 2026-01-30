@@ -23,11 +23,9 @@ const handleSignOut = async () => {
         <span class="text-lg font-bold text-brand tracking-tight">AusBeds</span>
         <span class="text-lg text-zinc-700 font-light">|</span>
         <span class="px-2.5 py-0.5 bg-brand/20 border border-brand/40 rounded text-[10px] font-bold tracking-wider text-brand-light">CHINA</span>
-        <span class="text-lg text-zinc-700 font-light">|</span>
-        <span class="text-lg font-semibold text-zinc-200 tracking-tight">Spring Order</span>
       </div>
       <div class="text-[11px] text-zinc-500">
-        Springs & Components | Coverage-Equalized Ordering
+        Coverage-equalized ordering
       </div>
     </div>
 
