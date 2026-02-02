@@ -31,11 +31,6 @@ pnpm-debug.log*
 *.sw?
 *.local
 
-# Test artifacts
-test-results/
-playwright-report/
-coverage/
-
 # Misc
 *.local
 .nitro

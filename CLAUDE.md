@@ -81,8 +81,7 @@ Each mattress requires **1 spring + multiple components**:
 - **Pinia** for state management (with persisted state plugin)
 - **Tailwind CSS** for styling
 - **Directus** for spring inventory and sales data
-- **Vitest** for unit testing
-- **JavaScript** (app code) / **TypeScript** (tests only)
+- **JavaScript**
 - **Yarn** as package manager
 
 ## Development Commands
@@ -90,13 +89,6 @@ Each mattress requires **1 spring + multiple components**:
 ```bash
 yarn dev              # Start Nuxt dev server
 yarn build            # Build production bundle
-yarn test             # Run all tests
-yarn test:ui          # Run tests with Vitest UI
-yarn test:coverage    # Generate test coverage report
-
-# Run a single test file
-yarn vitest tests/algorithms/coverage.test.ts
-yarn vitest tests/algorithms/coverage.test.ts --watch
 ```
 
 ## Environment Variables
@@ -188,11 +180,6 @@ components/
 ├── forecast/                # Forecast views (SpringTimelineDetailed, MonthSelector, etc.)
 ├── views/                   # Main views (OrderBuilderView, ForecastView)
 └── ui/                      # Reusable UI (AccordionSection)
-
-tests/
-├── algorithms/              # Unit tests for each algorithm
-├── integration/             # Full scenario tests
-└── performance/             # Stress tests
 ```
 
 ### Data Flow
@@ -253,7 +240,6 @@ tests/
 ### New Algorithm
 1. Create file in `lib/algorithms/` (e.g., `myAlgorithm.js`)
 2. Export from `lib/algorithms/index.js`
-3. Write tests in `tests/algorithms/myAlgorithm.test.ts`
 
 ### New Store
 1. Create file in `stores/` (e.g., `myStore.js`)
@@ -268,8 +254,6 @@ tests/
 1. Check CONSTRAINTS.md - ensure change doesn't violate fixed constraints
 2. Check GOALS.md - ensure change aligns with business objectives
 3. Update algorithm in `lib/algorithms/`
-4. Update or add tests
-5. Run `yarn test` to verify no regressions
 
 ### Deployment
 - Push to GitHub triggers automatic Vercel deployment

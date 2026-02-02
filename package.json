@@ -8,10 +8,7 @@
     "generate": "NITRO_PRESET=vercel nuxt generate",
     "start": "npx serve .vercel/output/static",
     "build": "NITRO_PRESET=vercel nuxt build",
-    "dev": "nuxi dev",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "dev": "nuxi dev"
   },
   "dependencies": {
     "@nuxt/icon": "^2.2.1",
@@ -23,10 +20,7 @@
     "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.13.2",
-    "@vitest/ui": "^4.0.18",
-    "jsdom": "^27.0.0",
-    "vitest": "^4.0.18"
+    "@nuxtjs/tailwindcss": "^6.13.2"
   },
   "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

@@ -7,10 +7,9 @@ A React-based inventory management and order planning tool for mattress manufact
 ## 🚀 Quick Start
 
 ```bash
-npm install
-npm run dev          # Start development server (http://localhost:5173)
-npm test             # Run test suite (129 tests)
-npm run build        # Build for production
+yarn install
+yarn dev             # Start development server
+yarn build           # Build for production
 ```
 
 ## 📊 What It Does
@@ -46,56 +45,6 @@ The system helps you plan container orders by:
 
 See `GOALS.md` and `CONSTRAINTS.md` for detailed documentation.
 
-## 🧪 Testing
-
-### Test Suite Overview
-
-**129 tests across 15 test files:**
-- ✅ Algorithm tests (48 tests)
-- ✅ Integration tests (29 tests)
-- ✅ Performance tests (11 tests)
-- ✅ Business validation tests (11 tests)
-- ✅ Real-world analysis tests (10 tests)
-- ✅ Firmness depletion tests (20 tests)
-
-### Run Tests
-
-```bash
-npm test                    # Run all tests
-npm run test:ui            # Interactive UI
-npm run test:coverage      # Coverage report
-
-# Run specific test file
-npm test tests/algorithms/componentCalc.test.ts
-```
-
-### Test Categories
-
-#### 1. Algorithm Tests
-- `coverage.test.ts` - Coverage calculation validation
-- `criticalSizes.test.ts` - Critical size detection
-- `nPlusOptimization.test.ts` - N+ pallet allocation
-- `componentCalc.test.ts` - Component order calculation
-- `equalRunway.test.ts` - Equal runway validation (CRITICAL)
-- `executionOrder.test.ts` - Dependency chain validation
-
-#### 2. Integration Tests
-- `fullOrderScenarios.test.ts` - 10 real-world scenarios
-- `extremeEdgeCases.test.ts` - Extreme edge cases
-
-#### 3. Performance Tests
-- `stressTests.test.ts` - Performance benchmarks
-
-### Performance Benchmarks
-
-| Operation | Time | Notes |
-|-----------|------|-------|
-| Full pipeline | 0.048ms | Springs → Components → TSV |
-| Spring order | 0.033ms | N+ optimization |
-| Component order | 0.022ms | Formula + consolidation |
-| Validation | 0.017ms | Equal runway check |
-| TSV export | 0.027ms | Ready to copy |
-
 ## 📁 Project Structure
 
 ```
@@ -124,26 +73,17 @@ src/
     │   ├── order.ts             # Order types
     │   └── component.ts         # Component types
     └── utils/
-        ├── inventory.ts         # Inventory helpers
         └── validation.ts        # Equal runway validation
-
-tests/
-├── algorithms/                  # Algorithm unit tests (48 tests)
-├── integration/                 # Integration tests (29 tests)
-└── performance/                 # Performance tests (11 tests)
-
-api/
-└── saves.js                     # Vercel serverless function (KV storage)
 ```
 
 ## 🔧 Development
 
 ### Tech Stack
-- **React 19** with hooks
-- **Vite** for build tooling
-- **Vitest** for testing (129 tests)
-- **TypeScript** for types (mixed JS/TS)
-- **Vercel** for deployment + KV storage
+- **Nuxt 4** (Vue 3 with Composition API)
+- **Pinia** for state management
+- **Tailwind CSS** for styling
+- **Directus** for data
+- **Vercel** for deployment
 
 ### Key Algorithms
 
@@ -174,8 +114,6 @@ Ensures all firmnesses deplete at the same rate:
 - **CLAUDE.md** - Project overview and AI assistant guidance
 - **GOALS.md** - Business objectives and optimization priorities
 - **CONSTRAINTS.md** - Fixed business constraints
-- **TEST_AND_OPTIMIZATION_SUMMARY.md** - Complete test suite documentation
-- **SAMPLE_DATA_README.md** - Sample data usage guide
 
 ## 🚢 Deployment
 
@@ -229,7 +167,6 @@ Never suggest changes to:
 For issues or questions:
 - See documentation in `CLAUDE.md`
 - Review `GOALS.md` for business context
-- Check `TEST_AND_OPTIMIZATION_SUMMARY.md` for test details
 
 ## 📄 License
 
