@@ -27,16 +27,6 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  microMultiplier: {
-    type: Object,
-    default: () => ({
-      King: 0,
-      Queen: 0,
-      Double: 0,
-      'King Single': 0,
-      Single: 0
-    })
-  },
   showYellowWarnings: {
     type: Boolean,
     default: false
@@ -99,65 +89,44 @@ const weeks = computed(() => {
  * - panelsidedouble: Double + King Single + Single (all 1:1)
  */
 
-// Define all component inventory rows with their demand sources
+// Define all component inventory rows with their demand sources (all weekly)
 const componentRows = computed(() => {
-  const rates = props.usageRates.MONTHLY_SALES_RATE
-  const microMult = props.microMultiplier
-
-  // Helper to convert monthly to weekly
-  const toWeekly = (monthly) => monthly / (30 / 7)
+  const rates = props.usageRates.WEEKLY_SALES_RATE
+  // Direct demand from sales data (weekly rates)
+  const microWeekly = props.usageRates.MICRO_COIL_WEEKLY_DEMAND || { King: 0, Queen: 0 }
+  const latexWeekly = props.usageRates.THIN_LATEX_WEEKLY_DEMAND || { King: 0, Queen: 0 }
 
   return [
-    // Micro Coils - King inventory (used by King + 0.5×Single)
-    {
-      id: 'micro_coils',
-      inventorySize: 'King',
-      label: 'Micro Coils (King)',
-      monthlyDemand: (rates.King * microMult.King) + (rates.Single * 0.5 * microMult.Single)
-    },
-    // Micro Coils - Queen inventory (used by Queen + Double + King Single)
-    {
-      id: 'micro_coils',
-      inventorySize: 'Queen',
-      label: 'Micro Coils (Queen)',
-      monthlyDemand: (rates.Queen * microMult.Queen) + (rates.Double * microMult.Double) + (rates['King Single'] * microMult['King Single'])
-    },
-    // Thin Latex - King inventory (used by King + 0.5×Single)
-    {
-      id: 'thin_latex',
-      inventorySize: 'King',
-      label: 'Thin Latex (King)',
-      monthlyDemand: (rates.King * microMult.King) + (rates.Single * 0.5 * microMult.Single)
-    },
-    // Thin Latex - Queen inventory (used by Queen + Double + King Single)
-    {
-      id: 'thin_latex',
-      inventorySize: 'Queen',
-      label: 'Thin Latex (Queen)',
-      monthlyDemand: (rates.Queen * microMult.Queen) + (rates.Double * microMult.Double) + (rates['King Single'] * microMult['King Single'])
-    },
+    // Micro Coils - King inventory (direct from sales: King + 0.5×Single, weighted by model)
+    { id: 'micro_coils', inventorySize: 'King', label: 'Micro Coils (King)', weeklyDemand: microWeekly.King },
+    // Micro Coils - Queen inventory (direct from sales: Queen + Double + King Single, weighted by model)
+    { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen },
+    // Thin Latex - King inventory (always 1:1 with micro coils)
+    { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King },
+    // Thin Latex - Queen inventory (always 1:1 with micro coils)
+    { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen },
     // Felt - 1:1 with mattress sales by size
-    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', monthlyDemand: rates.King },
-    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', monthlyDemand: rates.Queen },
-    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', monthlyDemand: rates.Double },
-    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', monthlyDemand: rates['King Single'] },
-    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', monthlyDemand: rates.Single },
+    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King },
+    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen },
+    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', weeklyDemand: rates.Double },
+    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', weeklyDemand: rates['King Single'] },
+    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', weeklyDemand: rates.Single },
     // Top Panel - 1:1 with mattress sales by size
-    { id: 'top_panel', inventorySize: 'King', label: 'Top Panel (King)', monthlyDemand: rates.King },
-    { id: 'top_panel', inventorySize: 'Queen', label: 'Top Panel (Queen)', monthlyDemand: rates.Queen },
-    { id: 'top_panel', inventorySize: 'Double', label: 'Top Panel (Double)', monthlyDemand: rates.Double },
-    { id: 'top_panel', inventorySize: 'King Single', label: 'Top Panel (King Single)', monthlyDemand: rates['King Single'] },
-    { id: 'top_panel', inventorySize: 'Single', label: 'Top Panel (Single)', monthlyDemand: rates.Single },
+    { id: 'top_panel', inventorySize: 'King', label: 'Top Panel (King)', weeklyDemand: rates.King },
+    { id: 'top_panel', inventorySize: 'Queen', label: 'Top Panel (Queen)', weeklyDemand: rates.Queen },
+    { id: 'top_panel', inventorySize: 'Double', label: 'Top Panel (Double)', weeklyDemand: rates.Double },
+    { id: 'top_panel', inventorySize: 'King Single', label: 'Top Panel (King Single)', weeklyDemand: rates['King Single'] },
+    { id: 'top_panel', inventorySize: 'Single', label: 'Top Panel (Single)', weeklyDemand: rates.Single },
     // Bottom Panel - 1:1 with mattress sales by size
-    { id: 'bottom_panel', inventorySize: 'King', label: 'Bottom Panel (King)', monthlyDemand: rates.King },
-    { id: 'bottom_panel', inventorySize: 'Queen', label: 'Bottom Panel (Queen)', monthlyDemand: rates.Queen },
-    { id: 'bottom_panel', inventorySize: 'Double', label: 'Bottom Panel (Double)', monthlyDemand: rates.Double },
-    { id: 'bottom_panel', inventorySize: 'King Single', label: 'Bottom Panel (King Single)', monthlyDemand: rates['King Single'] },
-    { id: 'bottom_panel', inventorySize: 'Single', label: 'Bottom Panel (Single)', monthlyDemand: rates.Single },
+    { id: 'bottom_panel', inventorySize: 'King', label: 'Bottom Panel (King)', weeklyDemand: rates.King },
+    { id: 'bottom_panel', inventorySize: 'Queen', label: 'Bottom Panel (Queen)', weeklyDemand: rates.Queen },
+    { id: 'bottom_panel', inventorySize: 'Double', label: 'Bottom Panel (Double)', weeklyDemand: rates.Double },
+    { id: 'bottom_panel', inventorySize: 'King Single', label: 'Bottom Panel (King Single)', weeklyDemand: rates['King Single'] },
+    { id: 'bottom_panel', inventorySize: 'Single', label: 'Bottom Panel (Single)', weeklyDemand: rates.Single },
     // Side Panel - King (King only), Queen (Queen only), Double (Double + King Single + Single)
-    { id: 'side_panel', inventorySize: 'King', label: 'Side Panel (King)', monthlyDemand: rates.King },
-    { id: 'side_panel', inventorySize: 'Queen', label: 'Side Panel (Queen)', monthlyDemand: rates.Queen },
-    { id: 'side_panel', inventorySize: 'Double', label: 'Side Panel (Double)', monthlyDemand: rates.Double + rates['King Single'] + rates.Single }
+    { id: 'side_panel', inventorySize: 'King', label: 'Side Panel (King)', weeklyDemand: rates.King },
+    { id: 'side_panel', inventorySize: 'Queen', label: 'Side Panel (Queen)', weeklyDemand: rates.Queen },
+    { id: 'side_panel', inventorySize: 'Double', label: 'Side Panel (Double)', weeklyDemand: rates.Double + rates['King Single'] + rates.Single }
   ]
 })
 
@@ -166,7 +135,7 @@ const rows = computed(() => {
   const result = []
 
   componentRows.value.forEach(comp => {
-    const weeklyRate = comp.monthlyDemand / (30 / 7)
+    const weeklyRate = comp.weeklyDemand
     const currentStock = props.inventory.components[comp.id]?.[comp.inventorySize] || 0
     const orderAmount = props.componentOrder?.[comp.id]?.[comp.inventorySize] || 0
 
@@ -273,8 +242,9 @@ const getCellBg = (stock, weeklyRate) => {
 
     <p class="text-xs text-zinc-500 mt-3">
       Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
-      Demand based on inventory SKU mapping: Micro coils/Thin latex King = King + 0.5×Single (×model factor), Queen = Queen + Double + King Single (×model factor).
-      Side Panel Double = Double + King Single + Single. Model factor: Cloud=2, Aurora=1, Cooper=0.
+      Micro coils/Thin latex demand calculated directly from Cloud/Aurora/Cooper sales (Cloud=2 layers, Aurora=1, Cooper=0).
+      King inventory = King + 0.5×Single. Queen inventory = Queen + Double + King Single.
+      Side Panel Double = Double + King Single + Single.
     </p>
   </div>
 </template>

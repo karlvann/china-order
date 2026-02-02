@@ -81,11 +81,9 @@ const rows = computed(() => {
 
   MATTRESS_SIZES.forEach(size => {
     FIRMNESS_TYPES.forEach(firmness => {
-      // Convert monthly rate to weekly rate (divide by ~4.33 weeks/month)
-      // Use live firmness distribution from sales data
+      // Use weekly rate directly, apply firmness distribution
       const firmnessDistribution = props.usageRates.FIRMNESS_DISTRIBUTION?.[size.id]?.[firmness] || 0
-      const monthlyRate = props.usageRates.MONTHLY_SALES_RATE[size.id] * firmnessDistribution
-      const weeklyRate = monthlyRate / (30 / 7)
+      const weeklyRate = props.usageRates.WEEKLY_SALES_RATE[size.id] * firmnessDistribution
 
       const currentStock = props.inventory.springs[firmness][size.id] || 0
       const orderAmount = props.springOrder?.springs[firmness][size.id] || 0
@@ -108,7 +106,7 @@ const rows = computed(() => {
         projections.push({
           week: i,
           stock: Math.round(stock),
-          isCritical: stock < weeklyRate * 8 // Less than 2 months worth
+          isCritical: stock < weeklyRate * 8 // Less than 8 weeks worth
         })
       }
 

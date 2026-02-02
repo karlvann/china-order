@@ -9,25 +9,19 @@ const getSpringValue = (firmness, sizeId) => {
   return inventoryStore.springs[firmness]?.[sizeId] || 0
 }
 
-// Get monthly demand for a firmness/size
-const getMonthlyDemand = (firmness, sizeId) => {
-  const weeklyRate = weeklyRates.value[sizeId]?.[firmness] || 0
-  return weeklyRate * (30 / 7)
-}
-
-// Get coverage in months for a firmness/size
+// Get coverage in weeks for a firmness/size
 const getCoverage = (firmness, sizeId) => {
   const inventory = getSpringValue(firmness, sizeId)
-  const monthlyDemand = getMonthlyDemand(firmness, sizeId)
-  if (monthlyDemand === 0) return null
-  return inventory / monthlyDemand
+  const weeklyDemand = weeklyRates.value[sizeId]?.[firmness] || 0
+  if (weeklyDemand === 0) return null
+  return inventory / weeklyDemand
 }
 
-// Get coverage color class
+// Get coverage color class (thresholds in weeks: <8 red, <12 yellow, else green)
 const getCoverageColor = (coverage) => {
   if (coverage === null) return 'text-zinc-500'
-  if (coverage < 2) return 'text-red-400'
-  if (coverage < 3) return 'text-yellow-400'
+  if (coverage < 8) return 'text-red-400'
+  if (coverage < 12) return 'text-yellow-400'
   return 'text-green-400'
 }
 </script>
@@ -62,7 +56,7 @@ const getCoverageColor = (coverage) => {
               v-if="getCoverage(firmness, size.id) !== null"
               :class="['text-xs ml-1', getCoverageColor(getCoverage(firmness, size.id))]"
             >
-              ({{ getCoverage(firmness, size.id).toFixed(1) }}mo)
+              ({{ getCoverage(firmness, size.id).toFixed(0) }}wk)
             </span>
             <span v-else class="text-xs text-zinc-600 ml-1">
               (-)

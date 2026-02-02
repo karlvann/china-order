@@ -9,7 +9,6 @@ const props = defineProps({
 const inventoryStore = useInventoryStore()
 const orderStore = useOrderStore()
 const settingsStore = useSettingsStore()
-const { microMultiplier } = useWeeklySales()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -40,7 +39,7 @@ const orderWeekOptions = computed(() => {
         <p class="text-sm text-zinc-400">
           Projected stock levels with container arrival at Week 10 from order. Components and springs calculated to deplete together.
           <span v-if="usageRates" class="ml-3 text-brand-light">
-            ({{ Math.round(usageRates.TOTAL_MONTHLY_SALES / 4.33) }} units/week)
+            ({{ usageRates.TOTAL_WEEKLY_SALES }} units/week)
           </span>
         </p>
       </div>
@@ -104,7 +103,6 @@ const orderWeekOptions = computed(() => {
         :order-week-offset="settingsStore.orderWeekOffset"
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
-        :micro-multiplier="microMultiplier"
         :show-yellow-warnings="showYellowWarnings"
       />
 

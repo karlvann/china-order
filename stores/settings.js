@@ -15,7 +15,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const orderWeekOffset = ref(0) // 0-6 weeks from current week
   const currentView = ref('builder') // 'builder', 'forecast'
   const liveSalesRates = ref({
-    MONTHLY_SALES_RATE: {
+    WEEKLY_SALES_RATE: {
       King: 0,
       Queen: 0,
       Double: 0,
@@ -28,7 +28,9 @@ export const useSettingsStore = defineStore('settings', () => {
       Double: { firm: 0.2, medium: 0.6, soft: 0.2 },
       'King Single': { firm: 0.2, medium: 0.6, soft: 0.2 },
       Single: { firm: 0.2, medium: 0.6, soft: 0.2 }
-    }
+    },
+    MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
+    THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 }
   })
   const liveSalesLoaded = ref(false)
 
@@ -133,8 +135,8 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setLiveSalesRates = (monthlyRates, firmnessDistribution) => {
-    liveSalesRates.value.MONTHLY_SALES_RATE = { ...monthlyRates }
+  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand) => {
+    liveSalesRates.value.WEEKLY_SALES_RATE = { ...weeklyRates }
     if (firmnessDistribution) {
       // Convert percentage (0-100) to decimal (0-1)
       for (const size of Object.keys(firmnessDistribution)) {
@@ -144,6 +146,12 @@ export const useSettingsStore = defineStore('settings', () => {
           soft: (firmnessDistribution[size]?.soft || 0) / 100
         }
       }
+    }
+    if (microCoilDemand) {
+      liveSalesRates.value.MICRO_COIL_WEEKLY_DEMAND = { ...microCoilDemand }
+    }
+    if (thinLatexDemand) {
+      liveSalesRates.value.THIN_LATEX_WEEKLY_DEMAND = { ...thinLatexDemand }
     }
     liveSalesLoaded.value = true
   }

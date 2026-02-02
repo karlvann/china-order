@@ -1,5 +1,5 @@
 <script setup>
-import { MONTHLY_SALES_RATE, SPRINGS_PER_PALLET } from '~/lib/constants/index.js'
+import { SPRINGS_PER_PALLET } from '~/lib/constants/index.js'
 
 const props = defineProps({
   inventory: {
@@ -18,7 +18,7 @@ const props = defineProps({
 
 const orderStore = useOrderStore()
 
-// Calculate coverage changes
+// Calculate coverage changes (in weeks)
 const coverageChanges = computed(() => {
   if (!props.springOrder) return []
 
@@ -32,10 +32,10 @@ const coverageChanges = computed(() => {
     const orderStock = ['firm', 'medium', 'soft'].reduce(
       (sum, f) => sum + (props.springOrder.springs[f][size] || 0), 0
     )
-    const monthlySales = props.usageRates.MONTHLY_SALES_RATE[size]
+    const weeklySales = props.usageRates.WEEKLY_SALES_RATE[size]
 
-    const currentCoverage = monthlySales > 0 ? currentStock / monthlySales : 0
-    const afterCoverage = monthlySales > 0 ? (currentStock + orderStock) / monthlySales : 0
+    const currentCoverage = weeklySales > 0 ? currentStock / weeklySales : 0
+    const afterCoverage = weeklySales > 0 ? (currentStock + orderStock) / weeklySales : 0
     const pallets = props.springOrder.pallets.filter(p => p.size === size).length
 
     result.push({
@@ -52,10 +52,10 @@ const coverageChanges = computed(() => {
   return result
 })
 
-// Get coverage color
-const getCoverageColor = (months) => {
-  if (months < 2) return 'text-red-400'
-  if (months < 3) return 'text-yellow-400'
+// Get coverage color (thresholds in weeks: <8 red, <12 yellow, else green)
+const getCoverageColor = (weeks) => {
+  if (weeks < 8) return 'text-red-400'
+  if (weeks < 12) return 'text-yellow-400'
   return 'text-green-400'
 }
 </script>
@@ -106,13 +106,13 @@ const getCoverageColor = (months) => {
           <td class="table-cell text-center font-mono">{{ item.pallets }}</td>
           <td class="table-cell text-center font-mono">{{ item.orderStock }}</td>
           <td :class="['table-cell text-center font-mono', getCoverageColor(item.currentCoverage)]">
-            {{ item.currentCoverage.toFixed(1) }}mo
+            {{ item.currentCoverage.toFixed(0) }}wk
           </td>
           <td :class="['table-cell text-center font-mono', getCoverageColor(item.afterCoverage)]">
-            {{ item.afterCoverage.toFixed(1) }}mo
+            {{ item.afterCoverage.toFixed(0) }}wk
           </td>
           <td class="table-cell text-center font-mono text-brand-light">
-            {{ item.change > 0 ? '+' : '' }}{{ item.change.toFixed(1) }}mo
+            {{ item.change > 0 ? '+' : '' }}{{ item.change.toFixed(0) }}wk
           </td>
         </tr>
       </tbody>

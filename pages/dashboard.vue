@@ -53,11 +53,13 @@ onMounted(() => {
 
 // Usage rates from live Directus data
 const usageRates = computed(() => {
-  const totalMonthly = Object.values(settingsStore.liveSalesRates.MONTHLY_SALES_RATE).reduce((a, b) => a + b, 0)
+  const totalWeekly = Object.values(settingsStore.liveSalesRates.WEEKLY_SALES_RATE).reduce((a, b) => a + b, 0)
   return {
-    MONTHLY_SALES_RATE: settingsStore.liveSalesRates.MONTHLY_SALES_RATE,
+    WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
     FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION,
-    TOTAL_MONTHLY_SALES: Math.round(totalMonthly)
+    MICRO_COIL_WEEKLY_DEMAND: settingsStore.liveSalesRates.MICRO_COIL_WEEKLY_DEMAND,
+    THIN_LATEX_WEEKLY_DEMAND: settingsStore.liveSalesRates.THIN_LATEX_WEEKLY_DEMAND,
+    TOTAL_WEEKLY_SALES: Math.round(totalWeekly * 10) / 10
   }
 })
 

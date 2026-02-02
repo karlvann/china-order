@@ -98,14 +98,6 @@ export function useWeeklySales() {
     Single: { firm: 0, medium: 0, soft: 0, total: 0 }
   })
 
-  // Monthly rates (for comparison with existing MONTHLY_SALES_RATE)
-  const monthlyRates = ref({
-    King: 0,
-    Queen: 0,
-    Double: 0,
-    'King Single': 0,
-    Single: 0
-  })
 
   // Firmness distribution percentages by size
   const firmnessDistribution = ref({
@@ -126,15 +118,10 @@ export function useWeeklySales() {
     Single: { cloud: 0, aurora: 0, cooper: 0 }
   })
 
-  // Micro coils multiplier per size (weighted by model mix)
-  // Cloud=2, Aurora=1, Cooper=0
-  const microMultiplier = ref({
-    King: 1.5,
-    Queen: 1.5,
-    Double: 0,
-    'King Single': 0,
-    Single: 0
-  })
+  // Direct micro coil demand by inventory SKU (King or Queen)
+  // Calculated from actual Cloud/Aurora/Cooper sales
+  const microCoilDemand = ref({ King: 0, Queen: 0 })
+  const thinLatexDemand = ref({ King: 0, Queen: 0 })
 
   const totalSales = ref(0)
   const dateRange = ref({ start: null, end: null })
@@ -232,24 +219,41 @@ export function useWeeklySales() {
       demandBySize.value = demand
       modelDistribution.value = modelCounts
 
-      // Calculate micro multiplier based on model mix
-      // Cloud=2 micros, Aurora=1 micro, Cooper=0 micros
-      const microMult = {}
-      for (const size of Object.keys(modelCounts)) {
-        const total = demand[size].total
-        if (total > 0) {
-          const cloudCount = modelCounts[size].cloud
-          const auroraCount = modelCounts[size].aurora
-          // Weighted average: (cloud*2 + aurora*1 + cooper*0) / total
-          microMult[size] = Math.round(((cloudCount * 2) + (auroraCount * 1)) / total * 100) / 100
-        } else {
-          microMult[size] = 0
+      // Calculate direct micro coil/thin latex demand by inventory SKU
+      // Business rules:
+      // - Cloud = 2 micro spring layers, Aurora = 1 layer, Cooper = 0 layers
+      // - 1 layer = 1 micro coil + 1 thin latex
+      // - King mattress uses King inventory (1.0x)
+      // - Single mattress uses King inventory (0.5x - half a King)
+      // - Queen/Double/King Single all use Queen inventory (1.0x)
+      let microKing = 0
+      let microQueen = 0
+
+      for (const sale of sales) {
+        const layers = sale.range === 'cloud' ? 2 : sale.range === 'aurora' ? 1 : 0
+
+        if (layers > 0) {
+          if (sale.size === 'King') {
+            microKing += layers * 1.0
+          } else if (sale.size === 'Single') {
+            microKing += layers * 0.5
+          } else {
+            // Queen, Double, King Single all use Queen inventory
+            microQueen += layers * 1.0
+          }
         }
       }
-      microMultiplier.value = microMult
 
       // Calculate weekly rates (divide by 6 weeks)
       const weeks = LOOKBACK_DAYS / 7
+
+      // Convert micro coil totals to weekly rates
+      microCoilDemand.value = {
+        King: Math.round((microKing / weeks) * 10) / 10,
+        Queen: Math.round((microQueen / weeks) * 10) / 10
+      }
+      // Thin latex is always 1:1 with micro coils
+      thinLatexDemand.value = { ...microCoilDemand.value }
       const weekly = {}
       for (const size of Object.keys(demand)) {
         weekly[size] = {
@@ -260,13 +264,6 @@ export function useWeeklySales() {
         }
       }
       weeklyRates.value = weekly
-
-      // Calculate monthly rates (multiply weekly by ~4.33)
-      const monthly = {}
-      for (const size of Object.keys(weekly)) {
-        monthly[size] = Math.round(weekly[size].total * (30 / 7) * 10) / 10
-      }
-      monthlyRates.value = monthly
 
       // Calculate firmness distribution percentages
       const distribution = {}
@@ -284,8 +281,14 @@ export function useWeeklySales() {
       }
       firmnessDistribution.value = distribution
 
+      // Build weekly totals for the store
+      const weeklyTotals = {}
+      for (const size of Object.keys(weekly)) {
+        weeklyTotals[size] = weekly[size].total
+      }
+
       // Update settings store with live data
-      settingsStore.setLiveSalesRates(monthly, distribution)
+      settingsStore.setLiveSalesRates(weeklyTotals, distribution, microCoilDemand.value, thinLatexDemand.value)
 
     } catch (e) {
       error.value = e.message
@@ -304,10 +307,10 @@ export function useWeeklySales() {
     salesData: readonly(salesData),
     demandBySize: readonly(demandBySize),
     weeklyRates: readonly(weeklyRates),
-    monthlyRates: readonly(monthlyRates),
     firmnessDistribution: readonly(firmnessDistribution),
     modelDistribution: readonly(modelDistribution),
-    microMultiplier: readonly(microMultiplier),
+    microCoilDemand: readonly(microCoilDemand),
+    thinLatexDemand: readonly(thinLatexDemand),
     totalSales: readonly(totalSales),
     dateRange: readonly(dateRange),
     refresh: fetchSalesData

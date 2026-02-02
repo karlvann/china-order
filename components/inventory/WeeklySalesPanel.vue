@@ -6,7 +6,6 @@ const {
   error,
   demandBySize,
   weeklyRates,
-  monthlyRates,
   firmnessDistribution,
   totalSales,
   dateRange,
