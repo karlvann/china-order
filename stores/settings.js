@@ -13,7 +13,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-6 weeks from current week
-  const currentView = ref('builder') // 'builder', 'forecast', 'forecastv2'
+  const currentView = ref('builder') // 'builder', 'forecast'
   const liveSalesRates = ref({
     MONTHLY_SALES_RATE: {
       King: 0,
@@ -48,8 +48,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const isBuilderView = computed(() => currentView.value === 'builder')
 
   const isForecastView = computed(() => currentView.value === 'forecast')
-
-  const isForecastV2View = computed(() => currentView.value === 'forecastv2')
 
   // Get current ISO week number (1-52)
   const currentWeekNumber = computed(() => {
@@ -174,7 +172,6 @@ export const useSettingsStore = defineStore('settings', () => {
     isExactFormat,
     isBuilderView,
     isForecastView,
-    isForecastV2View,
     currentWeekNumber,
     orderWeekNumber,
     // Actions

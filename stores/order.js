@@ -2,8 +2,7 @@ import {
   calculateKingQueenFirstOrder,
   calculateComponentOrder,
   optimizeComponentOrder,
-  generateTSV,
-  calculateAnnualProjection
+  generateTSV
 } from '~/lib/algorithms/index.js'
 
 import { MONTHLY_SALES_RATE } from '~/lib/constants/index.js'
@@ -74,26 +73,6 @@ export const useOrderStore = defineStore('order', () => {
     return coverage
   })
 
-  const annualProjection = computed(() => {
-    const inventoryStore = useInventoryStore()
-    const settingsStore = useSettingsStore()
-
-    if (!springOrder.value || !componentOrder.value) return null
-
-    try {
-      return calculateAnnualProjection(
-        inventoryStore.fullInventory,
-        settingsStore.startingMonth,
-        springOrder.value,
-        componentOrder.value,
-        settingsStore.palletCount
-      )
-    } catch (error) {
-      console.error('Error calculating annual projection:', error)
-      return null
-    }
-  })
-
   const totalSprings = computed(() => {
     if (!springOrder.value) return 0
     return springOrder.value.metadata.total_springs
@@ -110,7 +89,6 @@ export const useOrderStore = defineStore('order', () => {
     optimizedComponentOrder,
     tsvContent,
     coverageData,
-    annualProjection,
     totalSprings,
     totalPallets
   }

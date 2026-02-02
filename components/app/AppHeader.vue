@@ -5,8 +5,7 @@ const { logout } = useDirectusAuth()
 
 const views = [
   { id: 'builder', label: 'Order Builder' },
-  { id: 'forecast', label: 'Forecast 1' },
-  { id: 'forecastv2', label: 'Forecast 2' }
+  { id: 'forecast', label: 'Forecast' }
 ]
 
 const handleSignOut = async () => {

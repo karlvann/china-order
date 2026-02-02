@@ -153,7 +153,6 @@ lib/                         # Business logic (MUST manually import)
 │   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── criticalSizes.js     # Detect critical small sizes
 │   ├── exportOptimization.js # Round to supplier lot sizes
-│   ├── multiContainerProjection.js # Annual forecast
 │   ├── palletCreation.js    # Allocate springs to pallets
 │   ├── tsvGeneration.js     # Export format for suppliers
 │   └── index.js             # Central exports
@@ -187,7 +186,7 @@ components/
 ├── order/                   # Order Builder (OrderHero, PalletCard, PalletList, etc.)
 ├── inventory/               # Tables (SpringInventoryTable, ComponentInventoryTable, WeeklySalesPanel)
 ├── forecast/                # Forecast views (SpringTimelineDetailed, MonthSelector, etc.)
-├── views/                   # Main views (OrderBuilderView, ForecastView, ForecastV2View)
+├── views/                   # Main views (OrderBuilderView, ForecastView)
 └── ui/                      # Reusable UI (AccordionSection)
 
 tests/

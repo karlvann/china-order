@@ -99,8 +99,7 @@ useHead({
       <!-- Main Views -->
       <template v-else>
         <ViewsOrderBuilderView v-if="settingsStore.isBuilderView" :usage-rates="usageRates" />
-        <ViewsForecastView v-else-if="settingsStore.isForecastView" :usage-rates="usageRates" />
-        <ViewsForecastV2View v-else :usage-rates="usageRates" />
+        <ViewsForecastView v-else :usage-rates="usageRates" />
       </template>
     </main>
 

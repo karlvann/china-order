@@ -34,11 +34,8 @@ const orderWeekOptions = computed(() => {
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Header -->
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-zinc-50 mb-2 flex items-center gap-4">
+        <h1 class="text-2xl font-bold text-zinc-50 mb-2">
           22-Week Inventory Forecast
-          <span class="badge badge-success text-sm">
-            ✓ Equal Runway Validated
-          </span>
         </h1>
         <p class="text-sm text-zinc-400">
           Projected stock levels with container arrival at Week 10 from order. Components and springs calculated to deplete together.
