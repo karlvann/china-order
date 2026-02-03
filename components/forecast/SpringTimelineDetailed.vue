@@ -1,5 +1,5 @@
 <script setup>
-import { MATTRESS_SIZES, FIRMNESS_TYPES } from '~/lib/constants/index.js'
+import { MATTRESS_SIZES, FIRMNESS_TYPES, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 
 const WEEKS_TO_SHOW = 40
 const ARRIVAL_WEEK = 10 // Container arrives 10 weeks after order
@@ -34,6 +34,10 @@ const props = defineProps({
   storedOrders: {
     type: Array,
     default: () => []
+  },
+  useSeasonalDemand: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -73,6 +77,16 @@ const getOrdersArrivingInWeek = (weekIndex) => {
   return props.storedOrders.filter(order => getOrderWeekIndex(order) === weekIndex)
 }
 
+// Get seasonal multiplier for a given week index
+const getSeasonalMultiplierForWeek = (weekIndex) => {
+  if (!props.useSeasonalDemand) return 1.0
+  const monday = getCurrentMonday()
+  const weekDate = new Date(monday)
+  weekDate.setDate(monday.getDate() + (weekIndex * 7))
+  const monthIndex = weekDate.getMonth()
+  return SEASONAL_DEMAND[monthIndex] || 1.0
+}
+
 // Generate week numbers for display (current week + 22 weeks)
 const weeks = computed(() => {
   const result = []
@@ -108,6 +122,9 @@ const weeks = computed(() => {
 
 // Generate rows for each size/firmness combination
 const rows = computed(() => {
+  // Access reactive prop to ensure recomputation
+  const useSeasonal = props.useSeasonalDemand
+
   const result = []
 
   MATTRESS_SIZES.forEach(size => {
@@ -126,8 +143,12 @@ const rows = computed(() => {
       const arrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
 
       for (let i = 0; i < WEEKS_TO_SHOW; i++) {
+        // Get seasonal multiplier for this week
+        const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
+        const adjustedRate = weeklyRate * seasonalMultiplier
+
         // Deplete for this week
-        stock = Math.max(0, stock - weeklyRate)
+        stock = Math.max(0, stock - adjustedRate)
 
         // Track additions this week
         let addedThisWeek = 0
@@ -150,7 +171,7 @@ const rows = computed(() => {
           week: i,
           stock: Math.round(stock),
           added: addedThisWeek,
-          isCritical: stock < weeklyRate * 8 // Less than 8 weeks worth
+          isCritical: stock < adjustedRate * 8 // Less than 8 weeks worth
         })
       }
 

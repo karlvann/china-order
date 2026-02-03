@@ -14,6 +14,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const currentView = ref('builder') // 'builder', 'forecast'
+  const useSeasonalDemand = ref(false) // Apply seasonal multipliers to forecast
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
       King: 0,
@@ -114,6 +115,14 @@ export const useSettingsStore = defineStore('settings', () => {
     orderWeekOffset.value = Math.max(0, Math.min(20, offset))
   }
 
+  const setUseSeasonalDemand = (value) => {
+    useSeasonalDemand.value = value
+  }
+
+  const toggleSeasonalDemand = () => {
+    useSeasonalDemand.value = !useSeasonalDemand.value
+  }
+
   const setCurrentView = (view) => {
     currentView.value = view
   }
@@ -173,6 +182,7 @@ export const useSettingsStore = defineStore('settings', () => {
     currentView,
     liveSalesRates,
     liveSalesLoaded,
+    useSeasonalDemand,
     // Getters
     isMinPallets,
     isMaxPallets,
@@ -191,6 +201,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setStartingMonth,
     setOrderWeekOffset,
     setCurrentView,
+    setUseSeasonalDemand,
+    toggleSeasonalDemand,
     loadFromStorage,
     saveToStorage,
     setLiveSalesRates,

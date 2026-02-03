@@ -133,6 +133,26 @@ const orderWeekOptions = computed(() => {
             />
           </button>
         </label>
+
+        <!-- Seasonal Demand Toggle -->
+        <label class="flex items-center gap-2 cursor-pointer">
+          <span class="text-sm text-zinc-400">Seasonal demand</span>
+          <button
+            type="button"
+            :class="[
+              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+              settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-zinc-600'
+            ]"
+            @click="settingsStore.toggleSeasonalDemand()"
+          >
+            <span
+              :class="[
+                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                settingsStore.useSeasonalDemand ? 'translate-x-6' : 'translate-x-1'
+              ]"
+            />
+          </button>
+        </label>
       </div>
 
       <!-- Spring timeline -->
@@ -144,6 +164,7 @@ const orderWeekOptions = computed(() => {
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
         :stored-orders="inventoryOrdersStore.orders"
+        :use-seasonal-demand="settingsStore.useSeasonalDemand"
       />
 
       <!-- Component timeline -->
@@ -156,6 +177,7 @@ const orderWeekOptions = computed(() => {
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
         :stored-orders="inventoryOrdersStore.orders"
+        :use-seasonal-demand="settingsStore.useSeasonalDemand"
       />
     </div>
 

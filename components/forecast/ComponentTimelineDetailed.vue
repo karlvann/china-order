@@ -1,4 +1,6 @@
 <script setup>
+import { SEASONAL_DEMAND } from '~/lib/constants/index.js'
+
 const WEEKS_TO_SHOW = 40
 const ARRIVAL_WEEK = 10 // Container arrives 10 weeks after order
 
@@ -36,6 +38,10 @@ const props = defineProps({
   storedOrders: {
     type: Array,
     default: () => []
+  },
+  useSeasonalDemand: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -82,6 +88,16 @@ const getOrderComponentQuantity = (order, componentType, size) => {
 // Get stored orders arriving in a specific week
 const getOrdersArrivingInWeek = (weekIndex) => {
   return props.storedOrders.filter(order => getOrderWeekIndex(order) === weekIndex)
+}
+
+// Get seasonal multiplier for a given week index
+const getSeasonalMultiplierForWeek = (weekIndex) => {
+  if (!props.useSeasonalDemand) return 1.0
+  const monday = getCurrentMonday()
+  const weekDate = new Date(monday)
+  weekDate.setDate(monday.getDate() + (weekIndex * 7))
+  const monthIndex = weekDate.getMonth()
+  return SEASONAL_DEMAND[monthIndex] || 1.0
 }
 
 // Generate week numbers for display
@@ -174,6 +190,9 @@ const componentRows = computed(() => {
 
 // Generate rows with projections
 const rows = computed(() => {
+  // Access reactive prop to ensure recomputation
+  const useSeasonal = props.useSeasonalDemand
+
   const result = []
 
   componentRows.value.forEach(comp => {
@@ -187,7 +206,11 @@ const rows = computed(() => {
     const arrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
 
     for (let i = 0; i < WEEKS_TO_SHOW; i++) {
-      stock = Math.max(0, stock - weeklyRate)
+      // Get seasonal multiplier for this week
+      const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
+      const adjustedRate = weeklyRate * seasonalMultiplier
+
+      stock = Math.max(0, stock - adjustedRate)
 
       // Track additions this week
       let addedThisWeek = 0
@@ -210,7 +233,7 @@ const rows = computed(() => {
         week: i,
         stock: Math.round(stock),
         added: addedThisWeek,
-        isCritical: stock < weeklyRate * 8
+        isCritical: stock < adjustedRate * 8
       })
     }
 
