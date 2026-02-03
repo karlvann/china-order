@@ -1,6 +1,8 @@
 <script setup>
-const WEEKS_TO_SHOW = 22
+const WEEKS_TO_SHOW = 40
 const ARRIVAL_WEEK = 10 // Container arrives 10 weeks after order
+
+const inventoryOrdersStore = useInventoryOrdersStore()
 
 const props = defineProps({
   inventory: {
@@ -30,6 +32,10 @@ const props = defineProps({
   showYellowWarnings: {
     type: Boolean,
     default: false
+  },
+  storedOrders: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -48,11 +54,43 @@ const formatShortDate = (date) => {
   return `${day} ${month}`
 }
 
+// Get week index for a stored order's expected arrival
+const getOrderWeekIndex = (order) => {
+  const monday = getCurrentMonday()
+  const arrivalDate = new Date(order.expected_arrival)
+  const diffMs = arrivalDate - monday
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
+}
+
+// Get component quantity from a stored order
+const getOrderComponentQuantity = (order, componentType, size) => {
+  if (!order.skus) return 0
+  const prefixes = {
+    micro_coils: 'microcoils',
+    thin_latex: 'thinlatex',
+    felt: 'felt',
+    top_panel: 'paneltop',
+    bottom_panel: 'panelbottom',
+    side_panel: 'panelside'
+  }
+  const prefix = prefixes[componentType] || componentType
+  const skuString = `${prefix}${size.toLowerCase().replace(' ', '')}`
+  const skuItem = order.skus.find(item => item.skus_id?.sku === skuString)
+  return skuItem?.quantity || 0
+}
+
+// Get stored orders arriving in a specific week
+const getOrdersArrivingInWeek = (weekIndex) => {
+  return props.storedOrders.filter(order => getOrderWeekIndex(order) === weekIndex)
+}
+
 // Generate week numbers for display
 const weeks = computed(() => {
   const result = []
   const startWeek = props.currentWeek
   const monday = getCurrentMonday()
+
+  const algorithmArrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
 
   for (let i = 0; i < WEEKS_TO_SHOW; i++) {
     let weekNum = startWeek + i
@@ -61,13 +99,17 @@ const weeks = computed(() => {
     const weekMonday = new Date(monday)
     weekMonday.setDate(monday.getDate() + (i * 7))
 
-    const arrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
+    // Check for stored orders arriving this week
+    const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
+    const hasStoredOrders = storedOrdersThisWeek.length > 0
 
     result.push({
       index: i,
       number: weekNum,
       date: formatShortDate(weekMonday),
-      isArrival: i === arrivalIndex
+      isArrival: i === algorithmArrivalIndex,
+      storedOrders: storedOrdersThisWeek,
+      hasStoredOrders
     })
   }
   return result
@@ -147,13 +189,27 @@ const rows = computed(() => {
     for (let i = 0; i < WEEKS_TO_SHOW; i++) {
       stock = Math.max(0, stock - weeklyRate)
 
+      // Track additions this week
+      let addedThisWeek = 0
+
+      // Add algorithm order arrival
       if (i === arrivalIndex) {
         stock += orderAmount
+        addedThisWeek += orderAmount
+      }
+
+      // Add stored order arrivals
+      const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
+      for (const order of storedOrdersThisWeek) {
+        const qty = getOrderComponentQuantity(order, comp.id, comp.inventorySize)
+        stock += qty
+        addedThisWeek += qty
       }
 
       projections.push({
         week: i,
         stock: Math.round(stock),
+        added: addedThisWeek,
         isCritical: stock < weeklyRate * 8
       })
     }
@@ -186,7 +242,7 @@ const getCellBg = (stock, weeklyRate) => {
 <template>
   <div class="mb-8">
     <h3 class="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-3">
-      Component Timeline
+      Component timeline
       <span class="text-sm font-normal text-zinc-500">({{ rows.length }} rows)</span>
     </h3>
 
@@ -197,18 +253,27 @@ const getCellBg = (stock, weeklyRate) => {
             <th class="table-header sticky left-0 bg-surfaceHover z-10 min-w-[180px]">Component (Size)</th>
             <th class="table-header sticky left-[180px] bg-surfaceHover z-10 text-center w-[70px]">Demand</th>
             <th class="table-header sticky left-[250px] bg-surfaceHover z-10 text-center w-[50px]">Now</th>
-            <th class="table-header sticky left-[300px] bg-surfaceHover z-10 text-center w-[50px]">+Order</th>
             <th
               v-for="week in weeks"
               :key="week.index"
               :class="[
-                'table-header text-center min-w-[62px]',
-                week.isArrival ? 'bg-brand/20' : ''
+                'table-header text-center',
+                week.hasStoredOrders ? 'min-w-[85px] bg-green-500/10' : week.isArrival ? 'min-w-[62px] bg-blue-500/10' : 'min-w-[62px]'
               ]"
             >
               <div>W{{ week.number }}</div>
               <div class="text-[9px] text-zinc-500 font-normal">{{ week.date }}</div>
-              <span v-if="week.isArrival" class="block text-[10px] text-brand-light">Arrival</span>
+              <span v-if="week.isArrival" class="block text-[10px] text-brand-light">Recommended</span>
+              <div v-if="week.hasStoredOrders">
+                <span
+                  v-for="order in week.storedOrders"
+                  :key="order.id"
+                  class="block text-[10px] text-green-400"
+                  :title="order.notes || 'No notes'"
+                >
+                  Order {{ inventoryOrdersStore.getOrderLetter(order.id) }}
+                </span>
+              </div>
             </th>
           </tr>
         </thead>
@@ -221,19 +286,16 @@ const getCellBg = (stock, weeklyRate) => {
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium text-xs">{{ row.label }}</td>
             <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-zinc-400 w-[70px]">{{ row.weeklyRate }}/wk</td>
             <td class="table-cell sticky left-[250px] bg-background z-10 text-center font-mono w-[50px]">{{ row.currentStock }}</td>
-            <td class="table-cell sticky left-[300px] bg-background z-10 text-center font-mono text-brand-light w-[50px]">
-              {{ row.orderAmount > 0 ? `+${row.orderAmount}` : '-' }}
-            </td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                getCellBg(proj.stock, row.weeklyRate),
-                weeks[proj.week]?.isArrival ? 'border-l-2 border-brand' : ''
+                weeks[proj.week]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week]?.isArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
-              {{ proj.stock }}
+              <span>{{ proj.stock }}</span>
+              <span v-if="proj.added > 0" class="text-green-400 text-[10px]"> (+{{ proj.added }})</span>
             </td>
           </tr>
         </tbody>

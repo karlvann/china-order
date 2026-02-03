@@ -4,7 +4,7 @@ const router = useRouter()
 const { logout } = useDirectusAuth()
 
 const views = [
-  { id: 'builder', label: 'Order Builder' },
+  { id: 'builder', label: 'Order builder' },
   { id: 'forecast', label: 'Forecast' }
 ]
 
@@ -45,13 +45,13 @@ const handleSignOut = async () => {
         </button>
       </div>
 
-      <!-- Sign Out Button -->
+      <!-- Sign out button -->
       <button
         @click="handleSignOut"
         class="flex items-center gap-1.5 px-4 py-2 bg-surface border border-border rounded-lg font-semibold text-zinc-400 hover:text-red-400 hover:bg-surfaceHover transition-colors text-sm"
       >
         <Icon name="heroicons:arrow-right-on-rectangle" class="w-4 h-4" />
-        <span>Sign Out</span>
+        <span>Sign out</span>
       </button>
     </div>
   </header>

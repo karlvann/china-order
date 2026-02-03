@@ -12,7 +12,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const palletCount = ref(DEFAULT_PALLETS)
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
-  const orderWeekOffset = ref(0) // 0-6 weeks from current week
+  const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const currentView = ref('builder') // 'builder', 'forecast'
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
@@ -111,7 +111,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const setOrderWeekOffset = (offset) => {
-    orderWeekOffset.value = Math.max(0, Math.min(6, offset))
+    orderWeekOffset.value = Math.max(0, Math.min(20, offset))
   }
 
   const setCurrentView = (view) => {

@@ -3,23 +3,23 @@
 
 <template>
   <div class="section-container py-6">
-    <!-- Order Hero -->
+    <!-- Order hero -->
     <OrderHero />
 
-    <!-- Accordion Sections -->
+    <!-- Accordion sections -->
     <div class="mt-6">
-      <!-- Detailed Order Breakdown -->
+      <!-- Detailed order breakdown -->
       <UiAccordionSection
         section-id="yourOrder"
-        title="Detailed Order Breakdown"
+        title="Detailed order breakdown"
       >
         <OrderPalletList :compact="true" />
       </UiAccordionSection>
 
-      <!-- Spring Inventory -->
+      <!-- Spring inventory -->
       <UiAccordionSection
         section-id="springInventory"
-        title="Spring Inventory"
+        title="Spring inventory"
       >
         <p class="text-sm text-zinc-400 mb-3">
           In brackets is the calculated monthly depletion based on weekly sales data.
@@ -27,10 +27,10 @@
         <InventorySpringInventoryTable />
       </UiAccordionSection>
 
-      <!-- Component Inventory -->
+      <!-- Component inventory -->
       <UiAccordionSection
         section-id="componentInventory"
-        title="Component Inventory"
+        title="Component inventory"
       >
         <p class="text-sm text-zinc-400 mb-3">
           Enter current component stock. Micro coils & thin latex only for King/Queen.
@@ -38,10 +38,10 @@
         <InventoryComponentInventoryTable />
       </UiAccordionSection>
 
-      <!-- Weekly Sales Data -->
+      <!-- Weekly sales data -->
       <UiAccordionSection
         section-id="weeklySales"
-        title="Weekly Sales (Demand)"
+        title="Weekly sales (demand)"
         badge="Live"
         badge-type="success"
       >

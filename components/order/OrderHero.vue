@@ -34,7 +34,8 @@ const sizeBreakdown = computed(() => {
 
   // Add small sizes if allocated
   if (order.metadata.small_size_pallets > 0) {
-    order.metadata.critical_sizes.forEach(size => {
+    const smallSizes = order.metadata.small_sizes_allocated || []
+    smallSizes.forEach(size => {
       const pallets = order.pallets.filter(p => p.size === size).length
       if (pallets > 0) {
         sizes.push({ name: size, pallets, color: 'text-amber-400' })
@@ -51,7 +52,7 @@ const sizeBreakdown = computed(() => {
     <!-- Header Row -->
     <div class="flex items-start justify-between mb-6">
       <div>
-        <h2 class="text-xl font-bold text-zinc-50 mb-1">Your Order</h2>
+        <h2 class="text-xl font-bold text-zinc-50 mb-1">Your order</h2>
         <p class="text-sm text-zinc-500">
           {{ orderStore.totalSprings }} springs across {{ orderStore.totalPallets }} pallets
         </p>

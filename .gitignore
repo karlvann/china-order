@@ -36,4 +36,5 @@ pnpm-debug.log*
 .nitro
 .cache
 .git
+.vercel
 .claude

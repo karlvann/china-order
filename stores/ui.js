@@ -6,6 +6,11 @@ export const useUIStore = defineStore('ui', () => {
   const downloadFeedback = ref(false)
   const isExporting = ref(false)
 
+  // Order modal state
+  const orderModalOpen = ref(false)
+  const editingOrderId = ref(null)
+  const prefillFromRecommendation = ref(false)
+
   // Actions
   const isSectionOpen = (sectionName) => {
     return openSection.value === sectionName
@@ -41,12 +46,34 @@ export const useUIStore = defineStore('ui', () => {
     isExporting.value = exporting
   }
 
+  // Order modal actions
+  const openOrderModal = (orderId = null) => {
+    editingOrderId.value = orderId
+    prefillFromRecommendation.value = false
+    orderModalOpen.value = true
+  }
+
+  const openOrderModalWithRecommendation = () => {
+    editingOrderId.value = null
+    prefillFromRecommendation.value = true
+    orderModalOpen.value = true
+  }
+
+  const closeOrderModal = () => {
+    orderModalOpen.value = false
+    editingOrderId.value = null
+    prefillFromRecommendation.value = false
+  }
+
   return {
     // State
     openSection,
     copyFeedback,
     downloadFeedback,
     isExporting,
+    orderModalOpen,
+    editingOrderId,
+    prefillFromRecommendation,
     // Actions
     isSectionOpen,
     toggleSection,
@@ -54,6 +81,9 @@ export const useUIStore = defineStore('ui', () => {
     closeAllSections,
     showCopyFeedback,
     showDownloadFeedback,
-    setExporting
+    setExporting,
+    openOrderModal,
+    openOrderModalWithRecommendation,
+    closeOrderModal
   }
 })

@@ -131,6 +131,24 @@ Components auto-import with path-based names:
 - Use **composables** for error handling and UI interactions
 - Call store actions directly from components
 
+### UI Text: Sentence Case
+
+Use **sentence case** for all UI text (headings, buttons, labels, section titles). Only capitalise the first word and proper nouns.
+
+**Correct:**
+- "Order week"
+- "Spring timeline"
+- "Save recommendation"
+- "40-week inventory forecast"
+
+**Incorrect:**
+- "Order Week"
+- "Spring Timeline"
+- "Save Recommendation"
+- "40-Week Inventory Forecast"
+
+The styling (font size, weight, colour) already indicates that text is a title or button - title case is unnecessary.
+
 ---
 
 ## Core Architecture
