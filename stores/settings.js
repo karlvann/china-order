@@ -13,7 +13,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
-  const currentView = ref('builder') // 'builder', 'forecast'
+  const currentView = ref('forecast') // 'forecast', 'builder'
   const useSeasonalDemand = ref(false) // Apply seasonal multipliers to forecast
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
@@ -169,7 +169,7 @@ export const useSettingsStore = defineStore('settings', () => {
     palletCount.value = DEFAULT_PALLETS
     exportFormat.value = 'optimized'
     startingMonth.value = new Date().getMonth()
-    currentView.value = 'builder'
+    currentView.value = 'forecast'
     saveToStorage()
   }
 

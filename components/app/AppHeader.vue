@@ -4,8 +4,8 @@ const router = useRouter()
 const { logout } = useDirectusAuth()
 
 const views = [
-  { id: 'builder', label: 'Order builder' },
-  { id: 'forecast', label: 'Forecast' }
+  { id: 'forecast', label: 'Forecast' },
+  { id: 'builder', label: 'Order builder' }
 ]
 
 const handleSignOut = async () => {

@@ -73,6 +73,24 @@ const orderWeekOptions = computed(() => {
   }
   return options
 })
+
+// Get number of pallets allocated to a size
+const getPalletsForSize = (size) => {
+  if (!orderStore.springOrder?.metadata) return 0
+  const meta = orderStore.springOrder.metadata
+  if (size === 'King') return meta.king_pallets || 0
+  if (size === 'Queen') return meta.queen_pallets || 0
+  // For small sizes, count from pallets array
+  const pallets = orderStore.springOrder.pallets || []
+  return pallets.filter(p => p.size === size).length
+}
+
+// Get total springs for a size (across all firmnesses)
+const getSpringsForSize = (size) => {
+  if (!orderStore.springOrder?.springs) return 0
+  const springs = orderStore.springOrder.springs
+  return (springs.firm[size] || 0) + (springs.medium[size] || 0) + (springs.soft[size] || 0)
+}
 </script>
 
 <template>
@@ -96,6 +114,39 @@ const orderWeekOptions = computed(() => {
 
       <!-- Controls -->
       <div class="flex items-center gap-6 mb-8 pb-6 border-b-2 border-border">
+        <!-- Pallet Count Selector -->
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Pallets:</label>
+          <div class="flex items-center gap-1">
+            <button
+              @click="settingsStore.decrementPallets()"
+              :disabled="settingsStore.isMinPallets"
+              :class="[
+                'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                settingsStore.isMinPallets
+                  ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'bg-surface hover:bg-surfaceHover text-zinc-50'
+              ]"
+            >
+              −
+            </button>
+            <span class="w-10 text-center text-zinc-50 font-semibold">{{ settingsStore.palletCount }}</span>
+            <button
+              @click="settingsStore.incrementPallets()"
+              :disabled="settingsStore.isMaxPallets"
+              :class="[
+                'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                settingsStore.isMaxPallets
+                  ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                  : 'bg-surface hover:bg-surfaceHover text-zinc-50'
+              ]"
+            >
+              +
+            </button>
+          </div>
+          <span class="text-xs text-zinc-500">({{ settingsStore.palletCount * 30 }} springs)</span>
+        </div>
+
         <!-- Order week Selector -->
         <div class="flex items-center gap-3">
           <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Order week:</label>
@@ -153,6 +204,28 @@ const orderWeekOptions = computed(() => {
             />
           </button>
         </label>
+      </div>
+
+      <!-- Pallet Allocation Summary -->
+      <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
+        <h3 class="text-sm font-semibold text-zinc-50 mb-3">Recommended order breakdown</h3>
+        <div class="flex flex-wrap items-center gap-4 text-sm">
+          <div
+            v-for="size in ['King', 'Queen', 'Double', 'King Single', 'Single']"
+            :key="size"
+            class="flex items-center gap-2"
+          >
+            <span class="text-zinc-400">{{ size }}:</span>
+            <span class="font-mono text-zinc-50">
+              {{ getPalletsForSize(size) }} pallets
+              <span class="text-zinc-500">({{ getSpringsForSize(size) }})</span>
+            </span>
+          </div>
+          <div class="ml-auto flex items-center gap-2 text-brand-light">
+            <span class="font-semibold">Total:</span>
+            <span class="font-mono">{{ orderStore.springOrder.metadata.total_pallets }} pallets ({{ orderStore.springOrder.metadata.total_springs }} springs)</span>
+          </div>
+        </div>
       </div>
 
       <!-- Spring timeline -->
