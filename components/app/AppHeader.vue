@@ -15,7 +15,7 @@ const handleSignOut = async () => {
 </script>
 
 <template>
-  <header class="sticky top-0 h-16 bg-[rgba(17,17,19,0.95)] backdrop-blur-sm border-b border-border flex items-center justify-between px-6 z-50">
+  <header class="h-16 bg-background border-b border-border flex items-center justify-between px-6">
     <!-- Brand -->
     <div>
       <div class="flex items-center gap-2.5 mb-0.5">

@@ -94,20 +94,20 @@ const getSpringsForSize = (size) => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-64px)] bg-background">
-    <!-- Controls - Sticky (top-16 = 64px to clear fixed header) -->
-    <div class="sticky top-16 z-30 bg-background border-b border-border">
-      <div class="max-w-[1600px] mx-auto px-6 py-3">
-        <div class="flex items-center gap-6">
+  <div class="min-h-screen bg-background">
+    <!-- Controls - Sticky -->
+    <div class="sticky top-0 z-30 bg-background border-b border-border">
+      <div class="max-w-[1600px] mx-auto px-6 py-4">
+        <div class="flex gap-5">
           <!-- Pallet Count Selector -->
-          <div class="flex items-center gap-3">
-            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Pallets:</label>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">Pallets</label>
             <div class="flex items-center gap-1">
               <button
                 @click="settingsStore.decrementPallets()"
                 :disabled="settingsStore.isMinPallets"
                 :class="[
-                  'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                  'w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition-colors',
                   settingsStore.isMinPallets
                     ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                     : 'bg-surface hover:bg-surfaceHover text-zinc-50'
@@ -115,12 +115,12 @@ const getSpringsForSize = (size) => {
               >
                 −
               </button>
-              <span class="w-10 text-center text-zinc-50 font-semibold">{{ settingsStore.palletCount }}</span>
+              <span class="w-8 text-center text-zinc-50 font-semibold text-sm">{{ settingsStore.palletCount }}</span>
               <button
                 @click="settingsStore.incrementPallets()"
                 :disabled="settingsStore.isMaxPallets"
                 :class="[
-                  'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                  'w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition-colors',
                   settingsStore.isMaxPallets
                     ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                     : 'bg-surface hover:bg-surfaceHover text-zinc-50'
@@ -128,17 +128,17 @@ const getSpringsForSize = (size) => {
               >
                 +
               </button>
+              <span class="text-xs text-zinc-500 ml-1">({{ settingsStore.palletCount * 30 }})</span>
             </div>
-            <span class="text-xs text-zinc-500">({{ settingsStore.palletCount * 30 }} springs)</span>
           </div>
 
           <!-- Order week Selector -->
-          <div class="flex items-center gap-3">
-            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Order week:</label>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">Order week</label>
             <select
               :value="settingsStore.orderWeekOffset"
               @change="settingsStore.setOrderWeekOffset(parseInt($event.target.value))"
-              class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[160px]"
+              class="py-1.5 px-3 bg-surface border border-border rounded text-zinc-50 text-sm cursor-pointer"
             >
               <option
                 v-for="option in orderWeekOptions"
@@ -151,20 +151,20 @@ const getSpringsForSize = (size) => {
           </div>
 
           <!-- Delivery Weeks Selector -->
-          <div class="flex items-center gap-3">
-            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Delivery weeks:</label>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">Delivery weeks</label>
             <select
               :value="settingsStore.deliveryWeeks"
               @change="settingsStore.setDeliveryWeeks(parseInt($event.target.value))"
-              class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[80px]"
+              class="py-1.5 px-3 bg-surface border border-border rounded text-zinc-50 text-sm cursor-pointer"
             >
               <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
             </select>
           </div>
 
           <!-- Yellow Warnings Toggle -->
-          <label class="flex items-center gap-2 cursor-pointer">
-            <span class="text-sm text-zinc-400">Low stock warnings</span>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">Low stock warnings</label>
             <button
               type="button"
               :class="[
@@ -180,11 +180,11 @@ const getSpringsForSize = (size) => {
                 ]"
               />
             </button>
-          </label>
+          </div>
 
           <!-- Seasonal Demand Toggle -->
-          <label class="flex items-center gap-2 cursor-pointer">
-            <span class="text-sm text-zinc-400">Seasonal demand</span>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">Seasonal demand</label>
             <button
               type="button"
               :class="[
@@ -200,13 +200,13 @@ const getSpringsForSize = (size) => {
                 ]"
               />
             </button>
-          </label>
+          </div>
 
           <!-- Save Recommendation Button -->
           <button
             v-if="orderStore.springOrder"
             @click="uiStore.openOrderModalWithRecommendation()"
-            class="ml-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+            class="ml-auto px-3 py-1.5 bg-surface hover:bg-surfaceHover border border-border text-zinc-300 hover:text-zinc-50 text-sm rounded transition-colors"
           >
             Save recommendation
           </button>
@@ -217,7 +217,7 @@ const getSpringsForSize = (size) => {
     <!-- Main Content -->
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Header -->
-      <div class="mb-6">
+      <!-- <div class="mb-6">
         <h1 class="text-2xl font-bold text-zinc-50 mb-2">
           40-week inventory forecast
         </h1>
@@ -227,7 +227,7 @@ const getSpringsForSize = (size) => {
             ({{ usageRates.TOTAL_WEEKLY_SALES }} units/week)
           </span>
         </p>
-      </div>
+      </div> -->
 
       <!-- Pending orders -->
       <OrdersOrderList />

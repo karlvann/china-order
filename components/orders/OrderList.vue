@@ -101,7 +101,7 @@ const exportOrderTSV = (order) => {
 </script>
 
 <template>
-  <div class="mb-8">
+  <div class="mb-10">
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-zinc-50">Pending orders</h2>
