@@ -159,6 +159,9 @@ const exportOrderTSV = (order) => {
               <span v-if="order.ordered" class="px-2 py-0.5 text-xs font-medium rounded bg-green-500/20 text-green-400">
                 Ordered
               </span>
+              <span v-else class="px-2 py-0.5 text-xs font-medium rounded bg-yellow-500/20 text-yellow-400">
+                Pending
+              </span>
             </div>
 
             <!-- Item Counts -->
