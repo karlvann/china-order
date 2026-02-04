@@ -5,6 +5,19 @@ const WEEKS_TO_SHOW = 40
 
 const inventoryOrdersStore = useInventoryOrdersStore()
 
+const emit = defineEmits(['scroll'])
+
+const scrollContainer = ref(null)
+
+// Expose scroll container for external sync
+defineExpose({
+  scrollTo: (left) => {
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollLeft = left
+    }
+  }
+})
+
 const props = defineProps({
   inventory: {
     type: Object,
@@ -304,7 +317,7 @@ const getCellBg = (stock, weeklyRate) => {
       <span class="text-sm font-normal text-zinc-500">({{ rows.length }} rows)</span>
     </h3>
 
-    <div class="overflow-x-auto">
+    <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">
       <table class="w-full text-xs">
         <thead>
           <tr class="bg-surfaceHover">

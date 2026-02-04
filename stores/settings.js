@@ -16,6 +16,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
   const currentView = ref('forecast') // 'forecast', 'builder'
   const useSeasonalDemand = ref(false) // Apply seasonal multipliers to forecast
+  const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
       King: 0,
@@ -128,6 +129,10 @@ export const useSettingsStore = defineStore('settings', () => {
     useSeasonalDemand.value = !useSeasonalDemand.value
   }
 
+  const setComponentScale = (scale) => {
+    componentScale.value = Math.max(0.3, Math.min(2.0, Math.round(scale * 10) / 10))
+  }
+
   const setCurrentView = (view) => {
     currentView.value = view
   }
@@ -189,6 +194,7 @@ export const useSettingsStore = defineStore('settings', () => {
     liveSalesRates,
     liveSalesLoaded,
     useSeasonalDemand,
+    componentScale,
     // Getters
     isMinPallets,
     isMaxPallets,
@@ -210,6 +216,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setCurrentView,
     setUseSeasonalDemand,
     toggleSeasonalDemand,
+    setComponentScale,
     loadFromStorage,
     saveToStorage,
     setLiveSalesRates,

@@ -15,6 +15,26 @@ const inventoryOrdersStore = useInventoryOrdersStore()
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
 
+// Refs for syncing timeline scroll
+const springTimelineRef = ref(null)
+const componentTimelineRef = ref(null)
+let isScrolling = false
+
+// Sync scroll between timelines (prevent infinite loop with flag)
+const onSpringScroll = (scrollLeft) => {
+  if (isScrolling) return
+  isScrolling = true
+  componentTimelineRef.value?.scrollTo(scrollLeft)
+  requestAnimationFrame(() => { isScrolling = false })
+}
+
+const onComponentScroll = (scrollLeft) => {
+  if (isScrolling) return
+  isScrolling = true
+  springTimelineRef.value?.scrollTo(scrollLeft)
+  requestAnimationFrame(() => { isScrolling = false })
+}
+
 // Get the Monday of the current week
 const getCurrentMonday = () => {
   const now = new Date()
@@ -164,7 +184,7 @@ const getSpringsForSize = (size) => {
 
           <!-- Yellow Warnings Toggle -->
           <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Low stock warnings</label>
+            <label class="text-sm font-semibold text-zinc-50">Warn low stock</label>
             <button
               type="button"
               :class="[
@@ -200,6 +220,33 @@ const getSpringsForSize = (size) => {
                 ]"
               />
             </button>
+          </div>
+
+          <!-- Component Scale Slider -->
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-semibold text-zinc-50">
+              Component adjust
+              <span class="font-normal text-zinc-400 ml-1">{{ settingsStore.componentScale.toFixed(1) }}×</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                type="range"
+                min="0.3"
+                max="2"
+                step="0.1"
+                :value="settingsStore.componentScale"
+                @input="settingsStore.setComponentScale(parseFloat($event.target.value))"
+                class="w-24 h-1.5 bg-zinc-600 rounded-lg appearance-none cursor-pointer accent-brand"
+              />
+              <button
+                v-if="settingsStore.componentScale !== 1"
+                @click="settingsStore.setComponentScale(1)"
+                class="text-xs text-zinc-500 hover:text-zinc-300"
+                title="Reset to 1.0"
+              >
+                Reset
+              </button>
+            </div>
           </div>
 
           <!-- Save Recommendation Button -->
@@ -256,6 +303,7 @@ const getSpringsForSize = (size) => {
 
       <!-- Spring timeline -->
       <ForecastSpringTimelineDetailed
+        ref="springTimelineRef"
         :inventory="inventoryStore.fullInventory"
         :spring-order="orderStore.springOrder"
         :order-week-offset="settingsStore.orderWeekOffset"
@@ -265,10 +313,12 @@ const getSpringsForSize = (size) => {
         :show-yellow-warnings="showYellowWarnings"
         :stored-orders="inventoryOrdersStore.orders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
+        @scroll="onSpringScroll"
       />
 
       <!-- Component timeline -->
       <ForecastComponentTimelineDetailed
+        ref="componentTimelineRef"
         :inventory="inventoryStore.fullInventory"
         :spring-order="orderStore.springOrder"
         :component-order="orderStore.componentOrder"
@@ -279,6 +329,7 @@ const getSpringsForSize = (size) => {
         :show-yellow-warnings="showYellowWarnings"
         :stored-orders="inventoryOrdersStore.orders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
+        @scroll="onComponentScroll"
       />
     </div>
 

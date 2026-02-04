@@ -54,20 +54,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Critical Business Constraint: Equal Runway Requirement
+## Critical Business Constraint: Components Match Springs
 
-Components and springs MUST ship together and deplete at the same rate.
+Components and springs MUST ship together. The component algorithm ensures balanced coverage across all component types.
 
-**Formula** (`lib/algorithms/componentCalc.js`):
-```javascript
-targetComponentStock = (currentSprings + orderedSprings) * componentMultiplier
-componentOrderNeeded = targetComponentStock - currentComponentStock
-```
+**See `docs/ALGORITHMS.md` for detailed algorithm documentation.**
 
 Each mattress requires **1 spring + multiple components**:
 - 1 spring (firm/medium/soft)
-- 1 felt, 1 top panel, 1 bottom panel, 1 side panel (1.0x multiplier)
-- 1.5 micro coils, 1.5 thin latex - King/Queen only (1.5x multiplier)
+- 1 felt, 1 top panel, 1 bottom panel, 1 side panel (1:1 with springs)
+- Micro coils & thin latex (King/Queen only):
+  - King inventory: King springs + 0.5× Single springs (Singles cut King in half)
+  - Queen inventory: Queen + Double + King Single springs (cut from Queen)
+  - Demand ratio from sales data (Cloud=2 layers, Aurora=1, Cooper=0)
 
 ---
 
@@ -156,10 +155,13 @@ The styling (font size, weight, colour) already indicates that text is a title o
 ### Directory Structure
 
 ```
+docs/                        # Documentation
+└── ALGORITHMS.md            # Detailed spring & component algorithm documentation
+
 lib/                         # Business logic (MUST manually import)
 ├── algorithms/              # Core ordering algorithms
-│   ├── demandBasedOrder.js   # Main ordering algorithm (proportional by demand)
-│   ├── componentCalc.js     # Derive component orders from springs
+│   ├── demandBasedOrder.js   # Spring ordering (coverage-priority allocation)
+│   ├── componentCalc.js     # Component ordering (balanced coverage)
 │   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── criticalSizes.js     # Detect critical small sizes
 │   ├── exportOptimization.js # Round to supplier lot sizes
@@ -220,7 +222,7 @@ components/
 - `springOrder`, `componentOrder`, `coverageData`, `validation`, `tsvContent`
 
 **`useSettingsStore()`** - App settings
-- `palletCount`, `exportFormat`, `currentView`, `startingMonth`, `useLiveSalesData`
+- `palletCount`, `exportFormat`, `currentView`, `startingMonth`, `componentScale`, `orderWeekOffset`, `deliveryWeeks`, `useSeasonalDemand`
 
 **`useUIStore()`** - UI state
 - `openSection`, `showSaveModal`, `copyFeedback`
