@@ -60,6 +60,23 @@ const formatShortDate = (date) => {
   return `${day} ${month}`
 }
 
+// Get current week date range (e.g., "2-8 Feb")
+const currentWeekRange = computed(() => {
+  const monday = getCurrentMonday()
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+
+  const startDay = monday.getDate()
+  const endDay = sunday.getDate()
+  const startMonth = monday.toLocaleDateString('en-AU', { month: 'short' })
+  const endMonth = sunday.toLocaleDateString('en-AU', { month: 'short' })
+
+  if (startMonth === endMonth) {
+    return `${startDay}-${endDay} ${endMonth}`
+  }
+  return `${startDay} ${startMonth}-${endDay} ${endMonth}`
+})
+
 // Get week index for a stored order's expected arrival
 const getOrderWeekIndex = (order) => {
   const monday = getCurrentMonday()
@@ -100,7 +117,7 @@ const getSeasonalMultiplierForWeek = (weekIndex) => {
   return SEASONAL_DEMAND[monthIndex] || 1.0
 }
 
-// Generate week numbers for display
+// Generate week numbers for display (starting from NEXT week, since "Now" shows current)
 const weeks = computed(() => {
   const result = []
   const startWeek = props.currentWeek
@@ -108,7 +125,8 @@ const weeks = computed(() => {
 
   const algorithmArrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
 
-  for (let i = 0; i < WEEKS_TO_SHOW; i++) {
+  // Start from i=1 (next week) since "Now" column shows current week
+  for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
     let weekNum = startWeek + i
     if (weekNum > 52) weekNum -= 52
 
@@ -186,10 +204,19 @@ const componentRows = computed(() => {
   ]
 })
 
+// Calculate remaining days in current week as a fraction (Mon=start of week)
+const getRemainingWeekFraction = () => {
+  const now = new Date()
+  const dayOfWeek = now.getDay() // 0=Sun, 1=Mon, ... 6=Sat
+  const daysRemaining = dayOfWeek === 0 ? 1 : 8 - dayOfWeek
+  return daysRemaining / 7
+}
+
 // Generate rows with projections
 const rows = computed(() => {
   // Access reactive prop to ensure recomputation
   const useSeasonal = props.useSeasonalDemand
+  const remainingWeekFraction = getRemainingWeekFraction()
 
   const result = []
 
@@ -199,22 +226,20 @@ const rows = computed(() => {
     const orderAmount = props.componentOrder?.[comp.id]?.[comp.inventorySize] || 0
 
     const projections = []
-    let stock = currentStock
+
+    // Start with current stock, minus remaining demand for this week
+    const currentWeekSeasonalMultiplier = getSeasonalMultiplierForWeek(0)
+    const remainingThisWeek = weeklyRate * currentWeekSeasonalMultiplier * remainingWeekFraction
+    let stock = currentStock - remainingThisWeek
 
     const arrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
 
-    for (let i = 0; i < WEEKS_TO_SHOW; i++) {
-      // Get seasonal multiplier for this week
-      const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
-      const adjustedRate = weeklyRate * seasonalMultiplier
-
-      // Deplete for this week (can go negative for backorders)
-      stock = stock - adjustedRate
-
+    // Start from week 1 (next week) since "Now" shows current stock
+    for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
       // Track additions this week
       let addedThisWeek = 0
 
-      // Add algorithm order arrival
+      // Add arrivals at BEGINNING of week (before recording stock)
       if (i === arrivalIndex) {
         stock += orderAmount
         addedThisWeek += orderAmount
@@ -228,12 +253,20 @@ const rows = computed(() => {
         addedThisWeek += qty
       }
 
+      // Get seasonal multiplier for this week
+      const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
+      const adjustedRate = weeklyRate * seasonalMultiplier
+
+      // Record BEGINNING of week stock (after arrivals, before depletion)
       projections.push({
         week: i,
         stock: Math.round(stock),
         added: addedThisWeek,
         isCritical: stock < adjustedRate * 8
       })
+
+      // Deplete for this week (affects next week's beginning stock)
+      stock = stock - adjustedRate
     }
 
     result.push({
@@ -274,7 +307,10 @@ const getCellBg = (stock, weeklyRate) => {
           <tr class="bg-surfaceHover">
             <th class="table-header sticky left-0 bg-surfaceHover z-10 min-w-[180px]">Component (Size)</th>
             <th class="table-header sticky left-[180px] bg-surfaceHover z-10 text-center w-[70px]">Demand</th>
-            <th class="table-header sticky left-[250px] bg-surfaceHover z-10 text-center w-[50px]">Now</th>
+            <th class="table-header sticky left-[250px] bg-zinc-700 z-10 text-center w-[70px] text-zinc-50">
+              <div>Now</div>
+              <div class="text-[9px] text-zinc-400 font-normal">{{ currentWeekRange }}</div>
+            </th>
             <th
               v-for="week in weeks"
               :key="week.index"
@@ -307,13 +343,13 @@ const getCellBg = (stock, weeklyRate) => {
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium text-xs">{{ row.label }}</td>
             <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-zinc-400 w-[70px]">{{ row.weeklyRate }}/wk</td>
-            <td class="table-cell sticky left-[250px] bg-background z-10 text-center font-mono w-[50px]">{{ row.currentStock }}</td>
+            <td class="table-cell sticky left-[250px] bg-zinc-800 z-10 text-center font-mono w-[70px] text-zinc-50">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week]?.isArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week - 1]?.isArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
               <span>{{ proj.stock }}</span>
