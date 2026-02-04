@@ -9,7 +9,7 @@ export const useUIStore = defineStore('ui', () => {
   // Order modal state
   const orderModalOpen = ref(false)
   const editingOrderId = ref(null)
-  const prefillFromRecommendation = ref(false)
+  const prefillFromNewOrder = ref(false)
 
   // Actions
   const isSectionOpen = (sectionName) => {
@@ -49,20 +49,20 @@ export const useUIStore = defineStore('ui', () => {
   // Order modal actions
   const openOrderModal = (orderId = null) => {
     editingOrderId.value = orderId
-    prefillFromRecommendation.value = false
+    prefillFromNewOrder.value = false
     orderModalOpen.value = true
   }
 
-  const openOrderModalWithRecommendation = () => {
+  const openOrderModalWithNewOrder = () => {
     editingOrderId.value = null
-    prefillFromRecommendation.value = true
+    prefillFromNewOrder.value = true
     orderModalOpen.value = true
   }
 
   const closeOrderModal = () => {
     orderModalOpen.value = false
     editingOrderId.value = null
-    prefillFromRecommendation.value = false
+    prefillFromNewOrder.value = false
   }
 
   return {
@@ -73,7 +73,7 @@ export const useUIStore = defineStore('ui', () => {
     isExporting,
     orderModalOpen,
     editingOrderId,
-    prefillFromRecommendation,
+    prefillFromNewOrder,
     // Actions
     isSectionOpen,
     toggleSection,
@@ -83,7 +83,7 @@ export const useUIStore = defineStore('ui', () => {
     showDownloadFeedback,
     setExporting,
     openOrderModal,
-    openOrderModalWithRecommendation,
+    openOrderModalWithNewOrder,
     closeOrderModal
   }
 })

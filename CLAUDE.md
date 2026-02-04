@@ -137,13 +137,13 @@ Use **sentence case** for all UI text (headings, buttons, labels, section titles
 **Correct:**
 - "Order week"
 - "Spring timeline"
-- "Save recommendation"
+- "New order"
 - "40-week inventory forecast"
 
 **Incorrect:**
 - "Order Week"
 - "Spring Timeline"
-- "Save Recommendation"
+- "New Order"
 - "40-Week Inventory Forecast"
 
 The styling (font size, weight, colour) already indicates that text is a title or button - title case is unnecessary.

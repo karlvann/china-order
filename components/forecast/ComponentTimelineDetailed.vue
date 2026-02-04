@@ -337,7 +337,7 @@ const getCellBg = (stock, weeklyRate) => {
             >
               <div>W{{ week.number }}</div>
               <div class="text-[9px] text-zinc-500 font-normal">{{ week.date }}</div>
-              <span v-if="week.isArrival" class="block text-[10px] text-brand-light">Recommended</span>
+              <span v-if="week.isArrival" class="block text-[10px] text-brand-light">New order</span>
               <div v-if="week.hasStoredOrders">
                 <span
                   v-for="order in week.storedOrders"

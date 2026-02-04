@@ -249,13 +249,13 @@ const getSpringsForSize = (size) => {
             </div>
           </div>
 
-          <!-- Save Recommendation Button -->
+          <!-- Save new order button -->
           <button
             v-if="orderStore.springOrder"
-            @click="uiStore.openOrderModalWithRecommendation()"
+            @click="uiStore.openOrderModalWithNewOrder()"
             class="ml-auto px-3 py-1.5 bg-surface hover:bg-surfaceHover border border-border text-zinc-300 hover:text-zinc-50 text-sm rounded transition-colors"
           >
-            Save recommendation
+            Save new order
           </button>
         </div>
       </div>
@@ -281,7 +281,7 @@ const getSpringsForSize = (size) => {
 
       <!-- Pallet Allocation Summary -->
       <!-- <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
-        <h3 class="text-sm font-semibold text-zinc-50 mb-3">Recommended order breakdown</h3>
+        <h3 class="text-sm font-semibold text-zinc-50 mb-3">New order breakdown</h3>
         <div class="flex flex-wrap items-center gap-4 text-sm">
           <div
             v-for="size in ['King', 'Queen', 'Double', 'King Single', 'Single']"

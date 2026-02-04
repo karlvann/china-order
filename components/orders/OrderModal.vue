@@ -86,8 +86,8 @@ const convertComponentOrderToSkuQuantities = (componentOrder) => {
   return quantities
 }
 
-// Wait for SKU data and then prefill from recommendation
-const prefillFromRecommendationWhenReady = async () => {
+// Wait for SKU data and then prefill from new order
+const prefillFromNewOrderWhenReady = async () => {
   // Ensure SKUs are loaded
   await skuLookup.fetchSkus()
 
@@ -131,15 +131,15 @@ const initForm = () => {
       }
       skuQuantities.value = quantities
     }
-  } else if (uiStore.prefillFromRecommendation && orderStore.springOrder) {
-    // Pre-fill from algorithm recommendation
+  } else if (uiStore.prefillFromNewOrder && orderStore.springOrder) {
+    // Pre-fill from new order builder
     orderDate.value = getTodayString()
     orderType.value = 'ship'
     expectedArrival.value = inventoryOrdersStore.calculateExpectedArrival(getTodayString(), 'ship')
-    notes.value = 'From recommendation'
+    notes.value = ''
     ordered.value = false
     // SKUs need to be loaded first - do this async
-    prefillFromRecommendationWhenReady()
+    prefillFromNewOrderWhenReady()
   } else {
     // Defaults for new order
     orderDate.value = getTodayString()
