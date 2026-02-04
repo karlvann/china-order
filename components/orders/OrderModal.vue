@@ -13,6 +13,7 @@ const ordered = ref(false)
 const skuQuantities = ref({})
 const saving = ref(false)
 const error = ref(null)
+const isInitializing = ref(false)
 
 // Is editing existing order
 const isEditing = computed(() => !!uiStore.editingOrderId)
@@ -107,6 +108,8 @@ const prefillFromRecommendationWhenReady = async () => {
 
 // Initialize form with order data or defaults
 const initForm = () => {
+  isInitializing.value = true
+
   if (uiStore.editingOrderId) {
     // Editing existing order
     const order = inventoryOrdersStore.getOrderById(uiStore.editingOrderId)
@@ -146,10 +149,16 @@ const initForm = () => {
     ordered.value = false
     skuQuantities.value = {}
   }
+
+  // Allow watchers to run after initialization completes
+  nextTick(() => {
+    isInitializing.value = false
+  })
 }
 
 // Watch for order type changes to recalculate arrival
 watch(orderType, (newType) => {
+  if (isInitializing.value) return
   if (orderDate.value) {
     expectedArrival.value = inventoryOrdersStore.calculateExpectedArrival(orderDate.value, newType)
   }
@@ -157,6 +166,7 @@ watch(orderType, (newType) => {
 
 // Watch for order date changes to recalculate arrival
 watch(orderDate, (newDate) => {
+  if (isInitializing.value) return
   if (newDate) {
     expectedArrival.value = inventoryOrdersStore.calculateExpectedArrival(newDate, orderType.value)
   }
