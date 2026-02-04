@@ -181,6 +181,7 @@ export const useOrderStore = defineStore('order', () => {
 
     // Access reactive deps upfront
     const orderOffset = settingsStore.orderWeekOffset
+    const deliveryWeeks = settingsStore.deliveryWeeks
     const salesLoaded = settingsStore.liveSalesLoaded
 
     if (!springOrder.value) return null
@@ -202,7 +203,8 @@ export const useOrderStore = defineStore('order', () => {
       inventoryStore.components,
       salesRates,
       pendingComponentOrders,
-      orderOffset
+      orderOffset,
+      deliveryWeeks
     )
   })
 

@@ -1,7 +1,6 @@
 <script setup>
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
-const orderStore = useOrderStore()
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -106,21 +105,12 @@ const exportOrderTSV = (order) => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-zinc-50">Pending orders</h2>
-      <div class="flex gap-2">
-        <button
-          v-if="orderStore.springOrder"
-          @click="uiStore.openOrderModalWithRecommendation()"
-          class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          Save recommendation
-        </button>
-        <button
-          @click="uiStore.openOrderModal()"
-          class="px-4 py-2 bg-surface hover:bg-surfaceHover border border-border text-zinc-50 text-sm font-semibold rounded-lg transition-colors"
-        >
-          + New order
-        </button>
-      </div>
+      <button
+        @click="uiStore.openOrderModal()"
+        class="px-4 py-2 bg-surface hover:bg-surfaceHover border border-border text-zinc-50 text-sm font-semibold rounded-lg transition-colors"
+      >
+        + New order
+      </button>
     </div>
 
     <!-- Loading State -->

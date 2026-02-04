@@ -94,7 +94,127 @@ const getSpringsForSize = (size) => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-64px)] bg-background overflow-y-auto">
+  <div class="min-h-[calc(100vh-64px)] bg-background">
+    <!-- Controls - Sticky (top-16 = 64px to clear fixed header) -->
+    <div class="sticky top-16 z-30 bg-background border-b border-border">
+      <div class="max-w-[1600px] mx-auto px-6 py-3">
+        <div class="flex items-center gap-6">
+          <!-- Pallet Count Selector -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Pallets:</label>
+            <div class="flex items-center gap-1">
+              <button
+                @click="settingsStore.decrementPallets()"
+                :disabled="settingsStore.isMinPallets"
+                :class="[
+                  'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                  settingsStore.isMinPallets
+                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                    : 'bg-surface hover:bg-surfaceHover text-zinc-50'
+                ]"
+              >
+                −
+              </button>
+              <span class="w-10 text-center text-zinc-50 font-semibold">{{ settingsStore.palletCount }}</span>
+              <button
+                @click="settingsStore.incrementPallets()"
+                :disabled="settingsStore.isMaxPallets"
+                :class="[
+                  'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
+                  settingsStore.isMaxPallets
+                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                    : 'bg-surface hover:bg-surfaceHover text-zinc-50'
+                ]"
+              >
+                +
+              </button>
+            </div>
+            <span class="text-xs text-zinc-500">({{ settingsStore.palletCount * 30 }} springs)</span>
+          </div>
+
+          <!-- Order week Selector -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Order week:</label>
+            <select
+              :value="settingsStore.orderWeekOffset"
+              @change="settingsStore.setOrderWeekOffset(parseInt($event.target.value))"
+              class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[160px]"
+            >
+              <option
+                v-for="option in orderWeekOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Delivery Weeks Selector -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Delivery weeks:</label>
+            <select
+              :value="settingsStore.deliveryWeeks"
+              @change="settingsStore.setDeliveryWeeks(parseInt($event.target.value))"
+              class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[80px]"
+            >
+              <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
+            </select>
+          </div>
+
+          <!-- Yellow Warnings Toggle -->
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="text-sm text-zinc-400">Low stock warnings</span>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                showYellowWarnings ? 'bg-brand' : 'bg-zinc-600'
+              ]"
+              @click="showYellowWarnings = !showYellowWarnings"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                  showYellowWarnings ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+          </label>
+
+          <!-- Seasonal Demand Toggle -->
+          <label class="flex items-center gap-2 cursor-pointer">
+            <span class="text-sm text-zinc-400">Seasonal demand</span>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-zinc-600'
+              ]"
+              @click="settingsStore.toggleSeasonalDemand()"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                  settingsStore.useSeasonalDemand ? 'translate-x-6' : 'translate-x-1'
+                ]"
+              />
+            </button>
+          </label>
+
+          <!-- Save Recommendation Button -->
+          <button
+            v-if="orderStore.springOrder"
+            @click="uiStore.openOrderModalWithRecommendation()"
+            class="ml-auto px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            Save recommendation
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Header -->
       <div class="mb-6">
@@ -102,7 +222,7 @@ const getSpringsForSize = (size) => {
           40-week inventory forecast
         </h1>
         <p class="text-sm text-zinc-400">
-          Projected stock levels with container arrival {{ settingsStore.deliveryWeeks }} weeks from order. Components and springs calculated to deplete together.
+          Projected stock levels with container arrival {{ settingsStore.deliveryWeeks }} weeks from order. Components match spring quantities (1:1).
           <span v-if="usageRates" class="ml-3 text-brand-light">
             ({{ usageRates.TOTAL_WEEKLY_SALES }} units/week)
           </span>
@@ -112,114 +232,8 @@ const getSpringsForSize = (size) => {
       <!-- Pending orders -->
       <OrdersOrderList />
 
-      <!-- Controls -->
-      <div class="flex items-center gap-6 mb-8 pb-6 border-b-2 border-border">
-        <!-- Pallet Count Selector -->
-        <div class="flex items-center gap-3">
-          <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Pallets:</label>
-          <div class="flex items-center gap-1">
-            <button
-              @click="settingsStore.decrementPallets()"
-              :disabled="settingsStore.isMinPallets"
-              :class="[
-                'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
-                settingsStore.isMinPallets
-                  ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                  : 'bg-surface hover:bg-surfaceHover text-zinc-50'
-              ]"
-            >
-              −
-            </button>
-            <span class="w-10 text-center text-zinc-50 font-semibold">{{ settingsStore.palletCount }}</span>
-            <button
-              @click="settingsStore.incrementPallets()"
-              :disabled="settingsStore.isMaxPallets"
-              :class="[
-                'w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold transition-colors',
-                settingsStore.isMaxPallets
-                  ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                  : 'bg-surface hover:bg-surfaceHover text-zinc-50'
-              ]"
-            >
-              +
-            </button>
-          </div>
-          <span class="text-xs text-zinc-500">({{ settingsStore.palletCount * 30 }} springs)</span>
-        </div>
-
-        <!-- Order week Selector -->
-        <div class="flex items-center gap-3">
-          <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Order week:</label>
-          <select
-            :value="settingsStore.orderWeekOffset"
-            @change="settingsStore.setOrderWeekOffset(parseInt($event.target.value))"
-            class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[160px]"
-          >
-            <option
-              v-for="option in orderWeekOptions"
-              :key="option.value"
-              :value="option.value"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Delivery Weeks Selector -->
-        <div class="flex items-center gap-3">
-          <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Delivery weeks:</label>
-          <select
-            :value="settingsStore.deliveryWeeks"
-            @change="settingsStore.setDeliveryWeeks(parseInt($event.target.value))"
-            class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[80px]"
-          >
-            <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
-          </select>
-        </div>
-
-        <!-- Yellow Warnings Toggle -->
-        <label class="flex items-center gap-2 cursor-pointer">
-          <span class="text-sm text-zinc-400">Low stock warnings</span>
-          <button
-            type="button"
-            :class="[
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-              showYellowWarnings ? 'bg-brand' : 'bg-zinc-600'
-            ]"
-            @click="showYellowWarnings = !showYellowWarnings"
-          >
-            <span
-              :class="[
-                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                showYellowWarnings ? 'translate-x-6' : 'translate-x-1'
-              ]"
-            />
-          </button>
-        </label>
-
-        <!-- Seasonal Demand Toggle -->
-        <label class="flex items-center gap-2 cursor-pointer">
-          <span class="text-sm text-zinc-400">Seasonal demand</span>
-          <button
-            type="button"
-            :class="[
-              'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-              settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-zinc-600'
-            ]"
-            @click="settingsStore.toggleSeasonalDemand()"
-          >
-            <span
-              :class="[
-                'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                settingsStore.useSeasonalDemand ? 'translate-x-6' : 'translate-x-1'
-              ]"
-            />
-          </button>
-        </label>
-      </div>
-
       <!-- Pallet Allocation Summary -->
-      <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
+      <!-- <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
         <h3 class="text-sm font-semibold text-zinc-50 mb-3">Recommended order breakdown</h3>
         <div class="flex flex-wrap items-center gap-4 text-sm">
           <div
@@ -238,7 +252,7 @@ const getSpringsForSize = (size) => {
             <span class="font-mono">{{ orderStore.springOrder.metadata.total_pallets }} pallets ({{ orderStore.springOrder.metadata.total_springs }} springs)</span>
           </div>
         </div>
-      </div>
+      </div> -->
 
       <!-- Spring timeline -->
       <ForecastSpringTimelineDetailed
