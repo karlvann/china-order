@@ -13,6 +13,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
+  const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
   const currentView = ref('forecast') // 'forecast', 'builder'
   const useSeasonalDemand = ref(false) // Apply seasonal multipliers to forecast
   const liveSalesRates = ref({
@@ -115,6 +116,10 @@ export const useSettingsStore = defineStore('settings', () => {
     orderWeekOffset.value = Math.max(0, Math.min(20, offset))
   }
 
+  const setDeliveryWeeks = (weeks) => {
+    deliveryWeeks.value = Math.max(1, Math.min(15, weeks))
+  }
+
   const setUseSeasonalDemand = (value) => {
     useSeasonalDemand.value = value
   }
@@ -179,6 +184,7 @@ export const useSettingsStore = defineStore('settings', () => {
     exportFormat,
     startingMonth,
     orderWeekOffset,
+    deliveryWeeks,
     currentView,
     liveSalesRates,
     liveSalesLoaded,
@@ -200,6 +206,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleExportFormat,
     setStartingMonth,
     setOrderWeekOffset,
+    setDeliveryWeeks,
     setCurrentView,
     setUseSeasonalDemand,
     toggleSeasonalDemand,

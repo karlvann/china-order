@@ -17,13 +17,13 @@ yarn build           # Build for production
 The system helps you plan container orders by:
 - Analyzing current inventory across 5 mattress sizes and 3 firmness levels
 - Automatically detecting critical stockouts (sizes with <4 months coverage)
-- Allocating 4-12 pallets intelligently using Fill King/Queen First algorithm
+- Allocating 1-12 pallets intelligently using demand-based proportional algorithm
 - Calculating component orders to match spring inventory (equal runway)
 - Generating TSV export for suppliers
 
 ### Key Features
 
-✅ **Fill King/Queen First** - Prioritizes high-volume sizes, allocates remainder to small sizes
+✅ **Demand-Based Allocation** - Distributes pallets proportionally based on sales demand
 ✅ **Equal Runway Enforcement** - Springs and components deplete at the same rate
 ✅ **Equal Depletion Firmness Allocation** - All firmnesses (Firm/Medium/Soft) deplete together
 ✅ **Component Consolidation** - Smart rules (micro coils King/Queen only, side panel merging)
@@ -33,7 +33,7 @@ The system helps you plan container orders by:
 ## 🎯 Business Rules
 
 ### Fixed Constraints (Cannot Change)
-- **Container capacity**: 4-12 pallets (user configurable)
+- **Container capacity**: 1-12 pallets (user configurable)
 - **Pallet size**: 30 springs per pallet (supplier fixed)
 - **Lead time**: 10 weeks (shipping fixed)
 - **No pallet mixing**: Each pallet is single mattress size (supplier requirement)
@@ -58,7 +58,7 @@ src/
     │   ├── coverage.ts          # Coverage calculation
     │   ├── criticalSizes.ts     # Critical size detection
     │   ├── palletCreation.ts    # Equal depletion pallet allocation
-    │   ├── fillKingQueenFirst.ts # Main King/Queen priority algorithm
+    │   ├── demandBasedOrder.js   # Main demand-based allocation algorithm
     │   ├── componentCalc.ts     # Component calculation
     │   ├── exportOptimization.ts # Lot size rounding
     │   └── tsvGeneration.ts     # TSV export

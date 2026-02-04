@@ -16,7 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Non-Negotiable Constraints
 
-1. **Container capacity**: 4-12 pallets (user chooses within range)
+1. **Container capacity**: 1-12 pallets (user chooses within range)
 2. **Pallet size**: EXACTLY 30 springs per pallet (supplier fixed)
 3. **Lead time**: 10 weeks (shipping fixed)
 4. **Small sizes**: Can only receive WHOLE pallets (1 or 2 maximum)
@@ -158,7 +158,7 @@ The styling (font size, weight, colour) already indicates that text is a title o
 ```
 lib/                         # Business logic (MUST manually import)
 ├── algorithms/              # Core ordering algorithms
-│   ├── fillKingQueenFirst.js # Main ordering algorithm (King/Queen priority)
+│   ├── demandBasedOrder.js   # Main ordering algorithm (proportional by demand)
 │   ├── componentCalc.js     # Derive component orders from springs
 │   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── criticalSizes.js     # Detect critical small sizes

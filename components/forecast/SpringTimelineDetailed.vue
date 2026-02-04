@@ -2,7 +2,6 @@
 import { MATTRESS_SIZES, FIRMNESS_TYPES, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 
 const WEEKS_TO_SHOW = 40
-const ARRIVAL_WEEK = 10 // Container arrives 10 weeks after order
 
 const inventoryOrdersStore = useInventoryOrdersStore()
 
@@ -18,6 +17,10 @@ const props = defineProps({
   orderWeekOffset: {
     type: Number,
     default: 0
+  },
+  deliveryWeeks: {
+    type: Number,
+    default: 10
   },
   currentWeek: {
     type: Number,
@@ -112,7 +115,7 @@ const weeks = computed(() => {
   const monday = getCurrentMonday()
 
   // Algorithm order arrival index (adjusted for starting from week 1)
-  const algorithmArrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
+  const algorithmArrivalIndex = props.orderWeekOffset + props.deliveryWeeks
 
   // Start from i=1 (next week) since "Now" column shows current week
   for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
@@ -173,8 +176,8 @@ const rows = computed(() => {
       const remainingThisWeek = weeklyRate * currentWeekSeasonalMultiplier * remainingWeekFraction
       let stock = currentStock - remainingThisWeek
 
-      // Arrival index for algorithm order: orderWeekOffset + ARRIVAL_WEEK
-      const arrivalIndex = props.orderWeekOffset + ARRIVAL_WEEK
+      // Arrival index for algorithm order: orderWeekOffset + deliveryWeeks
+      const arrivalIndex = props.orderWeekOffset + props.deliveryWeeks
 
       // Start from week 1 (next week) since "Now" shows current stock
       for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
@@ -305,7 +308,7 @@ const getCellBg = (stock, weeklyRate) => {
     </div>
 
     <p class="text-xs text-zinc-500 mt-3">
-      Container arrives 10 weeks after order week. Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
+      Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
     </p>
   </div>
 </template>

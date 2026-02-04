@@ -102,7 +102,7 @@ const getSpringsForSize = (size) => {
           40-week inventory forecast
         </h1>
         <p class="text-sm text-zinc-400">
-          Projected stock levels with container arrival at Week 10 from order. Components and springs calculated to deplete together.
+          Projected stock levels with container arrival {{ settingsStore.deliveryWeeks }} weeks from order. Components and springs calculated to deplete together.
           <span v-if="usageRates" class="ml-3 text-brand-light">
             ({{ usageRates.TOTAL_WEEKLY_SALES }} units/week)
           </span>
@@ -162,6 +162,18 @@ const getSpringsForSize = (size) => {
             >
               {{ option.label }}
             </option>
+          </select>
+        </div>
+
+        <!-- Delivery Weeks Selector -->
+        <div class="flex items-center gap-3">
+          <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">Delivery weeks:</label>
+          <select
+            :value="settingsStore.deliveryWeeks"
+            @change="settingsStore.setDeliveryWeeks(parseInt($event.target.value))"
+            class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[80px]"
+          >
+            <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
           </select>
         </div>
 
@@ -233,6 +245,7 @@ const getSpringsForSize = (size) => {
         :inventory="inventoryStore.fullInventory"
         :spring-order="orderStore.springOrder"
         :order-week-offset="settingsStore.orderWeekOffset"
+        :delivery-weeks="settingsStore.deliveryWeeks"
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
@@ -246,6 +259,7 @@ const getSpringsForSize = (size) => {
         :spring-order="orderStore.springOrder"
         :component-order="orderStore.componentOrder"
         :order-week-offset="settingsStore.orderWeekOffset"
+        :delivery-weeks="settingsStore.deliveryWeeks"
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
