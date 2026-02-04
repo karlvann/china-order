@@ -150,9 +150,16 @@ export function useWeeklySales() {
           filter: {
             date_created: {
               _gte: startDate.toISOString()
+            },
+            payment_status: {
+              _eq: 'paid'
             }
           },
-          fields: ['id', 'date_created', 'skus.skus_id.sku'],
+          fields: [
+            'id', 
+            'date_created',
+            'skus.skus_id.sku'
+          ],
           limit: -1 // Get all matching orders
         }
       })
