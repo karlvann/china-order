@@ -155,13 +155,11 @@ const componentRows = computed(() => {
   const latexWeekly = props.usageRates.THIN_LATEX_WEEKLY_DEMAND || { King: 0, Queen: 0 }
 
   return [
-    // Micro Coils - King inventory (direct from sales: King + 0.5×Single, weighted by model)
+    // Micro Coils & Thin Latex - King inventory
     { id: 'micro_coils', inventorySize: 'King', label: 'Micro Coils (King)', weeklyDemand: microWeekly.King },
-    // Micro Coils - Queen inventory (direct from sales: Queen + Double + King Single, weighted by model)
-    { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen },
-    // Thin Latex - King inventory (always 1:1 with micro coils)
     { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King },
-    // Thin Latex - Queen inventory (always 1:1 with micro coils)
+    // Micro Coils & Thin Latex - Queen inventory
+    { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen },
     { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen },
     // Felt - 1:1 with mattress sales by size
     { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King },
@@ -210,7 +208,8 @@ const rows = computed(() => {
       const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
       const adjustedRate = weeklyRate * seasonalMultiplier
 
-      stock = Math.max(0, stock - adjustedRate)
+      // Deplete for this week (can go negative for backorders)
+      stock = stock - adjustedRate
 
       // Track additions this week
       let addedThisWeek = 0
@@ -253,7 +252,7 @@ const rows = computed(() => {
 
 // Get cell background based on weeks of stock
 const getCellBg = (stock, weeklyRate) => {
-  if (stock === 0) return 'bg-red-500/20'
+  if (stock <= 0) return 'bg-red-500/20'
   const weeksOfStock = weeklyRate > 0 ? stock / weeklyRate : Infinity
   if (weeksOfStock > 30) return 'bg-blue-500/20'
   if (!props.showYellowWarnings) return ''

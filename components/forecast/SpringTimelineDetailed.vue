@@ -147,8 +147,8 @@ const rows = computed(() => {
         const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
         const adjustedRate = weeklyRate * seasonalMultiplier
 
-        // Deplete for this week
-        stock = Math.max(0, stock - adjustedRate)
+        // Deplete for this week (can go negative for backorders)
+        stock = stock - adjustedRate
 
         // Track additions this week
         let addedThisWeek = 0
@@ -192,7 +192,7 @@ const rows = computed(() => {
 
 // Get cell background based on stock level (weeks of coverage)
 const getCellBg = (stock, weeklyRate) => {
-  if (stock === 0) return 'bg-red-500/20'
+  if (stock <= 0) return 'bg-red-500/20'
   const weeksOfStock = weeklyRate > 0 ? stock / weeklyRate : Infinity
   if (weeksOfStock > 30) return 'bg-blue-500/20'
   if (!props.showYellowWarnings) return ''

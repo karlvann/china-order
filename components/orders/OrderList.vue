@@ -49,6 +49,56 @@ const confirmDelete = async (order) => {
     await inventoryOrdersStore.deleteOrder(order.id)
   }
 }
+
+// Generate TSV from order SKUs
+const generateOrderTSV = (order) => {
+  const lines = []
+  const orderLetter = inventoryOrdersStore.getOrderLetter(order.id)
+
+  lines.push(`Order ${orderLetter} - ${formatDate(order.expected_arrival)}`)
+  if (order.notes) lines.push(`Notes: ${order.notes}`)
+  lines.push('')
+  lines.push('SKU\tName\tQuantity')
+
+  if (order.skus) {
+    // Sort SKUs: springs first, then components
+    const sortedSkus = [...order.skus].sort((a, b) => {
+      const skuA = a.skus_id?.sku || ''
+      const skuB = b.skus_id?.sku || ''
+      const aIsSpring = skuA.startsWith('springs')
+      const bIsSpring = skuB.startsWith('springs')
+      if (aIsSpring && !bIsSpring) return -1
+      if (!aIsSpring && bIsSpring) return 1
+      return skuA.localeCompare(skuB)
+    })
+
+    for (const item of sortedSkus) {
+      if (item.quantity > 0) {
+        lines.push(`${item.skus_id?.sku || ''}\t${item.skus_id?.name || ''}\t${item.quantity}`)
+      }
+    }
+  }
+
+  lines.push('')
+  lines.push(`Total items: ${getTotalItems(order)}`)
+
+  return lines.join('\n')
+}
+
+// Export order as TSV (only if not yet ordered)
+const exportOrderTSV = (order) => {
+  if (order.ordered) return
+  const tsv = generateOrderTSV(order)
+  const filename = `Ausbeds_ChinaOrder_${order.order_date}.tsv`
+
+  const blob = new Blob([tsv], { type: 'text/tab-separated-values' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -106,9 +156,6 @@ const confirmDelete = async (order) => {
               <span class="text-zinc-400 text-sm">
                 ({{ weeksUntilArrival(order.expected_arrival) }} weeks)
               </span>
-              <span class="text-zinc-500 text-xs">
-                {{ order.order_type === 'air' ? 'Air' : 'Ship' }}
-              </span>
               <span v-if="order.ordered" class="px-2 py-0.5 text-xs font-medium rounded bg-green-500/20 text-green-400">
                 Ordered
               </span>
@@ -134,6 +181,19 @@ const confirmDelete = async (order) => {
 
           <!-- Actions -->
           <div class="flex items-center gap-2 shrink-0">
+            <button
+              @click="exportOrderTSV(order)"
+              :disabled="order.ordered"
+              :class="[
+                'px-3 py-1.5 text-sm rounded transition-colors',
+                order.ordered
+                  ? 'text-zinc-600 cursor-not-allowed'
+                  : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700'
+              ]"
+              :title="order.ordered ? 'Order already placed' : 'Export as TSV'"
+            >
+              Export
+            </button>
             <button
               @click="uiStore.openOrderModal(order.id)"
               class="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded transition-colors"
