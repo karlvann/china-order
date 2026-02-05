@@ -31,13 +31,13 @@ const props = defineProps({
     type: Object,
     default: null
   },
-  orderWeekOffset: {
-    type: Number,
-    default: 0
+  hasDraftOrder: {
+    type: Boolean,
+    default: false
   },
-  deliveryWeeks: {
+  draftArrivalWeek: {
     type: Number,
-    default: 10
+    default: null
   },
   currentWeek: {
     type: Number,
@@ -139,7 +139,8 @@ const weeks = computed(() => {
   const startWeek = props.currentWeek
   const monday = getCurrentMonday()
 
-  const algorithmArrivalIndex = props.orderWeekOffset + props.deliveryWeeks
+  // Draft order arrival index (only valid if hasDraftOrder)
+  const draftArrivalIndex = props.hasDraftOrder ? props.draftArrivalWeek : null
 
   // Start from i=1 (next week) since "Now" column shows current week
   for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
@@ -157,7 +158,7 @@ const weeks = computed(() => {
       index: i,
       number: weekNum,
       date: formatShortDate(weekMonday),
-      isArrival: i === algorithmArrivalIndex,
+      isDraftArrival: draftArrivalIndex !== null && i === draftArrivalIndex,
       storedOrders: storedOrdersThisWeek,
       hasStoredOrders
     })
@@ -248,7 +249,8 @@ const rows = computed(() => {
     const remainingThisWeek = weeklyRate * currentWeekSeasonalMultiplier * remainingWeekFraction
     let stock = currentStock - remainingThisWeek
 
-    const arrivalIndex = props.orderWeekOffset + props.deliveryWeeks
+    // Arrival index for draft order (only if there is one)
+    const arrivalIndex = props.hasDraftOrder ? props.draftArrivalWeek : null
 
     // Start from week 1 (next week) since "Now" shows current stock
     for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
@@ -256,7 +258,7 @@ const rows = computed(() => {
       let addedThisWeek = 0
 
       // Add arrivals at BEGINNING of week (before recording stock)
-      if (i === arrivalIndex) {
+      if (arrivalIndex !== null && i === arrivalIndex) {
         stock += orderAmount
         addedThisWeek += orderAmount
       }
@@ -332,12 +334,12 @@ const getCellBg = (stock, weeklyRate) => {
               :key="week.index"
               :class="[
                 'table-header text-center',
-                week.hasStoredOrders ? 'min-w-[85px] bg-green-500/10' : week.isArrival ? 'min-w-[62px] bg-blue-500/10' : 'min-w-[62px]'
+                week.hasStoredOrders ? 'min-w-[95px] bg-green-500/10' : week.isDraftArrival ? 'min-w-[95px] bg-blue-500/10' : 'min-w-[62px]'
               ]"
             >
               <div>W{{ week.number }}</div>
               <div class="text-[9px] text-zinc-500 font-normal">{{ week.date }}</div>
-              <span v-if="week.isArrival" class="block text-[10px] text-brand-light">New order</span>
+              <span v-if="week.isDraftArrival" class="block text-[10px] text-brand-light">Draft</span>
               <div v-if="week.hasStoredOrders">
                 <span
                   v-for="order in week.storedOrders"
@@ -365,7 +367,7 @@ const getCellBg = (stock, weeklyRate) => {
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week - 1]?.isArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
               <span>{{ proj.stock }}</span>

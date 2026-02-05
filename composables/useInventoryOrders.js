@@ -11,19 +11,6 @@ export function useInventoryOrders() {
   const error = ref(null)
 
   /**
-   * Calculate expected arrival date based on order type
-   * @param {string} orderDate - ISO date string
-   * @param {string} orderType - 'ship' or 'air'
-   * @returns {string} ISO date string for expected arrival
-   */
-  const calculateExpectedArrival = (orderDate, orderType) => {
-    const arrival = new Date(orderDate)
-    const weeksToAdd = orderType === 'ship' ? 10 : 3
-    arrival.setDate(arrival.getDate() + (weeksToAdd * 7))
-    return arrival.toISOString().split('T')[0]
-  }
-
-  /**
    * Get the week index for a date relative to a reference Monday
    * @param {string} dateString - ISO date string
    * @param {Date} referenceMonday - The Monday to calculate from
@@ -49,7 +36,7 @@ export function useInventoryOrders() {
           filter: {
             order_location: { _eq: 'china' }
           },
-          fields: ['id', 'order_date', 'expected_arrival', 'order_type', 'order_location', 'notes', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
+          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
           sort: ['-expected_arrival']
         }
       })
@@ -66,7 +53,7 @@ export function useInventoryOrders() {
 
   /**
    * Create a new inventory order
-   * @param {Object} orderData - Order fields (order_date, expected_arrival, order_type, notes)
+   * @param {Object} orderData - Order fields (order_date, expected_arrival, notes)
    * @param {Array} skuItems - Array of { skus_id: number, quantity: number }
    * @returns {Object|null} Created order or null on error
    */
@@ -78,7 +65,6 @@ export function useInventoryOrders() {
       const orderPayload = {
         order_date: orderData.order_date,
         expected_arrival: orderData.expected_arrival,
-        order_type: orderData.order_type || 'ship',
         order_location: 'china',
         notes: orderData.notes || '',
         skus: skuItems.filter(item => item.quantity > 0).map(item => ({
@@ -119,7 +105,6 @@ export function useInventoryOrders() {
       const orderPayload = {
         order_date: orderData.order_date,
         expected_arrival: orderData.expected_arrival,
-        order_type: orderData.order_type,
         notes: orderData.notes || '',
         skus: skuItems.filter(item => item.quantity > 0).map(item => ({
           skus_id: item.skus_id,
@@ -279,7 +264,6 @@ export function useInventoryOrders() {
     getOrderTotalQuantity,
     getOrderSpringQuantity,
     getOrderComponentQuantity,
-    calculateExpectedArrival,
     getWeekIndex,
     pendingOrders,
     pastOrders

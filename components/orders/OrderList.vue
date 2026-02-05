@@ -103,14 +103,8 @@ const exportOrderTSV = (order) => {
 <template>
   <div class="mb-10">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
+    <div class="mb-4">
       <h2 class="text-lg font-semibold text-zinc-50">Pending orders</h2>
-      <button
-        @click="uiStore.openOrderModal()"
-        class="px-4 py-2 bg-surface hover:bg-surfaceHover border border-border text-zinc-50 text-sm font-semibold rounded-lg transition-colors"
-      >
-        + New order
-      </button>
     </div>
 
     <!-- Loading State -->
@@ -135,7 +129,7 @@ const exportOrderTSV = (order) => {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2">
               <!-- Order Letter Badge -->
-              <span class="w-6 h-6 flex items-center justify-center text-xs font-bold rounded bg-brand/20 text-brand">
+              <span class="w-6 h-6 flex items-center justify-center text-xs font-bold rounded bg-green-500/20 text-green-400">
                 {{ inventoryOrdersStore.getOrderLetter(order.id) }}
               </span>
 
@@ -155,7 +149,7 @@ const exportOrderTSV = (order) => {
             </div>
 
             <!-- Item Counts -->
-            <div class="text-sm text-zinc-400">
+            <!-- <div class="text-sm text-zinc-400">
               <span v-if="getItemBreakdown(order).springs > 0">
                 {{ getItemBreakdown(order).springs }} springs
               </span>
@@ -164,7 +158,7 @@ const exportOrderTSV = (order) => {
                 {{ getItemBreakdown(order).components }} components
               </span>
               <span v-if="getTotalItems(order) === 0" class="italic">No items</span>
-            </div>
+            </div> -->
 
             <!-- Notes -->
             <p v-if="order.notes" class="text-sm text-zinc-500 mt-1 truncate">
@@ -188,7 +182,7 @@ const exportOrderTSV = (order) => {
               Export
             </button>
             <button
-              @click="uiStore.openOrderModal(order.id)"
+              @click="uiStore.openOrderPanel(order.id)"
               class="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded transition-colors"
             >
               Edit

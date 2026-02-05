@@ -7,13 +7,33 @@ const props = defineProps({
 })
 
 const inventoryStore = useInventoryStore()
-const orderStore = useOrderStore()
 const settingsStore = useSettingsStore()
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
+
+// Check if there's a draft order being created (only when panel is open)
+const hasDraftOrder = computed(() => uiStore.orderPanelOpen && uiStore.draftSpringOrder !== null)
+
+// Use draft orders when available (panel open), otherwise null (no new order lane)
+const activeSpringOrder = computed(() => {
+  if (hasDraftOrder.value) {
+    return uiStore.draftSpringOrder
+  }
+  return null
+})
+
+const activeComponentOrder = computed(() => {
+  if (hasDraftOrder.value) {
+    return uiStore.draftComponentOrder
+  }
+  return null
+})
+
+// Draft arrival week for timeline display
+const draftArrivalWeek = computed(() => uiStore.draftArrivalWeek)
 
 // Refs for syncing timeline scroll
 const springTimelineRef = ref(null)
@@ -35,227 +55,64 @@ const onComponentScroll = (scrollLeft) => {
   requestAnimationFrame(() => { isScrolling = false })
 }
 
-// Get the Monday of the current week
-const getCurrentMonday = () => {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(now.getFullYear(), now.getMonth(), diff)
-}
-
 // Fetch orders on mount
 onMounted(() => {
   inventoryOrdersStore.fetchOrders()
 })
-
-// Set order week to latest pending order's arrival week when orders load
-watch(() => inventoryOrdersStore.pendingOrders, (pendingOrders) => {
-  if (pendingOrders.length > 0) {
-    // Get the latest pending order (sorted by arrival, so last one is latest)
-    const latestOrder = pendingOrders[pendingOrders.length - 1]
-    const monday = getCurrentMonday()
-    const arrivalDate = new Date(latestOrder.expected_arrival)
-    const diffMs = arrivalDate - monday
-    const arrivalWeekIndex = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
-
-    // Set order week offset to arrival week (clamped to valid range)
-    if (arrivalWeekIndex >= 0 && arrivalWeekIndex <= 20) {
-      settingsStore.setOrderWeekOffset(arrivalWeekIndex)
-    }
-  }
-}, { immediate: true })
-
-// Format date as "d Mon" (e.g., "2 Feb")
-const formatShortDate = (date) => {
-  const day = date.getDate()
-  const month = date.toLocaleDateString('en-AU', { month: 'short' })
-  return `${day} ${month}`
-}
-
-// Generate order week options (current week + 0-20 weeks)
-const orderWeekOptions = computed(() => {
-  const options = []
-  const monday = getCurrentMonday()
-
-  for (let i = 0; i <= 20; i++) {
-    let weekNum = settingsStore.currentWeekNumber + i
-    if (weekNum > 52) weekNum -= 52
-
-    // Calculate the Monday date for this week
-    const weekMonday = new Date(monday)
-    weekMonday.setDate(monday.getDate() + (i * 7))
-    const dateStr = formatShortDate(weekMonday)
-
-    options.push({
-      value: i,
-      label: i === 0 ? `Week ${weekNum} / ${dateStr} (Now)` : `Week ${weekNum} / ${dateStr}`
-    })
-  }
-  return options
-})
-
-// Get number of pallets allocated to a size
-const getPalletsForSize = (size) => {
-  if (!orderStore.springOrder?.metadata) return 0
-  const meta = orderStore.springOrder.metadata
-  if (size === 'King') return meta.king_pallets || 0
-  if (size === 'Queen') return meta.queen_pallets || 0
-  // For small sizes, count from pallets array
-  const pallets = orderStore.springOrder.pallets || []
-  return pallets.filter(p => p.size === size).length
-}
-
-// Get total springs for a size (across all firmnesses)
-const getSpringsForSize = (size) => {
-  if (!orderStore.springOrder?.springs) return 0
-  const springs = orderStore.springOrder.springs
-  return (springs.firm[size] || 0) + (springs.medium[size] || 0) + (springs.soft[size] || 0)
-}
 </script>
 
 <template>
   <div class="min-h-screen bg-background">
     <!-- Controls - Sticky -->
     <div class="sticky top-0 z-30 bg-background border-b border-border">
-      <div class="max-w-[1600px] mx-auto px-6 py-4">
-        <div class="flex gap-5">
-          <!-- Pallet Count Selector -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Pallets</label>
-            <div class="flex items-center gap-1">
-              <button
-                @click="settingsStore.decrementPallets()"
-                :disabled="settingsStore.isMinPallets"
-                :class="[
-                  'w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition-colors',
-                  settingsStore.isMinPallets
-                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                    : 'bg-surface hover:bg-surfaceHover text-zinc-50'
-                ]"
-              >
-                −
-              </button>
-              <span class="w-8 text-center text-zinc-50 font-semibold text-sm">{{ settingsStore.palletCount }}</span>
-              <button
-                @click="settingsStore.incrementPallets()"
-                :disabled="settingsStore.isMaxPallets"
-                :class="[
-                  'w-7 h-7 flex items-center justify-center rounded text-sm font-bold transition-colors',
-                  settingsStore.isMaxPallets
-                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                    : 'bg-surface hover:bg-surfaceHover text-zinc-50'
-                ]"
-              >
-                +
-              </button>
-              <span class="text-xs text-zinc-500 ml-1">({{ settingsStore.palletCount * 30 }})</span>
-            </div>
-          </div>
-
-          <!-- Order week Selector -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Order week</label>
-            <select
-              :value="settingsStore.orderWeekOffset"
-              @change="settingsStore.setOrderWeekOffset(parseInt($event.target.value))"
-              class="py-1.5 px-3 bg-surface border border-border rounded text-zinc-50 text-sm cursor-pointer"
-            >
-              <option
-                v-for="option in orderWeekOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Delivery Weeks Selector -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Delivery weeks</label>
-            <select
-              :value="settingsStore.deliveryWeeks"
-              @change="settingsStore.setDeliveryWeeks(parseInt($event.target.value))"
-              class="py-1.5 px-3 bg-surface border border-border rounded text-zinc-50 text-sm cursor-pointer"
-            >
-              <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
-            </select>
-          </div>
-
-          <!-- Yellow Warnings Toggle -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Warn low stock</label>
+      <div class="max-w-[1600px] mx-auto px-6 py-3">
+        <div class="flex items-center gap-5">
+          <!-- Warn low stock Toggle -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-zinc-300">Warn low stock</label>
             <button
               type="button"
               :class="[
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 showYellowWarnings ? 'bg-brand' : 'bg-zinc-600'
               ]"
               @click="showYellowWarnings = !showYellowWarnings"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                  showYellowWarnings ? 'translate-x-6' : 'translate-x-1'
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  showYellowWarnings ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
           </div>
 
           <!-- Seasonal Demand Toggle -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">Seasonal demand</label>
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-zinc-300">Seasonal demand</label>
             <button
               type="button"
               :class="[
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-zinc-600'
               ]"
               @click="settingsStore.toggleSeasonalDemand()"
             >
               <span
                 :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                  settingsStore.useSeasonalDemand ? 'translate-x-6' : 'translate-x-1'
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  settingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
           </div>
 
-          <!-- Component Scale Slider -->
-          <div class="flex flex-col gap-2">
-            <label class="text-sm font-semibold text-zinc-50">
-              Component adjust
-              <span class="font-normal text-zinc-400 ml-1">{{ settingsStore.componentScale.toFixed(1) }}×</span>
-            </label>
-            <div class="flex items-center gap-2">
-              <input
-                type="range"
-                min="0.3"
-                max="2"
-                step="0.1"
-                :value="settingsStore.componentScale"
-                @input="settingsStore.setComponentScale(parseFloat($event.target.value))"
-                class="w-24 h-1.5 bg-zinc-600 rounded-lg appearance-none cursor-pointer accent-brand"
-              />
-              <button
-                v-if="settingsStore.componentScale !== 1"
-                @click="settingsStore.setComponentScale(1)"
-                class="text-xs text-zinc-500 hover:text-zinc-300"
-                title="Reset to 1.0"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-
-          <!-- Save new order button -->
+          <!-- New order button -->
           <button
-            v-if="orderStore.springOrder"
-            @click="uiStore.openOrderModalWithNewOrder()"
-            class="ml-auto px-3 py-1.5 bg-surface hover:bg-surfaceHover border border-border text-zinc-300 hover:text-zinc-50 text-sm rounded transition-colors"
+            @click="uiStore.openOrderPanelWithNewOrder()"
+            class="ml-auto px-4 py-1.5 bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded transition-colors"
           >
-            Save new order
+            + New order
           </button>
         </div>
       </div>
@@ -305,9 +162,9 @@ const getSpringsForSize = (size) => {
       <ForecastSpringTimelineDetailed
         ref="springTimelineRef"
         :inventory="inventoryStore.fullInventory"
-        :spring-order="orderStore.springOrder"
-        :order-week-offset="settingsStore.orderWeekOffset"
-        :delivery-weeks="settingsStore.deliveryWeeks"
+        :spring-order="activeSpringOrder"
+        :has-draft-order="hasDraftOrder"
+        :draft-arrival-week="draftArrivalWeek"
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
@@ -320,10 +177,10 @@ const getSpringsForSize = (size) => {
       <ForecastComponentTimelineDetailed
         ref="componentTimelineRef"
         :inventory="inventoryStore.fullInventory"
-        :spring-order="orderStore.springOrder"
-        :component-order="orderStore.componentOrder"
-        :order-week-offset="settingsStore.orderWeekOffset"
-        :delivery-weeks="settingsStore.deliveryWeeks"
+        :spring-order="activeSpringOrder"
+        :component-order="activeComponentOrder"
+        :has-draft-order="hasDraftOrder"
+        :draft-arrival-week="draftArrivalWeek"
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
@@ -333,7 +190,7 @@ const getSpringsForSize = (size) => {
       />
     </div>
 
-    <!-- Order Modal -->
-    <OrdersOrderModal v-if="uiStore.orderModalOpen" />
+    <!-- Order Panel -->
+    <OrdersOrderPanel />
   </div>
 </template>

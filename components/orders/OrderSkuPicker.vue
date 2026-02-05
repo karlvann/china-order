@@ -17,6 +17,7 @@ const activeTab = ref('springs')
 
 // Sizes in display order
 const SIZES = ['King', 'Queen', 'Double', 'King Single', 'Single']
+const SIZE_ABBREV = { King: 'K', Queen: 'Q', Double: 'D', 'King Single': 'KS', Single: 'S' }
 const FIRMNESS_TYPES = ['firm', 'medium', 'soft']
 const COMPONENT_TYPES = [
   { key: 'micro_coils', label: 'Micro Coils', sizesOnly: ['King', 'Queen'] },
@@ -184,14 +185,14 @@ const clearComponents = () => {
           </thead>
           <tbody>
             <tr v-for="size in SIZES" :key="size" class="border-t border-border">
-              <td class="py-2 pr-4 text-zinc-50 font-medium">{{ size }}</td>
+              <td class="py-2 pr-4 text-zinc-50 font-medium">{{ SIZE_ABBREV[size] }}</td>
               <td v-for="firmness in FIRMNESS_TYPES" :key="firmness" class="py-2 px-2">
                 <div class="flex items-center justify-center gap-1">
                   <button
                     @click="adjustQuantity(getSpringSkuString(firmness, size), -10)"
                     class="w-6 h-6 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
                   >
-                    -10
+                    −
                   </button>
                   <input
                     type="number"
@@ -204,7 +205,7 @@ const clearComponents = () => {
                     @click="adjustQuantity(getSpringSkuString(firmness, size), 10)"
                     class="w-6 h-6 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
                   >
-                    +10
+                    +
                   </button>
                 </div>
               </td>
@@ -236,7 +237,7 @@ const clearComponents = () => {
               :key="size"
               class="text-center"
             >
-              <div class="text-xs text-zinc-500 mb-1">{{ size }}</div>
+              <div class="text-xs text-zinc-500 mb-1">{{ SIZE_ABBREV[size] }}</div>
               <template v-if="!comp.sizesOnly || comp.sizesOnly.includes(size)">
                 <div class="flex items-center justify-center gap-1">
                   <button

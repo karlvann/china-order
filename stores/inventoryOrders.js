@@ -12,16 +12,6 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
   const error = ref(null)
 
   /**
-   * Calculate expected arrival date based on order type
-   */
-  const calculateExpectedArrival = (orderDate, orderType) => {
-    const arrival = new Date(orderDate)
-    const weeksToAdd = orderType === 'ship' ? 10 : 3
-    arrival.setDate(arrival.getDate() + (weeksToAdd * 7))
-    return arrival.toISOString().split('T')[0]
-  }
-
-  /**
    * Get week index for a date relative to a reference Monday
    */
   const getWeekIndex = (dateString, referenceMonday) => {
@@ -44,7 +34,7 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
           filter: {
             order_location: { _eq: 'china' }
           },
-          fields: ['id', 'order_date', 'expected_arrival', 'order_type', 'order_location', 'notes', 'ordered', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
+          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'ordered', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
           sort: ['-expected_arrival']
         }
       })
@@ -70,7 +60,6 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       const orderPayload = {
         order_date: orderData.order_date,
         expected_arrival: orderData.expected_arrival,
-        order_type: orderData.order_type || 'ship',
         order_location: 'china',
         notes: orderData.notes || '',
         ordered: orderData.ordered || false,
@@ -108,7 +97,6 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       const orderPayload = {
         order_date: orderData.order_date,
         expected_arrival: orderData.expected_arrival,
-        order_type: orderData.order_type,
         notes: orderData.notes || '',
         ordered: orderData.ordered || false,
         skus: skuItems.filter(item => item.quantity > 0).map(item => ({
@@ -262,7 +250,6 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
     getOrderTotalQuantity,
     getOrderSpringQuantity,
     getOrderComponentQuantity,
-    calculateExpectedArrival,
     getWeekIndex
   }
 })

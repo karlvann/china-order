@@ -136,7 +136,7 @@ export function useWeeklySales() {
       const startDate = new Date()
       startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
 
-      console.log(`Fetching orders from ${startDate.toISOString()} to ${endDate.toISOString()}`)
+      console.log(`Fetching orders from last ${LOOKBACK_DAYS} days: ${startDate.toISOString()} to ${endDate.toISOString()}`)
 
       dateRange.value = {
         start: startDate.toISOString().split('T')[0],
@@ -153,6 +153,9 @@ export function useWeeklySales() {
             },
             payment_status: {
               _eq: 'paid'
+            },
+            order_type: {
+              _eq: 'sale'
             }
           },
           fields: [

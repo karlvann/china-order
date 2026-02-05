@@ -12,21 +12,14 @@
     @apply font-sans antialiased;
   }
 
-  /* Custom scrollbar for dark theme */
+  /* Hide scrollbar */
+  html, body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-background;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700 rounded-full;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-zinc-600;
+    display: none;
   }
 }
 

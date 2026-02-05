@@ -6,10 +6,15 @@ export const useUIStore = defineStore('ui', () => {
   const downloadFeedback = ref(false)
   const isExporting = ref(false)
 
-  // Order modal state
-  const orderModalOpen = ref(false)
+  // Order panel state
+  const orderPanelOpen = ref(false)
   const editingOrderId = ref(null)
   const prefillFromNewOrder = ref(false)
+
+  // Draft order state (for real-time forecast preview)
+  const draftSpringOrder = ref(null)
+  const draftComponentOrder = ref(null)
+  const draftArrivalWeek = ref(null)
 
   // Actions
   const isSectionOpen = (sectionName) => {
@@ -46,23 +51,34 @@ export const useUIStore = defineStore('ui', () => {
     isExporting.value = exporting
   }
 
-  // Order modal actions
-  const openOrderModal = (orderId = null) => {
+  // Order panel actions
+  const openOrderPanel = (orderId = null) => {
     editingOrderId.value = orderId
     prefillFromNewOrder.value = false
-    orderModalOpen.value = true
+    orderPanelOpen.value = true
   }
 
-  const openOrderModalWithNewOrder = () => {
+  const openOrderPanelWithNewOrder = () => {
     editingOrderId.value = null
     prefillFromNewOrder.value = true
-    orderModalOpen.value = true
+    orderPanelOpen.value = true
   }
 
-  const closeOrderModal = () => {
-    orderModalOpen.value = false
+  const closeOrderPanel = () => {
+    orderPanelOpen.value = false
     editingOrderId.value = null
     prefillFromNewOrder.value = false
+    draftSpringOrder.value = null
+    draftComponentOrder.value = null
+    draftArrivalWeek.value = null
+  }
+
+  const setDraftOrders = (springOrder, componentOrder, arrivalWeek = null) => {
+    draftSpringOrder.value = springOrder
+    draftComponentOrder.value = componentOrder
+    if (arrivalWeek !== null) {
+      draftArrivalWeek.value = arrivalWeek
+    }
   }
 
   return {
@@ -71,9 +87,12 @@ export const useUIStore = defineStore('ui', () => {
     copyFeedback,
     downloadFeedback,
     isExporting,
-    orderModalOpen,
+    orderPanelOpen,
     editingOrderId,
     prefillFromNewOrder,
+    draftSpringOrder,
+    draftComponentOrder,
+    draftArrivalWeek,
     // Actions
     isSectionOpen,
     toggleSection,
@@ -82,8 +101,9 @@ export const useUIStore = defineStore('ui', () => {
     showCopyFeedback,
     showDownloadFeedback,
     setExporting,
-    openOrderModal,
-    openOrderModalWithNewOrder,
-    closeOrderModal
+    openOrderPanel,
+    openOrderPanelWithNewOrder,
+    closeOrderPanel,
+    setDraftOrders
   }
 })
