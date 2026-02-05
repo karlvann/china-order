@@ -1,8 +1,7 @@
 import {
   calculateDemandBasedOrder,
   calculateComponentOrder,
-  optimizeComponentOrder,
-  generateTSV
+  optimizeComponentOrder
 } from '~/lib/algorithms/index.js'
 
 /**
@@ -223,18 +222,6 @@ export const useOrderStore = defineStore('order', () => {
     )
   })
 
-  const tsvContent = computed(() => {
-    const settingsStore = useSettingsStore()
-
-    if (!springOrder.value || !optimizedComponentOrder.value) return ''
-
-    return generateTSV(
-      springOrder.value,
-      optimizedComponentOrder.value,
-      settingsStore.exportFormat
-    )
-  })
-
   const totalSprings = computed(() => {
     if (!springOrder.value) return 0
     return springOrder.value.metadata.total_springs
@@ -249,7 +236,6 @@ export const useOrderStore = defineStore('order', () => {
     springOrder,
     componentOrder,
     optimizedComponentOrder,
-    tsvContent,
     totalSprings,
     totalPallets
   }

@@ -3,51 +3,12 @@
 
 <template>
   <div class="section-container py-6">
-    <!-- Order hero -->
-    <OrderHero />
-
-    <!-- Accordion sections -->
-    <div class="mt-6">
-      <!-- Detailed order breakdown -->
-      <UiAccordionSection
-        section-id="yourOrder"
-        title="Detailed order breakdown"
-      >
-        <OrderPalletList :compact="true" />
-      </UiAccordionSection>
-
-      <!-- Spring inventory -->
-      <UiAccordionSection
-        section-id="springInventory"
-        title="Spring inventory"
-      >
-        <p class="text-sm text-zinc-400 mb-3">
-          In brackets is the calculated monthly depletion based on weekly sales data.
-        </p>
-        <InventorySpringInventoryTable />
-      </UiAccordionSection>
-
-      <!-- Component inventory -->
-      <UiAccordionSection
-        section-id="componentInventory"
-        title="Component inventory"
-      >
-        <p class="text-sm text-zinc-400 mb-3">
-          Enter current component stock. Micro coils & thin latex only for King/Queen.
-        </p>
-        <InventoryComponentInventoryTable />
-      </UiAccordionSection>
-
-      <!-- Weekly sales data -->
-      <UiAccordionSection
-        section-id="weeklySales"
-        title="Weekly sales (demand)"
-        badge="Live"
-        badge-type="success"
-      >
-        <InventoryWeeklySalesPanel />
-      </UiAccordionSection>
-
+    <div class="flex flex-col items-center justify-center py-20 text-center">
+      <div class="text-6xl mb-4">🇱🇰</div>
+      <h1 class="text-2xl font-bold text-zinc-50 mb-2">Sri Lanka ordering</h1>
+      <p class="text-zinc-400 max-w-md">
+        Sri Lanka ordering coming soon. This tab will be used for managing orders from our Sri Lanka supplier.
+      </p>
     </div>
   </div>
 </template>
