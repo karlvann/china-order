@@ -73,7 +73,8 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         palletCount: palletCount.value,
-        exportFormat: exportFormat.value
+        exportFormat: exportFormat.value,
+        currentView: currentView.value
       }))
     } catch (e) {
       console.error('Failed to save settings:', e)
@@ -135,6 +136,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const setCurrentView = (view) => {
     currentView.value = view
+    saveToStorage()
   }
 
   const loadFromStorage = () => {
@@ -147,6 +149,9 @@ export const useSettingsStore = defineStore('settings', () => {
         }
         if (data.exportFormat !== undefined) {
           exportFormat.value = data.exportFormat
+        }
+        if (data.currentView !== undefined) {
+          currentView.value = data.currentView
         }
       }
     } catch (e) {
