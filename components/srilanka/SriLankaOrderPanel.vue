@@ -1,6 +1,7 @@
 <script setup>
 import { calculateLatexOrder, convertOrdersForLatexAlgorithm } from '~/lib/algorithms/latexOrder.js'
 import { LATEX_FIRMNESSES, LATEX_SIZES, CONTAINER_CAPACITY, LATEX_LEAD_TIME_WEEKS } from '~/lib/constants/index.js'
+import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const sriLankaUIStore = useSriLankaUIStore()
 const sriLankaOrdersStore = useSriLankaOrdersStore()
@@ -31,16 +32,15 @@ const isEditing = computed(() => !!sriLankaUIStore.editingOrderId)
 // Container capacity
 const containerCapacity = computed(() => CONTAINER_CAPACITY[localContainerSize.value] || 340)
 
-// Computed arrival week for timeline display
-const arrivalWeekIndex = computed(() => localOrderWeekOffset.value + localDeliveryWeeks.value)
+// Computed arrival week index from expected arrival date (for timeline display)
+const arrivalWeekIndex = computed(() => {
+  if (!expectedArrival.value) return localOrderWeekOffset.value + localDeliveryWeeks.value
+  const monday = getCurrentMonday()
+  const arrivalDate = new Date(expectedArrival.value)
+  const diffMs = arrivalDate - monday
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
+})
 
-// Get the Monday of the current week
-const getCurrentMonday = () => {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(now.getFullYear(), now.getMonth(), diff)
-}
 
 // Format date as "d Mon" (e.g., "2 Feb")
 const formatShortDate = (date) => {
@@ -99,7 +99,7 @@ const getMondayForWeekOffset = (offset) => {
 
 // Calculate expected arrival from order date and delivery weeks
 const calculateExpectedArrivalFromWeeks = (orderDateStr, deliveryWeeks) => {
-  const orderDateObj = new Date(orderDateStr + 'T00:00:00')
+  const orderDateObj = new Date(orderDateStr)
   const arrival = new Date(orderDateObj)
   arrival.setDate(orderDateObj.getDate() + (deliveryWeeks * 7))
   return formatDateYMD(arrival)
@@ -313,6 +313,13 @@ watch(orderDate, (newDate) => {
   if (!isEditing.value) {
     expectedArrival.value = calculateExpectedArrivalFromWeeks(newDate, localDeliveryWeeks.value)
   }
+})
+
+// Watch for expected arrival changes to update draft order (when user edits date directly)
+watch(expectedArrival, () => {
+  if (isInitializing.value || !sriLankaUIStore.orderPanelOpen) return
+  const latexOrder = convertSkuQuantitiesToLatexOrder()
+  sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
 })
 
 // Total items count

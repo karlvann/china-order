@@ -3,16 +3,7 @@ import {
   calculateComponentOrder,
   optimizeComponentOrder
 } from '~/lib/algorithms/index.js'
-
-/**
- * Get the Monday of the current week (for calculating week indices)
- */
-function getCurrentMonday() {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(now.setDate(diff))
-}
+import { getCurrentMonday } from '~/lib/utils/index.js'
 
 /**
  * Convert database orders to algorithm format

@@ -1,5 +1,6 @@
 <script setup>
 import { LATEX_FIRMNESSES, LATEX_SIZES, SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
 
@@ -57,13 +58,6 @@ const props = defineProps({
   }
 })
 
-// Get the Monday of the current week
-const getCurrentMonday = () => {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(now.setDate(diff))
-}
 
 // Format date as "d Mon" (e.g., "26 Jan")
 const formatShortDate = (date) => {

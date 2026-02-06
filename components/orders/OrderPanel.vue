@@ -1,6 +1,7 @@
 <script setup>
 import { calculateDemandBasedOrder } from '~/lib/algorithms/demandBasedOrder.js'
 import { calculateComponentOrder } from '~/lib/algorithms/componentCalc.js'
+import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
@@ -30,8 +31,14 @@ const isInitializing = ref(false)
 // Is editing existing order
 const isEditing = computed(() => !!uiStore.editingOrderId)
 
-// Computed arrival week for timeline display
-const arrivalWeekIndex = computed(() => localOrderWeekOffset.value + localDeliveryWeeks.value)
+// Computed arrival week index from expected arrival date (for timeline display)
+const arrivalWeekIndex = computed(() => {
+  if (!expectedArrival.value) return localOrderWeekOffset.value + localDeliveryWeeks.value
+  const monday = getCurrentMonday()
+  const arrivalDate = new Date(expectedArrival.value)
+  const diffMs = arrivalDate - monday
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
+})
 
 // Get today's date in YYYY-MM-DD format
 const getTodayString = () => {
@@ -176,13 +183,6 @@ const convertSkuQuantitiesToComponentOrder = () => {
   return componentOrder
 }
 
-// Get the Monday of the current week
-const getCurrentMonday = () => {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  return new Date(now.getFullYear(), now.getMonth(), diff)
-}
 
 // Format date as "d Mon" (e.g., "2 Feb")
 const formatShortDate = (date) => {
@@ -233,7 +233,7 @@ const getMondayForWeekOffset = (offset) => {
 
 // Calculate expected arrival from order date and delivery weeks
 const calculateExpectedArrivalFromWeeks = (orderDateStr, deliveryWeeks) => {
-  const orderDate = new Date(orderDateStr + 'T00:00:00')
+  const orderDate = new Date(orderDateStr)
   const arrival = new Date(orderDate)
   arrival.setDate(orderDate.getDate() + (deliveryWeeks * 7))
   return formatDateYMD(arrival)
@@ -507,6 +507,14 @@ watch(orderDate, (newDate) => {
     // New order: use local delivery weeks
     expectedArrival.value = calculateExpectedArrivalFromWeeks(newDate, localDeliveryWeeks.value)
   }
+})
+
+// Watch for expected arrival changes to update draft orders (when user edits date directly)
+watch(expectedArrival, () => {
+  if (isInitializing.value || !uiStore.orderPanelOpen) return
+  const springOrder = convertSkuQuantitiesToSpringOrder()
+  const componentOrder = convertSkuQuantitiesToComponentOrder()
+  uiStore.setDraftOrders(springOrder, componentOrder, arrivalWeekIndex.value)
 })
 
 // Total items count
