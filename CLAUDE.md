@@ -110,8 +110,8 @@ Set in `.env` for local development:
 **MUST manually import** (from `lib/`):
 ```javascript
 import { MATTRESS_SIZES, FIRMNESS_TYPES } from '~/lib/constants/index.js'
-import { calculateCoverage, calculateComponentOrder } from '~/lib/algorithms/index.js'
-import { validateEqualRunway } from '~/lib/utils/validation.js'
+import { calculateDemandBasedOrder, calculateComponentOrder } from '~/lib/algorithms/index.js'
+import { createEmptySpringInventory } from '~/lib/utils/index.js'
 ```
 
 ### Component Naming Convention
@@ -162,11 +162,8 @@ lib/                         # Business logic (MUST manually import)
 ├── algorithms/              # Core ordering algorithms
 │   ├── demandBasedOrder.js   # Spring ordering (coverage-priority allocation)
 │   ├── componentCalc.js     # Component ordering (balanced coverage)
-│   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── exportOptimization.js # Round to supplier lot sizes
 │   ├── latexOrder.js        # Sri Lanka latex order allocation
-│   ├── palletCreation.js    # Allocate springs to pallets
-│   ├── tsvGeneration.js     # Export format for suppliers
 │   └── index.js             # Central exports
 ├── constants/               # Business constants
 │   ├── business.js          # Lead time, pallet size, thresholds
@@ -176,7 +173,6 @@ lib/                         # Business logic (MUST manually import)
 │   ├── components.js        # Component types, lot sizes
 │   └── latex.js             # Sri Lanka latex SKUs, container sizes, lead time
 └── utils/
-    ├── validation.js        # Equal runway validation
     ├── inventory.js         # Empty inventory structure builders
     └── dates.js             # Date utilities (getCurrentMonday)
 
