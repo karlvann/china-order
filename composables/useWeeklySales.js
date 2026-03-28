@@ -159,7 +159,7 @@ export function useWeeklySales() {
             }
           },
           fields: [
-            'id', 
+            'id',
             'date_created',
             'skus.skus_id.sku'
           ],

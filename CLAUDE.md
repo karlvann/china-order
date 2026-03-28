@@ -72,7 +72,7 @@ Each mattress requires **1 spring + multiple components**:
 
 ## Project Overview
 
-**Mattress Order System** - Nuxt 4 inventory management and order planning for mattress manufacturing. Plans container orders for springs and components using sales data and demand forecasting.
+**Mattress Order System** - Nuxt 4 inventory management and order planning for mattress manufacturing. Plans container orders for springs and components (China) and latex comfort layers (Sri Lanka) using sales data and demand forecasting.
 
 ## Tech Stack
 
@@ -103,7 +103,7 @@ Set in `.env` for local development:
 
 1. **Vue Composition API** - `ref`, `computed`, `watch`, `onMounted`, `readonly`, etc.
 2. **Pinia** - `defineStore` (in stores)
-3. **Store composables** - `useInventoryStore()`, `useOrderStore()`, `useSettingsStore()`, `useUIStore()`
+3. **Store composables** - `useInventoryStore()`, `useOrderStore()`, `useSettingsStore()`, `useUIStore()`, `useInventoryOrdersStore()`, `useSriLankaOrdersStore()`, `useSriLankaSettingsStore()`, `useSriLankaUIStore()`
 4. **Custom composables** - All functions from `composables/` folder
 5. **Directus composables** - `useDirectusItems()`, etc.
 
@@ -165,6 +165,7 @@ lib/                         # Business logic (MUST manually import)
 │   ├── coverage.js          # Calculate months of inventory remaining
 │   ├── criticalSizes.js     # Detect critical small sizes
 │   ├── exportOptimization.js # Round to supplier lot sizes
+│   ├── latexOrder.js        # Sri Lanka latex order allocation
 │   ├── palletCreation.js    # Allocate springs to pallets
 │   ├── tsvGeneration.js     # Export format for suppliers
 │   └── index.js             # Central exports
@@ -173,14 +174,21 @@ lib/                         # Business logic (MUST manually import)
 │   ├── sales.js             # Mattress sizes, monthly rates
 │   ├── firmness.js          # Firm/Medium/Soft distribution
 │   ├── seasonality.js       # Busy/slow season multipliers
-│   └── components.js        # Component types, lot sizes
+│   ├── components.js        # Component types, lot sizes
+│   └── latex.js             # Sri Lanka latex SKUs, container sizes, lead time
 └── utils/
-    └── validation.js        # Equal runway validation
+    ├── validation.js        # Equal runway validation
+    ├── inventory.js         # Empty inventory structure builders
+    └── dates.js             # Date utilities (getCurrentMonday)
 
 stores/                      # Pinia stores (auto-imported)
 ├── inventory.js             # Springs (Directus) + Components (localStorage)
+├── inventoryOrders.js       # China orders from Directus
 ├── order.js                 # Computed order data (getters only)
 ├── settings.js              # App settings (palletCount, startingMonth, etc.)
+├── sriLankaOrders.js        # Sri Lanka latex orders
+├── sriLankaSettings.js      # Sri Lanka ordering settings
+├── sriLankaUI.js            # Sri Lanka UI state
 └── ui.js                    # UI state (accordion, modals)
 
 pages/                       # Nuxt pages (file-based routing)
@@ -188,16 +196,22 @@ pages/                       # Nuxt pages (file-based routing)
 └── dashboard.vue            # Main dashboard
 
 composables/                 # Auto-imported composables
-├── useSpringInventory.js    # Fetch springs from Directus
-├── useWeeklySales.js        # Fetch sales data from Directus
+├── useComponentInventory.js # Fetch component data from Directus
 ├── useComponentStorage.js   # localStorage for components
-└── useErrorHandler.js       # Error handling
+├── useErrorHandler.js       # Error handling
+├── useInventoryOrders.js    # Fetch/manage inventory orders from Directus
+├── useLatexInventory.js     # Fetch latex inventory from Directus
+├── useLatexSales.js         # Fetch latex sales data from Directus
+├── useMonthNames.js         # Month name generation utility
+├── useSkuLookup.js          # SKU lookup functionality
+├── useSpringInventory.js    # Fetch springs from Directus
+└── useWeeklySales.js        # Fetch sales data from Directus
 
 components/
 ├── app/                     # App-level (AppHeader)
-├── order/                   # Order Builder (OrderHero, PalletCard, PalletList, etc.)
-├── inventory/               # Tables (SpringInventoryTable, ComponentInventoryTable, WeeklySalesPanel)
-├── forecast/                # Forecast views (SpringTimelineDetailed, MonthSelector, etc.)
+├── orders/                  # China order management (OrderList, OrderPanel, OrderSkuPicker)
+├── forecast/                # Forecast views (SpringTimelineDetailed, ComponentTimelineDetailed, MonthSelector)
+├── srilanka/                # Sri Lanka latex ordering (LatexSkuPicker, LatexTimeline, SriLankaOrderList, SriLankaOrderPanel)
 ├── views/                   # Main views (OrderBuilderView, ForecastView)
 └── ui/                      # Reusable UI (AccordionSection)
 ```
@@ -212,11 +226,15 @@ components/
 6. Export optimization rounds to supplier lot sizes
 7. TSV generated for supplier
 
-### State Management (4 Pinia Stores)
+### State Management (8 Pinia Stores)
+
+**China ordering:**
 
 **`useInventoryStore()`** - Inventory data
 - `springs`: From Directus (read-only)
 - `components`: From localStorage (editable)
+
+**`useInventoryOrdersStore()`** - China orders from Directus
 
 **`useOrderStore()`** - Computed order data (getters only)
 - `springOrder`, `componentOrder`, `coverageData`, `validation`, `tsvContent`
@@ -226,6 +244,34 @@ components/
 
 **`useUIStore()`** - UI state
 - `openSection`, `showSaveModal`, `copyFeedback`
+
+**Sri Lanka ordering:**
+
+**`useSriLankaOrdersStore()`** - Sri Lanka latex orders
+
+**`useSriLankaSettingsStore()`** - Sri Lanka ordering settings
+
+**`useSriLankaUIStore()`** - Sri Lanka UI state
+
+---
+
+## Two Ordering Systems
+
+The app manages two independent supply chains:
+
+### China (Springs + Components)
+- Pallet-based ordering (30 springs per pallet, 1-12 pallets per container)
+- 5 mattress sizes × 3 firmness levels
+- Components must match springs (equal runway)
+- Constants in `lib/constants/business.js`, `sales.js`, `firmness.js`, `components.js`
+
+### Sri Lanka (Latex Comfort Layers)
+- Unit-based ordering (20ft: 170 units, 40ft: 340 units)
+- Only King and Queen sizes (smaller sizes cut from these)
+- 6 SKUs: 3 firmnesses × 2 sizes
+- Mattress-to-latex mapping: King→King (1.0x), Single→King (0.5x), Queen/Double/King Single→Queen (1.0x)
+- Constants in `lib/constants/latex.js`, algorithm in `lib/algorithms/latexOrder.js`
+- Lead time: 10 weeks (`LATEX_LEAD_TIME_WEEKS`)
 
 ---
 
