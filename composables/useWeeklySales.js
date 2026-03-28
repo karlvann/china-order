@@ -29,7 +29,7 @@ function getFirmnessType(level) {
 }
 
 // Parse a mattress SKU to extract range, firmness level, and size
-// Format: range[cooper|cloud|aurora] + firmnessLevel[2-19] + size[single|kingsingle|double|queen|king]
+// Format: range[cooper|cloud|aurora] + firmnessLevel[2-16] + size[single|kingsingle|double|queen|king]
 function parseMattressSku(sku) {
   if (!sku || typeof sku !== 'string') return null
 
@@ -57,7 +57,7 @@ function parseMattressSku(sku) {
   // Extract firmness level (what's between range and size)
   const firmnessStr = remainder.slice(0, remainder.length - sizeKey.length)
   const firmnessLevel = parseInt(firmnessStr, 10)
-  if (isNaN(firmnessLevel) || firmnessLevel < 2 || firmnessLevel > 19) return null
+  if (isNaN(firmnessLevel) || firmnessLevel < 2 || firmnessLevel > 16) return null
 
   const firmnessType = getFirmnessType(firmnessLevel)
   if (!firmnessType) return null

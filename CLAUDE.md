@@ -163,7 +163,6 @@ lib/                         # Business logic (MUST manually import)
 │   ├── demandBasedOrder.js   # Spring ordering (coverage-priority allocation)
 │   ├── componentCalc.js     # Component ordering (balanced coverage)
 │   ├── coverage.js          # Calculate months of inventory remaining
-│   ├── criticalSizes.js     # Detect critical small sizes
 │   ├── exportOptimization.js # Round to supplier lot sizes
 │   ├── latexOrder.js        # Sri Lanka latex order allocation
 │   ├── palletCreation.js    # Allocate springs to pallets
