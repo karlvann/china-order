@@ -1,12 +1,14 @@
 /**
  * Composable for fetching and analyzing weekly sales data from Directus
  *
- * Fetches orders from the last 42 days (6 weeks) and analyzes mattress sales
+ * Fetches orders from the last 84 days (12 weeks) and analyzes mattress sales
  * to determine spring demand by size and firmness.
+ * Uses blended 6/12 week lookback — takes the higher weekly rate from either window.
  */
 
 const MATTRESS_RANGES = ['cooper', 'cloud', 'aurora']
-const LOOKBACK_DAYS = 42 // 6 weeks
+const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
+const LOOKBACK_DAYS_LONG = 84 // 12 weeks
 
 // Size mapping from SKU suffix to standard size names
 // Order matters! Check longer matches first (kingsingle before single, king before checking others)
@@ -131,15 +133,17 @@ export function useWeeklySales() {
     error.value = null
 
     try {
-      // Calculate date range (last 42 days)
+      // Calculate date ranges (6-week and 12-week windows)
       const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
+      const startDateLong = new Date()
+      startDateLong.setDate(startDateLong.getDate() - LOOKBACK_DAYS_LONG)
+      const startDateShort = new Date()
+      startDateShort.setDate(startDateShort.getDate() - LOOKBACK_DAYS_SHORT)
 
-      console.log(`Fetching orders from last ${LOOKBACK_DAYS} days: ${startDate.toISOString()} to ${endDate.toISOString()}`)
+      console.log(`Fetching orders from last ${LOOKBACK_DAYS_LONG} days (blended 6/12 week lookback)`)
 
       dateRange.value = {
-        start: startDate.toISOString().split('T')[0],
+        start: startDateLong.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
       }
 
@@ -149,7 +153,7 @@ export function useWeeklySales() {
         params: {
           filter: {
             date_created: {
-              _gte: startDate.toISOString()
+              _gte: startDateLong.toISOString()
             },
             payment_status: {
               _eq: 'paid'
@@ -195,95 +199,109 @@ export function useWeeklySales() {
       salesData.value = sales
       totalSales.value = sales.length
 
-      // Reset demand counts
-      const demand = {
+      // Split sales into 12-week (all) and 6-week (recent) windows
+      const shortCutoff = startDateShort.getTime()
+      const salesShort = sales.filter(s => new Date(s.dateCreated).getTime() >= shortCutoff)
+
+      // Helper to create empty demand structure
+      const emptyDemand = () => ({
         King: { firm: 0, medium: 0, soft: 0, total: 0 },
         Queen: { firm: 0, medium: 0, soft: 0, total: 0 },
         Double: { firm: 0, medium: 0, soft: 0, total: 0 },
         'King Single': { firm: 0, medium: 0, soft: 0, total: 0 },
         Single: { firm: 0, medium: 0, soft: 0, total: 0 }
-      }
+      })
 
-      // Track model counts by size
-      const modelCounts = {
+      const emptyModelCounts = () => ({
         King: { cloud: 0, aurora: 0, cooper: 0 },
         Queen: { cloud: 0, aurora: 0, cooper: 0 },
         Double: { cloud: 0, aurora: 0, cooper: 0 },
         'King Single': { cloud: 0, aurora: 0, cooper: 0 },
         Single: { cloud: 0, aurora: 0, cooper: 0 }
-      }
+      })
 
-      // Aggregate sales by size, firmness, and model
+      // Aggregate both windows
+      const demandLong = emptyDemand()
+      const demandShort = emptyDemand()
+      const modelCountsLong = emptyModelCounts()
+
       for (const sale of sales) {
-        if (demand[sale.size]) {
-          demand[sale.size][sale.firmnessType]++
-          demand[sale.size].total++
-
-          // Track model distribution
-          if (modelCounts[sale.size] && sale.range) {
-            modelCounts[sale.size][sale.range]++
+        if (demandLong[sale.size]) {
+          demandLong[sale.size][sale.firmnessType]++
+          demandLong[sale.size].total++
+          if (modelCountsLong[sale.size] && sale.range) {
+            modelCountsLong[sale.size][sale.range]++
           }
         }
       }
 
-      demandBySize.value = demand
-      modelDistribution.value = modelCounts
+      for (const sale of salesShort) {
+        if (demandShort[sale.size]) {
+          demandShort[sale.size][sale.firmnessType]++
+          demandShort[sale.size].total++
+        }
+      }
 
-      // Calculate direct micro coil/thin latex demand by inventory SKU
-      // Business rules:
-      // - Cloud = 2 micro spring layers, Aurora = 1 layer, Cooper = 0 layers
-      // - 1 layer = 1 micro coil + 1 thin latex
-      // - King mattress uses King inventory (1.0x)
-      // - Single mattress uses King inventory (0.5x - half a King)
-      // - Queen/Double/King Single all use Queen inventory (1.0x)
-      let microKing = 0
-      let microQueen = 0
+      demandBySize.value = demandLong
+      modelDistribution.value = modelCountsLong
 
-      for (const sale of sales) {
+      // Calculate micro coil/thin latex demand for both windows
+      function addMicroDemand(sale, mkRef, mqRef) {
         const layers = sale.range === 'cloud' ? 2 : sale.range === 'aurora' ? 1 : 0
-
         if (layers > 0) {
           if (sale.size === 'King') {
-            microKing += layers * 1.0
+            mkRef.value += layers * 1.0
           } else if (sale.size === 'Single') {
-            microKing += layers * 0.5
+            mkRef.value += layers * 0.5
           } else {
-            // Queen, Double, King Single all use Queen inventory
-            microQueen += layers * 1.0
+            mqRef.value += layers * 1.0
           }
         }
       }
 
-      // Calculate weekly rates (divide by 6 weeks)
-      const weeks = LOOKBACK_DAYS / 7
+      // Use wrapper objects for pass-by-reference
+      const mkL = { value: 0 }, mqL = { value: 0 }, mkS = { value: 0 }, mqS = { value: 0 }
+      for (const sale of sales) addMicroDemand(sale, mkL, mqL)
+      for (const sale of salesShort) addMicroDemand(sale, mkS, mqS)
 
-      // Convert micro coil totals to weekly rates
+      // Calculate weekly rates for both windows, take the max
+      const weeksShort = LOOKBACK_DAYS_SHORT / 7
+      const weeksLong = LOOKBACK_DAYS_LONG / 7
+
+      const microKingRateShort = mkS.value / weeksShort
+      const microKingRateLong = mkL.value / weeksLong
+      const microQueenRateShort = mqS.value / weeksShort
+      const microQueenRateLong = mqL.value / weeksLong
+
       microCoilDemand.value = {
-        King: Math.round((microKing / weeks) * 10) / 10,
-        Queen: Math.round((microQueen / weeks) * 10) / 10
+        King: Math.round(Math.max(microKingRateShort, microKingRateLong) * 10) / 10,
+        Queen: Math.round(Math.max(microQueenRateShort, microQueenRateLong) * 10) / 10
       }
-      // Thin latex is always 1:1 with micro coils
       thinLatexDemand.value = { ...microCoilDemand.value }
+
+      // Blended weekly rates: max of 6-week and 12-week rate for each metric
       const weekly = {}
-      for (const size of Object.keys(demand)) {
-        weekly[size] = {
-          firm: Math.round((demand[size].firm / weeks) * 10) / 10,
-          medium: Math.round((demand[size].medium / weeks) * 10) / 10,
-          soft: Math.round((demand[size].soft / weeks) * 10) / 10,
-          total: Math.round((demand[size].total / weeks) * 10) / 10
+      for (const size of Object.keys(demandLong)) {
+        weekly[size] = {}
+        for (const key of ['firm', 'medium', 'soft', 'total']) {
+          const rateShort = demandShort[size][key] / weeksShort
+          const rateLong = demandLong[size][key] / weeksLong
+          weekly[size][key] = Math.round(Math.max(rateShort, rateLong) * 10) / 10
         }
       }
       weeklyRates.value = weekly
 
-      // Calculate firmness distribution percentages
+      console.log('[Sales] Blended 6/12 week rates (higher of two windows):', weekly)
+
+      // Firmness distribution from 12-week window (larger sample = more stable)
       const distribution = {}
-      for (const size of Object.keys(demand)) {
-        const total = demand[size].total
+      for (const size of Object.keys(demandLong)) {
+        const total = demandLong[size].total
         if (total > 0) {
           distribution[size] = {
-            firm: Math.round((demand[size].firm / total) * 100),
-            medium: Math.round((demand[size].medium / total) * 100),
-            soft: Math.round((demand[size].soft / total) * 100)
+            firm: Math.round((demandLong[size].firm / total) * 100),
+            medium: Math.round((demandLong[size].medium / total) * 100),
+            soft: Math.round((demandLong[size].soft / total) * 100)
           }
         } else {
           distribution[size] = { firm: 0, medium: 0, soft: 0 }

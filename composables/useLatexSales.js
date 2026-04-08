@@ -1,8 +1,9 @@
 /**
  * Composable for fetching and analyzing latex demand from sales data
  *
- * Fetches orders from the last 42 days (6 weeks) and analyzes mattress sales
+ * Fetches orders from the last 84 days (12 weeks) and analyzes mattress sales
  * to determine latex demand by firmness and size.
+ * Uses blended 6/12 week lookback — takes the higher weekly rate from either window.
  *
  * Key business rules:
  * - Cooper mattresses use polyfoam, NOT latex (excluded from calculations)
@@ -18,7 +19,8 @@ import {
   LATEX_FIRMNESS_LEVEL_RANGES
 } from '~/lib/constants/index.js'
 
-const LOOKBACK_DAYS = 42 // 6 weeks
+const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
+const LOOKBACK_DAYS_LONG = 84 // 12 weeks
 
 // Size mapping from SKU suffix - order matters (check longer matches first)
 const SIZE_MAP_ORDERED = [
@@ -133,15 +135,17 @@ export function useLatexSales() {
     error.value = null
 
     try {
-      // Calculate date range (last 42 days)
+      // Calculate date ranges (6-week and 12-week windows)
       const endDate = new Date()
-      const startDate = new Date()
-      startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
+      const startDateLong = new Date()
+      startDateLong.setDate(startDateLong.getDate() - LOOKBACK_DAYS_LONG)
+      const startDateShort = new Date()
+      startDateShort.setDate(startDateShort.getDate() - LOOKBACK_DAYS_SHORT)
 
-      console.log(`[Latex] Fetching orders from last ${LOOKBACK_DAYS} days: ${startDate.toISOString()} to ${endDate.toISOString()}`)
+      console.log(`[Latex] Fetching orders from last ${LOOKBACK_DAYS_LONG} days (blended 6/12 week lookback)`)
 
       dateRange.value = {
-        start: startDate.toISOString().split('T')[0],
+        start: startDateLong.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
       }
 
@@ -151,7 +155,7 @@ export function useLatexSales() {
         params: {
           filter: {
             date_created: {
-              _gte: startDate.toISOString()
+              _gte: startDateLong.toISOString()
             },
             payment_status: {
               _eq: 'paid'
@@ -197,23 +201,34 @@ export function useLatexSales() {
       salesData.value = sales
       totalSales.value = sales.length
 
-      // Aggregate demand by firmness and latex size
-      const demand = createEmptyDemand()
+      // Split sales into 12-week (all) and 6-week (recent) windows
+      const shortCutoff = startDateShort.getTime()
+      const salesShort = sales.filter(s => new Date(s.dateCreated).getTime() >= shortCutoff)
+
+      // Aggregate demand for both windows
+      const demandLong = createEmptyDemand()
+      const demandShort = createEmptyDemand()
 
       for (const sale of sales) {
-        demand[sale.latexFirmness][sale.latexSize] += sale.deduction
+        demandLong[sale.latexFirmness][sale.latexSize] += sale.deduction
+      }
+      for (const sale of salesShort) {
+        demandShort[sale.latexFirmness][sale.latexSize] += sale.deduction
       }
 
-      demandByFirmnessSize.value = demand
+      demandByFirmnessSize.value = demandLong
 
-      // Calculate weekly rates (divide by 6 weeks)
-      const weeks = LOOKBACK_DAYS / 7
+      // Calculate blended weekly rates: max of 6-week and 12-week rate
+      const weeksShort = LOOKBACK_DAYS_SHORT / 7
+      const weeksLong = LOOKBACK_DAYS_LONG / 7
       const weekly = createEmptyDemand()
       const totals = { King: 0, Queen: 0 }
 
       for (const firmness of LATEX_FIRMNESSES) {
         for (const size of LATEX_SIZES) {
-          const rate = Math.round((demand[firmness][size] / weeks) * 10) / 10
+          const rateShort = demandShort[firmness][size] / weeksShort
+          const rateLong = demandLong[firmness][size] / weeksLong
+          const rate = Math.round(Math.max(rateShort, rateLong) * 10) / 10
           weekly[firmness][size] = rate
           totals[size] += rate
         }
@@ -225,22 +240,27 @@ export function useLatexSales() {
         Queen: Math.round(totals.Queen * 10) / 10
       }
 
-      // Calculate firmness distribution percentages per size
+      // Firmness distribution from 12-week window (larger sample = more stable)
       const distribution = {
         King: { firm: 0, medium: 0, soft: 0 },
         Queen: { firm: 0, medium: 0, soft: 0 }
       }
 
       for (const size of LATEX_SIZES) {
-        const total = totals[size]
-        if (total > 0) {
+        let longTotal = 0
+        for (const firmness of LATEX_FIRMNESSES) {
+          longTotal += demandLong[firmness][size]
+        }
+        if (longTotal > 0) {
           for (const firmness of LATEX_FIRMNESSES) {
-            distribution[size][firmness] = Math.round((weekly[firmness][size] / total) * 100)
+            distribution[size][firmness] = Math.round((demandLong[firmness][size] / longTotal) * 100)
           }
         }
       }
 
       firmnessDistribution.value = distribution
+
+      console.log('[Latex] Blended 6/12 week rates (higher of two windows):', weekly)
 
       // Update settings store with live data
       sriLankaSettingsStore.setLatexSalesRates(
