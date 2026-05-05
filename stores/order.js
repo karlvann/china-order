@@ -141,6 +141,7 @@ export const useOrderStore = defineStore('order', () => {
     // Access reactive deps upfront to ensure Vue tracks them
     const pallets = settingsStore.palletCount
     const orderOffset = settingsStore.orderWeekOffset
+    const deliveryWeeks = settingsStore.deliveryWeeks
     const salesLoaded = settingsStore.liveSalesLoaded
 
     if (inventoryStore.springsLoading) return null
@@ -160,7 +161,8 @@ export const useOrderStore = defineStore('order', () => {
       inventoryStore.fullInventory,
       salesRates,
       pendingOrders,
-      orderOffset
+      orderOffset,
+      deliveryWeeks
     )
   })
 

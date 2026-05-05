@@ -1,27 +1,27 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents when working with code in this repository.
 
 ## FIXED CONSTRAINTS - DO NOT SUGGEST CHANGES
 
-**CRITICAL**: The following constraints are FIXED by the business and CANNOT be changed. Do NOT suggest:
-- Larger/smaller containers
+**CRITICAL**: The following constraints are fixed by the business/suppliers. Do NOT suggest:
+- Containers/orders larger than 12 spring pallets
 - Different pallet sizes
-- More frequent ordering
-- Mixed pallets (multiple sizes per pallet)
+- Unrealistic order frequency changes
+- Mixed mattress sizes on one pallet
 - Different supplier lot sizes
-- Changing lead times
+- Rush freight or unrealistic logistics assumptions
 
-**ALL algorithm improvements must work WITHIN these constraints. See CONSTRAINTS.md for full details.**
+**ALL algorithm improvements must work WITHIN these constraints. See docs/CONSTRAINTS.md for full details.**
 
 ### Non-Negotiable Constraints
 
 1. **Container capacity**: 1-12 pallets (user chooses within range)
 2. **Pallet size**: EXACTLY 30 springs per pallet (supplier fixed)
-3. **Lead time**: 10 weeks (shipping fixed)
-4. **Small sizes**: Can only receive WHOLE pallets (1 or 2 maximum)
+3. **Lead time**: Variable by order/season; 10 weeks is the default China planning assumption
+4. **Pallet allocation**: Whole pallets by size, allocated by demand/coverage urgency
 5. **Component lot sizes**: Fixed by supplier (20 or 10 units)
-6. **No pallet mixing**: Each pallet must be single size (supplier requirement)
+6. **No size mixing**: Each spring pallet must be a single mattress size; firmness can be mixed within that size
 
 ### What You CAN Change
 
@@ -36,13 +36,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Business Goals
 
 ### Primary Goal: Prevent Stockouts
-- **King**: 30 units/month (36.88% of business)
-- **Queen**: 41 units/month (51.15% of business)
-- **Together**: 88% of sales volume
-- **Priority**: Keep King/Queen above 2-3 months coverage minimum
+- **King**: Approximately 30% of sales
+- **Queen**: Approximately 48% of sales
+- **Together**: Approximately 78% of sales volume
+- **Priority**: Keep King/Queen above their week-based coverage targets where capacity allows
 
 ### Secondary Goal: Capital Efficiency
-- Don't waste inventory on small sizes that already have good coverage (>4 months)
+- Don't waste inventory on sizes that already have healthy projected coverage
 - Free up pallets for critical items when possible
 
 ### NOT Goals:
@@ -50,7 +50,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Equal coverage across all sizes
 - Minimize variance between sizes
 
-**See GOALS.md for complete documentation.**
+**See docs/GOALS.md for complete documentation.**
 
 ---
 
@@ -167,7 +167,7 @@ lib/                         # Business logic (MUST manually import)
 │   └── index.js             # Central exports
 ├── constants/               # Business constants
 │   ├── business.js          # Lead time, pallet size, thresholds
-│   ├── sales.js             # Mattress sizes, monthly rates
+│   ├── sales.js             # Mattress sizes and historical demand ratios
 │   ├── firmness.js          # Firm/Medium/Soft distribution
 │   ├── seasonality.js       # Busy/slow season multipliers
 │   ├── components.js        # Component types, lot sizes
@@ -257,7 +257,7 @@ The app manages two independent supply chains:
 ### China (Springs + Components)
 - Pallet-based ordering (30 springs per pallet, 1-12 pallets per container)
 - 5 mattress sizes × 3 firmness levels
-- Components must match springs (equal runway)
+- Components must match springs while maintaining balanced coverage
 - Constants in `lib/constants/business.js`, `sales.js`, `firmness.js`, `components.js`
 
 ### Sri Lanka (Latex Comfort Layers)
@@ -266,7 +266,7 @@ The app manages two independent supply chains:
 - 6 SKUs: 3 firmnesses × 2 sizes
 - Mattress-to-latex mapping: King→King (1.0x), Single→King (0.5x), Queen/Double/King Single→Queen (1.0x)
 - Constants in `lib/constants/latex.js`, algorithm in `lib/algorithms/latexOrder.js`
-- Lead time: 10 weeks (`LATEX_LEAD_TIME_WEEKS`)
+- Lead time: configurable; default from `LATEX_LEAD_TIME_WEEKS`
 
 ---
 
@@ -289,10 +289,10 @@ The app manages two independent supply chains:
 ## Key Invariants
 
 1. Each pallet MUST contain exactly 30 springs - **FIXED CONSTRAINT**
-2. Container arrival at 10-week mark - **FIXED CONSTRAINT**
+2. Lead time is an order/forecast assumption, not a fixed business constraint
 3. Component consolidation rules applied before optimization
 4. Inventory subtraction happens AFTER component calculation
-5. Critical size selection based on Medium firmness coverage (primary), total coverage (tiebreaker)
+5. Spring pallet allocation is demand/coverage based, using the lowest-coverage firmness per size plus King/Queen priority weighting
 
 ---
 
@@ -312,8 +312,8 @@ The app manages two independent supply chains:
 2. Export function - auto-imports everywhere
 
 ### Modifying Business Logic
-1. Check CONSTRAINTS.md - ensure change doesn't violate fixed constraints
-2. Check GOALS.md - ensure change aligns with business objectives
+1. Check docs/CONSTRAINTS.md - ensure change doesn't violate fixed constraints
+2. Check docs/GOALS.md - ensure change aligns with business objectives
 3. Update algorithm in `lib/algorithms/`
 
 ### Deployment

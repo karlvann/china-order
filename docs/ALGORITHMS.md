@@ -12,11 +12,11 @@ This document describes the spring and component ordering algorithms used in the
 
 The spring ordering algorithm allocates pallets to sizes based on coverage priority, then distributes springs across firmnesses within each size. The goal is to prevent stockouts while respecting business constraints.
 
-### Constraints (Fixed)
+### Constraints and planning assumptions
 
 - **Container capacity:** 1-12 pallets (user selects)
 - **Pallet size:** Exactly 30 springs per pallet (supplier fixed)
-- **Lead time:** 10 weeks default (configurable)
+- **Lead time:** Defaults to 10 weeks for China orders, but is user-adjustable because real lead times vary by order, season, supplier timing, and shipping conditions
 - **Single size per pallet:** Cannot mix sizes on one pallet
 
 ### Size-Specific Coverage Targets
@@ -26,12 +26,12 @@ Different sizes have different minimum coverage targets based on business priori
 | Size | Target Coverage | Weight |
 |------|-----------------|--------|
 | Queen | 9 weeks | 1.5× |
-| King | 7 weeks | 1.3× |
+| King | 8 weeks | 1.3× |
 | Double | 6 weeks | 1.0× |
 | King Single | 6 weeks | 1.0× |
 | Single | 6 weeks | 1.0× |
 
-Queen and King get priority weighting because they represent 88% of sales.
+Queen and King get priority weighting because they represent approximately 78% of sales.
 
 ### Algorithm Steps
 
@@ -61,15 +61,14 @@ projectedCoverage = projectedStock / weeklyDemand
 
 For each size that received pallets:
 
-1. Calculate springs needed per firmness to reach target coverage
-2. Allocate springs to the lowest-coverage firmness first
-3. Continue until all 30 springs per pallet are allocated
-4. Never add springs to firmnesses that would exceed 30 weeks coverage
+1. Use the size's total allocated springs (`pallets × 30`).
+2. Allocate springs to the lowest-coverage firmness first.
+3. Continue allocating to the lowest-coverage firmnesses until all springs assigned to that size have been used.
 
 ### Skip Conditions
 
-- **Overstock threshold:** Don't allocate springs to firmnesses with >30 weeks projected coverage
-- **Zero pallets:** If all firmnesses of a size are overstocked, that size gets 0 pallets
+- **Overstock threshold:** SKUs above 30 weeks projected coverage are classified as overstocked for reporting/priority purposes
+- **Demand-based allocation:** Sizes with healthier coverage naturally become less urgent, but the selected pallet count is still allocated by demand/coverage urgency
 
 ### Output
 
@@ -125,7 +124,7 @@ minForCoverage = calculateMinimumFor6WeeksAtArrival()
 initialOrder = max(springMatched, minForCoverage)
 ```
 
-Skip if projected coverage at arrival > 12 weeks.
+Skip if projected coverage at arrival is above `SKIP_IF_COVERAGE_ABOVE` (currently 10 weeks).
 
 #### Phase 2: Calculate Coverage
 
@@ -169,7 +168,7 @@ For each component:
 
 | Threshold | Value | Purpose |
 |-----------|-------|---------|
-| Skip if coverage above | 12 weeks | Don't order if already well-stocked at arrival |
+| `SKIP_IF_COVERAGE_ABOVE` | 10 weeks | Don't order if already well-stocked at arrival |
 | Minimum coverage at arrival | 6 weeks (default) | Floor for all components |
 | Max coverage spread | 4 weeks | Balance range (min to min+4) |
 | Full container | 12 pallets | Base for container scaling |
@@ -227,7 +226,7 @@ The timelines scroll horizontally in sync.
 
 ## Seasonal Demand (Optional)
 
-When enabled, applies monthly multipliers to demand projections:
+When enabled, applies calendar-month seasonality multipliers to demand projections:
 
 - **Busy season (Apr-Aug):** +14% demand
 - **Slow season (Sep-Mar):** -12% demand

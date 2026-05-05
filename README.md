@@ -16,7 +16,7 @@ Set `DIRECTUS_URL` in `.env` for local development.
 
 Plans container orders across two supply chains:
 
-**China (springs + components)** - Allocates 1-12 pallets (30 springs each) using demand-based proportional algorithm. Calculates matching component orders to maintain equal runway.
+**China (springs + components)** - Allocates 1-12 pallets (30 springs each) using demand-based coverage priority. Calculates matching component orders with balanced coverage.
 
 **Sri Lanka (latex comfort layers)** - Allocates latex units across King/Queen in 20ft (170 units) or 40ft (340 units) containers.
 
@@ -24,11 +24,11 @@ Both systems pull live sales data (6-week lookback) from Directus to calculate w
 
 ## Documentation
 
-See **[CLAUDE.md](CLAUDE.md)** for full project documentation including architecture, business rules, constraints, algorithms, and conventions.
+See **[AGENTS.md](AGENTS.md)** for full project documentation including architecture, business rules, constraints, algorithms, and conventions.
 
 Additional docs:
-- **[CONSTRAINTS.md](CONSTRAINTS.md)** - Fixed business constraints
-- **[GOALS.md](GOALS.md)** - Business objectives and optimisation priorities
+- **[docs/CONSTRAINTS.md](docs/CONSTRAINTS.md)** - Fixed business constraints
+- **[docs/GOALS.md](docs/GOALS.md)** - Business objectives and optimisation priorities
 - **[docs/ALGORITHMS.md](docs/ALGORITHMS.md)** - Detailed algorithm documentation
 
 ## Deployment
