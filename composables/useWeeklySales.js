@@ -8,7 +8,7 @@
 
 const MATTRESS_RANGES = ['cooper', 'cloud', 'aurora']
 const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
-const LOOKBACK_DAYS_LONG = 84 // 12 weeks
+const LOOKBACK_DAYS_LONG = 63 // 9 weeks
 
 // Size mapping from SKU suffix to standard size names
 // Order matters! Check longer matches first (kingsingle before single, king before checking others)

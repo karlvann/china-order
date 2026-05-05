@@ -20,7 +20,7 @@ import {
 } from '~/lib/constants/index.js'
 
 const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
-const LOOKBACK_DAYS_LONG = 84 // 12 weeks
+const LOOKBACK_DAYS_LONG = 63 // 9 weeks
 
 // Size mapping from SKU suffix - order matters (check longer matches first)
 const SIZE_MAP_ORDERED = [
