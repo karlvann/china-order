@@ -1,26 +1,34 @@
 /**
  * Composable for fetching and analyzing latex demand from sales data
  *
- * Fetches orders from the last 84 days (12 weeks) and analyzes mattress sales
- * to determine latex demand by firmness and size.
- * Uses blended 6/12 week lookback — takes the higher weekly rate from either window.
+ * Fetches orders from the last 63 days (9 weeks) and analyzes mattress and pillow sales
+ * to determine latex demand.
+ * Uses blended 6/9 week lookback — takes the higher weekly rate from either window.
  *
  * Key business rules:
  * - Cooper mattresses use polyfoam, NOT latex (excluded from calculations)
  * - Cloud and Aurora mattresses use latex
  * - Size mapping: King/Single → King latex, Queen/Double/King Single → Queen latex
  * - Single deducts 0.5 from King inventory (one King sheet makes two Singles)
+ * - Pillow latex demand comes from exact pillowlatexthin/pillowlatexthick SKU sales
  */
 
 import {
   LATEX_FIRMNESSES,
   LATEX_SIZES,
   MATTRESS_TO_LATEX_MAP,
-  LATEX_FIRMNESS_LEVEL_RANGES
+  LATEX_FIRMNESS_LEVEL_RANGES,
+  PILLOW_LATEX_SKUS,
+  PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
 
 const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
 const LOOKBACK_DAYS_LONG = 63 // 9 weeks
+
+const PILLOW_LATEX_SKU_MAP = {
+  pillowlatexthin: 'thin',
+  pillowlatexthick: 'thick'
+}
 
 // Size mapping from SKU suffix - order matters (check longer matches first)
 const SIZE_MAP_ORDERED = [
@@ -89,6 +97,21 @@ function parseLatexSku(sku) {
 }
 
 /**
+ * Parse pillow latex SKU to get pillow latex type
+ */
+function parsePillowLatexSku(sku) {
+  if (!sku || typeof sku !== 'string') return null
+
+  const lowerSku = sku.toLowerCase()
+  if (!PILLOW_LATEX_SKUS.includes(lowerSku)) return null
+
+  return {
+    pillowLatexType: PILLOW_LATEX_SKU_MAP[lowerSku],
+    deduction: 1
+  }
+}
+
+/**
  * Create empty demand structure
  */
 function createEmptyDemand() {
@@ -98,6 +121,14 @@ function createEmptyDemand() {
     for (const size of LATEX_SIZES) {
       demand[firmness][size] = 0
     }
+  }
+  return demand
+}
+
+function createEmptyPillowLatexDemand() {
+  const demand = {}
+  for (const type of PILLOW_LATEX_TYPES) {
+    demand[type] = 0
   }
   return demand
 }
@@ -120,6 +151,9 @@ export function useLatexSales() {
 
   // Total weekly demand per size (all firmnesses combined)
   const weeklyTotalBySize = ref({ King: 0, Queen: 0 })
+
+  // Pillow latex weekly demand
+  const pillowLatexWeeklyRates = ref(createEmptyPillowLatexDemand())
 
   // Firmness distribution percentages per size
   const firmnessDistribution = ref({
@@ -167,6 +201,7 @@ export function useLatexSales() {
           fields: [
             'id',
             'date_created',
+            'skus.quantity',
             'skus.skus_id.sku'
           ],
           limit: -1
@@ -186,20 +221,36 @@ export function useLatexSales() {
           const sku = skuRelation?.skus_id?.sku
           if (!sku) continue
 
+          const quantity = parseInt(skuRelation.quantity, 10) || 1
           const parsed = parseLatexSku(sku)
           if (parsed) {
             sales.push({
+              type: 'mattress_latex',
               orderId: order.id,
               dateCreated: order.date_created,
               sku,
+              quantity,
               ...parsed
+            })
+            continue
+          }
+
+          const parsedPillowLatex = parsePillowLatexSku(sku)
+          if (parsedPillowLatex) {
+            sales.push({
+              type: 'pillow_latex',
+              orderId: order.id,
+              dateCreated: order.date_created,
+              sku,
+              quantity,
+              ...parsedPillowLatex
             })
           }
         }
       }
 
       salesData.value = sales
-      totalSales.value = sales.length
+      totalSales.value = sales.reduce((sum, sale) => sum + sale.quantity, 0)
 
       // Split sales into 12-week (all) and 6-week (recent) windows
       const shortCutoff = startDateShort.getTime()
@@ -208,12 +259,22 @@ export function useLatexSales() {
       // Aggregate demand for both windows
       const demandLong = createEmptyDemand()
       const demandShort = createEmptyDemand()
+      const pillowDemandLong = createEmptyPillowLatexDemand()
+      const pillowDemandShort = createEmptyPillowLatexDemand()
 
       for (const sale of sales) {
-        demandLong[sale.latexFirmness][sale.latexSize] += sale.deduction
+        if (sale.type === 'pillow_latex') {
+          pillowDemandLong[sale.pillowLatexType] += sale.deduction * sale.quantity
+        } else {
+          demandLong[sale.latexFirmness][sale.latexSize] += sale.deduction * sale.quantity
+        }
       }
       for (const sale of salesShort) {
-        demandShort[sale.latexFirmness][sale.latexSize] += sale.deduction
+        if (sale.type === 'pillow_latex') {
+          pillowDemandShort[sale.pillowLatexType] += sale.deduction * sale.quantity
+        } else {
+          demandShort[sale.latexFirmness][sale.latexSize] += sale.deduction * sale.quantity
+        }
       }
 
       demandByFirmnessSize.value = demandLong
@@ -234,11 +295,19 @@ export function useLatexSales() {
         }
       }
 
+      const pillowWeekly = createEmptyPillowLatexDemand()
+      for (const type of PILLOW_LATEX_TYPES) {
+        const rateShort = pillowDemandShort[type] / weeksShort
+        const rateLong = pillowDemandLong[type] / weeksLong
+        pillowWeekly[type] = Math.round(Math.max(rateShort, rateLong) * 10) / 10
+      }
+
       weeklyRates.value = weekly
       weeklyTotalBySize.value = {
         King: Math.round(totals.King * 10) / 10,
         Queen: Math.round(totals.Queen * 10) / 10
       }
+      pillowLatexWeeklyRates.value = pillowWeekly
 
       // Firmness distribution from 12-week window (larger sample = more stable)
       const distribution = {
@@ -266,11 +335,13 @@ export function useLatexSales() {
       sriLankaSettingsStore.setLatexSalesRates(
         weeklyTotalBySize.value,
         weekly,
-        distribution
+        distribution,
+        pillowWeekly
       )
 
       console.log(`[Latex] Processed ${sales.length} latex-relevant sales from ${orders.length} orders`)
       console.log('[Latex] Weekly rates:', weekly)
+      console.log('[Latex] Pillow latex weekly rates:', pillowWeekly)
       console.log('[Latex] Totals by size:', weeklyTotalBySize.value)
 
     } catch (e) {
@@ -291,6 +362,7 @@ export function useLatexSales() {
     demandByFirmnessSize: readonly(demandByFirmnessSize),
     weeklyRates: readonly(weeklyRates),
     weeklyTotalBySize: readonly(weeklyTotalBySize),
+    pillowLatexWeeklyRates: readonly(pillowLatexWeeklyRates),
     firmnessDistribution: readonly(firmnessDistribution),
     totalSales: readonly(totalSales),
     dateRange: readonly(dateRange),
@@ -299,4 +371,4 @@ export function useLatexSales() {
 }
 
 // Export parser for testing
-export { parseLatexSku }
+export { parseLatexSku, parsePillowLatexSku }

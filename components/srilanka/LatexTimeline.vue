@@ -1,5 +1,5 @@
 <script setup>
-import { LATEX_FIRMNESSES, LATEX_SIZES, SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import { LATEX_FIRMNESSES, PILLOW_LATEX_TYPES, PILLOW_LATEX_LABELS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
@@ -91,10 +91,9 @@ const getOrderWeekIndex = (order) => {
   return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
 }
 
-// Get latex quantity from a stored order for a specific firmness/size
-const getOrderLatexQuantity = (order, firmness, size) => {
+// Get latex quantity from a stored order for a specific SKU
+const getOrderSkuQuantity = (order, skuString) => {
   if (!order.skus) return 0
-  const skuString = `latex${firmness}${size.toLowerCase()}`
   const skuItem = order.skus.find(item => item.skus_id?.sku === skuString)
   return skuItem?.quantity || 0
 }
@@ -152,11 +151,59 @@ const getRemainingWeekFraction = () => {
   return daysRemaining / 7
 }
 
-// Generate rows for each firmness/size combination (6 rows)
-const rows = computed(() => {
-  const useSeasonal = props.useSeasonalDemand
+const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate }) => {
   const remainingWeekFraction = getRemainingWeekFraction()
+  const projections = []
 
+  // Start with current stock, minus remaining demand for this week
+  const currentWeekSeasonalMultiplier = getSeasonalMultiplierForWeek(0)
+  const remainingThisWeek = weeklyRate * currentWeekSeasonalMultiplier * remainingWeekFraction
+  let stock = currentStock - remainingThisWeek
+
+  const arrivalIndex = props.hasDraftOrder ? props.draftArrivalWeek : null
+
+  for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
+    let addedThisWeek = 0
+
+    // Add arrivals at BEGINNING of week
+    if (i === arrivalIndex) {
+      stock += orderAmount
+      addedThisWeek += orderAmount
+    }
+
+    // Add stored order arrivals
+    const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
+    for (const order of storedOrdersThisWeek) {
+      const qty = getOrderSkuQuantity(order, skuString)
+      stock += qty
+      addedThisWeek += qty
+    }
+
+    const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
+    const adjustedRate = weeklyRate * seasonalMultiplier
+
+    projections.push({
+      week: i,
+      stock: Math.round(stock),
+      added: addedThisWeek,
+      isCritical: stock < adjustedRate * 8
+    })
+
+    stock = stock - adjustedRate
+  }
+
+  return {
+    key,
+    label,
+    currentStock: Math.round(currentStock),
+    orderAmount,
+    weeklyRate: Math.round(weeklyRate * 10) / 10,
+    projections
+  }
+}
+
+// Generate rows for each latex SKU (8 rows)
+const rows = computed(() => {
   const result = []
 
   // Rows in order: Queen first (sells more), then King
@@ -167,63 +214,35 @@ const rows = computed(() => {
       // Get weekly rate from usage rates
       const weeklyRates = props.usageRates.WEEKLY_RATES || {}
       const weeklyRate = weeklyRates[firmness]?.[size] || 0
-
       const currentStock = props.inventory[firmness]?.[size] || 0
-      const orderAmount = props.latexOrder?.latex[firmness]?.[size] || 0
-
-      const projections = []
-
-      // Start with current stock, minus remaining demand for this week
-      const currentWeekSeasonalMultiplier = getSeasonalMultiplierForWeek(0)
-      const remainingThisWeek = weeklyRate * currentWeekSeasonalMultiplier * remainingWeekFraction
-      let stock = currentStock - remainingThisWeek
-
-      const arrivalIndex = props.hasDraftOrder ? props.draftArrivalWeek : null
-
-      for (let i = 1; i <= WEEKS_TO_SHOW; i++) {
-        let addedThisWeek = 0
-
-        // Add arrivals at BEGINNING of week
-        if (i === arrivalIndex) {
-          stock += orderAmount
-          addedThisWeek += orderAmount
-        }
-
-        // Add stored order arrivals
-        const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
-        for (const order of storedOrdersThisWeek) {
-          const qty = getOrderLatexQuantity(order, firmness, size)
-          stock += qty
-          addedThisWeek += qty
-        }
-
-        const seasonalMultiplier = getSeasonalMultiplierForWeek(i)
-        const adjustedRate = weeklyRate * seasonalMultiplier
-
-        projections.push({
-          week: i,
-          stock: Math.round(stock),
-          added: addedThisWeek,
-          isCritical: stock < adjustedRate * 8
-        })
-
-        stock = stock - adjustedRate
-      }
-
-      // Capitalize firmness for display
+      const orderAmount = props.latexOrder?.latex?.[firmness]?.[size] || 0
       const firmLabel = firmness.charAt(0).toUpperCase() + firmness.slice(1)
 
-      result.push({
-        size,
-        firmness,
+      result.push(buildRow({
+        key: `${size}-${firmness}`,
         label: `${size} ${firmLabel}`,
-        currentStock: Math.round(currentStock),
+        skuString: `latex${firmness}${size.toLowerCase()}`,
+        currentStock,
         orderAmount,
-        weeklyRate: Math.round(weeklyRate * 10) / 10,
-        projections
-      })
+        weeklyRate
+      }))
     })
   })
+
+  for (const type of PILLOW_LATEX_TYPES) {
+    const weeklyRate = props.usageRates.PILLOW_LATEX_WEEKLY_RATES?.[type] || 0
+    const currentStock = props.inventory.pillowLatex?.[type] || 0
+    const orderAmount = props.latexOrder?.pillowLatex?.[type] || 0
+
+    result.push(buildRow({
+      key: `pillow-latex-${type}`,
+      label: PILLOW_LATEX_LABELS[type],
+      skuString: `pillowlatex${type}`,
+      currentStock,
+      orderAmount,
+      weeklyRate
+    }))
+  }
 
   return result
 })
@@ -243,14 +262,14 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <h3 class="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-3">
       Latex timeline
-      <span class="text-sm font-normal text-zinc-500">(6 rows: 2 sizes × 3 firmnesses)</span>
+      <span class="text-sm font-normal text-zinc-500">(8 rows: latex sheets and pillow latex)</span>
     </h3>
 
     <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">
       <table class="w-full text-xs">
         <thead>
           <tr class="bg-surfaceHover">
-            <th class="table-header sticky left-0 bg-surfaceHover z-10 min-w-[140px]">Size/Firmness</th>
+            <th class="table-header sticky left-0 bg-surfaceHover z-10 min-w-[140px]">Item</th>
             <th class="table-header sticky left-[140px] bg-surfaceHover z-10 text-center w-[70px]">Demand</th>
             <th class="table-header sticky left-[210px] bg-zinc-700 z-10 text-center w-[70px] text-zinc-50">
               <div>Now</div>
@@ -283,7 +302,7 @@ const getCellBg = (stock, weeklyRate) => {
         <tbody>
           <tr
             v-for="row in rows"
-            :key="`${row.size}-${row.firmness}`"
+            :key="row.key"
             class="border-b border-border hover:bg-surfaceHover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[140px] font-medium">{{ row.label }}</td>

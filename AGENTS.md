@@ -261,10 +261,12 @@ The app manages two independent supply chains:
 - Constants in `lib/constants/business.js`, `sales.js`, `firmness.js`, `components.js`
 
 ### Sri Lanka (Latex Comfort Layers)
-- Unit-based ordering (20ft: 170 units, 40ft: 340 units)
-- Only King and Queen sizes (smaller sizes cut from these)
-- 6 SKUs: 3 firmnesses × 2 sizes
+- Unit-based ordering with editable item capacity (default: 410 units, adjusted in steps of 5)
+- Mattress latex: King and Queen sheets only (smaller sizes cut from these)
+- Pillow latex: thin and thick pillow latex SKUs tracked alongside mattress latex
+- 8 SKUs total: 3 firmnesses × 2 mattress sheet sizes, plus pillow latex thin/thick
 - Mattress-to-latex mapping: King→King (1.0x), Single→King (0.5x), Queen/Double/King Single→Queen (1.0x)
+- Pillow latex demand comes from exact `pillowlatexthin` and `pillowlatexthick` SKU sales
 - Constants in `lib/constants/latex.js`, algorithm in `lib/algorithms/latexOrder.js`
 - Lead time: configurable; default from `LATEX_LEAD_TIME_WEEKS`
 

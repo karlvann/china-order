@@ -1,6 +1,6 @@
 <script setup>
 import { calculateLatexOrder, convertOrdersForLatexAlgorithm } from '~/lib/algorithms/latexOrder.js'
-import { LATEX_FIRMNESSES, LATEX_SIZES, CONTAINER_CAPACITY, LATEX_LEAD_TIME_WEEKS } from '~/lib/constants/index.js'
+import { LATEX_FIRMNESSES, LATEX_SIZES, PILLOW_LATEX_TYPES, DEFAULT_LATEX_CAPACITY, LATEX_CAPACITY_STEP, MIN_LATEX_CAPACITY, LATEX_LEAD_TIME_WEEKS } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const sriLankaUIStore = useSriLankaUIStore()
@@ -12,7 +12,7 @@ const latexInventory = useLatexInventory()
 const usageRates = computed(() => sriLankaSettingsStore.latexSalesRates)
 
 // Local order settings (independent of global settings)
-const localContainerSize = ref('40ft')
+const localCapacity = ref(DEFAULT_LATEX_CAPACITY)
 const localOrderWeekOffset = ref(0)
 const localDeliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS)
 
@@ -29,8 +29,16 @@ const isInitializing = ref(false)
 // Is editing existing order
 const isEditing = computed(() => !!sriLankaUIStore.editingOrderId)
 
-// Container capacity
-const containerCapacity = computed(() => CONTAINER_CAPACITY[localContainerSize.value] || 340)
+// Order capacity
+const containerCapacity = computed(() => localCapacity.value)
+
+const incrementCapacity = () => {
+  localCapacity.value += LATEX_CAPACITY_STEP
+}
+
+const decrementCapacity = () => {
+  localCapacity.value = Math.max(MIN_LATEX_CAPACITY, localCapacity.value - LATEX_CAPACITY_STEP)
+}
 
 // Computed arrival week index from expected arrival date (for timeline display)
 const arrivalWeekIndex = computed(() => {
@@ -105,6 +113,22 @@ const calculateExpectedArrivalFromWeeks = (orderDateStr, deliveryWeeks) => {
   return formatDateYMD(arrival)
 }
 
+const getWeekOffsetForDate = (dateString) => {
+  if (!dateString) return 0
+  const monday = getCurrentMonday()
+  const date = new Date(dateString)
+  const diffMs = date - monday
+  return Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
+}
+
+const getDeliveryWeeksBetweenDates = (orderDateStr, expectedArrivalStr) => {
+  if (!orderDateStr || !expectedArrivalStr) return LATEX_LEAD_TIME_WEEKS
+  const orderDateObj = new Date(orderDateStr)
+  const arrivalDateObj = new Date(expectedArrivalStr)
+  const diffMs = arrivalDateObj - orderDateObj
+  return Math.max(1, Math.min(15, Math.round(diffMs / (7 * 24 * 60 * 60 * 1000))))
+}
+
 // Convert pending orders to algorithm format (exclude the one we're editing)
 const convertPendingOrdersForAlgorithm = () => {
   const orders = sriLankaOrdersStore.pendingOrders || []
@@ -124,13 +148,24 @@ const convertLatexOrderToSkuQuantities = (latexOrder) => {
 
   for (const firmness of LATEX_FIRMNESSES) {
     for (const size of LATEX_SIZES) {
-      const qty = latexOrder.latex[firmness]?.[size] || 0
+      const qty = latexOrder.latex?.[firmness]?.[size] || 0
       if (qty > 0) {
         const skuString = `latex${firmness}${size.toLowerCase()}`
         const skuId = skuIdMap[skuString]
         if (skuId) {
           quantities[skuId] = qty
         }
+      }
+    }
+  }
+
+  for (const type of PILLOW_LATEX_TYPES) {
+    const qty = latexOrder.pillowLatex?.[type] || 0
+    if (qty > 0) {
+      const skuString = `pillowlatex${type}`
+      const skuId = skuIdMap[skuString]
+      if (skuId) {
+        quantities[skuId] = qty
       }
     }
   }
@@ -145,6 +180,10 @@ const convertSkuQuantitiesToLatexOrder = () => {
     medium: { King: 0, Queen: 0 },
     soft: { King: 0, Queen: 0 }
   }
+  const pillowLatex = {
+    thin: 0,
+    thick: 0
+  }
 
   const skuIdMap = latexInventory.getSkuIdMap()
 
@@ -158,6 +197,14 @@ const convertSkuQuantitiesToLatexOrder = () => {
     }
   }
 
+  for (const type of PILLOW_LATEX_TYPES) {
+    const skuString = `pillowlatex${type}`
+    const skuId = skuIdMap[skuString]
+    if (skuId && skuQuantities.value[skuId]) {
+      pillowLatex[type] = skuQuantities.value[skuId]
+    }
+  }
+
   // Calculate total
   let total = 0
   for (const firmness of LATEX_FIRMNESSES) {
@@ -165,9 +212,13 @@ const convertSkuQuantitiesToLatexOrder = () => {
       total += latex[firmness][size]
     }
   }
+  for (const type of PILLOW_LATEX_TYPES) {
+    total += pillowLatex[type]
+  }
 
   return {
     latex,
+    pillowLatex,
     metadata: {
       total_items: total,
       container_capacity: containerCapacity.value
@@ -193,7 +244,7 @@ const computeOrderFromSettings = () => {
 
 // Update draft orders and SKU quantities from algorithm when settings change
 const updateFromAlgorithm = async () => {
-  if (isInitializing.value || isEditing.value) return
+  if (isInitializing.value) return
 
   await latexInventory.refresh()
 
@@ -208,7 +259,7 @@ const updateFromAlgorithm = async () => {
 }
 
 // Watch local settings and update draft orders
-watch(localContainerSize, () => {
+watch(localCapacity, () => {
   updateFromAlgorithm()
 })
 
@@ -222,7 +273,7 @@ watch(localOrderWeekOffset, (offset) => {
 
 // Watch delivery weeks - update expected arrival and recalculate
 watch(localDeliveryWeeks, (weeks) => {
-  if (isInitializing.value || isEditing.value) return
+  if (isInitializing.value) return
   expectedArrival.value = calculateExpectedArrivalFromWeeks(orderDate.value, weeks)
   updateFromAlgorithm()
 })
@@ -277,6 +328,9 @@ const initForm = () => {
         })
       }
       skuQuantities.value = quantities
+      localCapacity.value = Object.values(quantities).reduce((sum, qty) => sum + (qty || 0), 0) || DEFAULT_LATEX_CAPACITY
+      localDeliveryWeeks.value = getDeliveryWeeksBetweenDates(order.order_date, order.expected_arrival)
+      localOrderWeekOffset.value = getWeekOffsetForDate(order.order_date)
 
       // Set draft order for real-time preview
       latexInventory.refresh().then(() => {
@@ -290,7 +344,7 @@ const initForm = () => {
     }
   } else {
     // Creating new order - use algorithm
-    localContainerSize.value = '40ft'
+    localCapacity.value = DEFAULT_LATEX_CAPACITY
     localOrderWeekOffset.value = 0
     localDeliveryWeeks.value = LATEX_LEAD_TIME_WEEKS
 
@@ -310,9 +364,9 @@ const initForm = () => {
 watch(orderDate, (newDate) => {
   if (isInitializing.value) return
   if (!newDate) return
-  if (!isEditing.value) {
-    expectedArrival.value = calculateExpectedArrivalFromWeeks(newDate, localDeliveryWeeks.value)
-  }
+  localOrderWeekOffset.value = getWeekOffsetForDate(newDate)
+  expectedArrival.value = calculateExpectedArrivalFromWeeks(newDate, localDeliveryWeeks.value)
+  updateFromAlgorithm()
 })
 
 // Watch for expected arrival changes to update draft order (when user edits date directly)
@@ -427,35 +481,29 @@ const currentInventory = computed(() => latexInventory.inventory.value)
           {{ error }}
         </div>
 
-        <!-- Order Settings (only for new orders) -->
-        <div v-if="!isEditing" class="mb-6 p-3 bg-zinc-800/50 rounded-lg space-y-4">
+        <!-- Order Settings -->
+        <div class="mb-6 p-3 bg-zinc-800/50 rounded-lg space-y-4">
           <h3 class="text-sm font-medium text-zinc-300">Order settings</h3>
 
-          <!-- Container Size -->
+          <!-- Capacity -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-zinc-400">Container</label>
-            <div class="flex gap-1 bg-zinc-700 rounded-lg p-0.5">
+            <label class="text-sm text-zinc-400">Capacity</label>
+            <div class="flex items-center gap-2">
               <button
-                @click="localContainerSize = '40ft'"
-                :class="[
-                  'px-3 py-1 text-sm rounded-md transition-colors',
-                  localContainerSize === '40ft'
-                    ? 'bg-orange-500 text-white'
-                    : 'text-zinc-400 hover:text-zinc-50'
-                ]"
+                @click="decrementCapacity"
+                class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+                :disabled="localCapacity <= MIN_LATEX_CAPACITY"
               >
-                40ft (340)
+                -
               </button>
+              <div class="w-20 h-8 flex items-center justify-center bg-zinc-800 border border-border rounded text-zinc-50 text-sm font-mono">
+                {{ localCapacity }}
+              </div>
               <button
-                @click="localContainerSize = '20ft'"
-                :class="[
-                  'px-3 py-1 text-sm rounded-md transition-colors',
-                  localContainerSize === '20ft'
-                    ? 'bg-orange-500 text-white'
-                    : 'text-zinc-400 hover:text-zinc-50'
-                ]"
+                @click="incrementCapacity"
+                class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
               >
-                20ft (170)
+                +
               </button>
             </div>
           </div>

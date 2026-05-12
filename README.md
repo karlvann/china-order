@@ -18,9 +18,9 @@ Plans container orders across two supply chains:
 
 **China (springs + components)** - Allocates 1-12 pallets (30 springs each) using demand-based coverage priority. Calculates matching component orders with balanced coverage.
 
-**Sri Lanka (latex comfort layers)** - Allocates latex units across King/Queen in 20ft (170 units) or 40ft (340 units) containers.
+**Sri Lanka (latex comfort layers)** - Allocates latex units across King/Queen mattress sheets and pillow latex thin/thick using an editable item capacity.
 
-Both systems pull live sales data (6-week lookback) from Directus to calculate weekly demand rates.
+Both systems pull live sales data from Directus to calculate weekly demand rates.
 
 ## Documentation
 

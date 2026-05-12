@@ -1,5 +1,5 @@
 <script setup>
-import { LATEX_FIRMNESSES, LATEX_SIZES } from '~/lib/constants/index.js'
+import { LATEX_FIRMNESSES, LATEX_SIZES, PILLOW_LATEX_TYPES, PILLOW_LATEX_LABELS } from '~/lib/constants/index.js'
 
 const props = defineProps({
   modelValue: {
@@ -19,21 +19,35 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 // Get quantity for a specific SKU
-const getQuantity = (firmness, size) => {
-  const skuString = `latex${firmness}${size.toLowerCase()}`
+const getSkuQuantity = (skuString) => {
   const skuId = props.skuIdMap[skuString]
   return skuId ? (props.modelValue[skuId] || 0) : 0
 }
 
 // Set quantity for a specific SKU
-const setQuantity = (firmness, size, value) => {
-  const skuString = `latex${firmness}${size.toLowerCase()}`
+const setSkuQuantity = (skuString, value) => {
   const skuId = props.skuIdMap[skuString]
   if (!skuId) return
 
   const newValue = { ...props.modelValue }
   newValue[skuId] = Math.max(0, parseInt(value) || 0)
   emit('update:modelValue', newValue)
+}
+
+const getQuantity = (firmness, size) => {
+  return getSkuQuantity(`latex${firmness}${size.toLowerCase()}`)
+}
+
+const setQuantity = (firmness, size, value) => {
+  setSkuQuantity(`latex${firmness}${size.toLowerCase()}`, value)
+}
+
+const getPillowLatexQuantity = (type) => {
+  return getSkuQuantity(`pillowlatex${type}`)
+}
+
+const setPillowLatexQuantity = (type, value) => {
+  setSkuQuantity(`pillowlatex${type}`, value)
 }
 
 // Increment quantity
@@ -65,8 +79,16 @@ const totalBySize = computed(() => {
   return totals
 })
 
+const totalPillowLatex = computed(() => {
+  let total = 0
+  for (const type of PILLOW_LATEX_TYPES) {
+    total += getPillowLatexQuantity(type)
+  }
+  return total
+})
+
 const grandTotal = computed(() => {
-  return totalBySize.value.King + totalBySize.value.Queen
+  return totalBySize.value.King + totalBySize.value.Queen + totalPillowLatex.value
 })
 </script>
 
@@ -106,6 +128,48 @@ const grandTotal = computed(() => {
             >
             <button
               @click="increment(firmness, size)"
+              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pillow latex rows -->
+    <div class="space-y-2">
+      <div class="text-sm font-medium text-zinc-300 mb-3">
+        Pillow latex
+        <span class="text-zinc-500 font-normal">({{ totalPillowLatex }} total)</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div
+          v-for="type in PILLOW_LATEX_TYPES"
+          :key="type"
+          class="flex flex-col items-center bg-surface border border-border rounded-lg p-3"
+        >
+          <div class="text-sm text-zinc-50">{{ PILLOW_LATEX_LABELS[type] }}</div>
+          <div class="text-xs text-zinc-500 mb-2">Stock: {{ Math.round(currentInventory.pillowLatex?.[type] || 0) }}</div>
+
+          <div class="flex items-center gap-2">
+            <button
+              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) - 1)"
+              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+              :disabled="getPillowLatexQuantity(type) <= 0"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              :value="getPillowLatexQuantity(type)"
+              @input="setPillowLatexQuantity(type, $event.target.value)"
+              class="w-16 h-8 text-center bg-zinc-800 border border-border rounded text-zinc-50 text-sm"
+              min="0"
+            >
+            <button
+              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) + 1)"
               class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
             >
               +

@@ -1,14 +1,15 @@
 /**
  * Composable for fetching latex inventory from Directus
  *
- * Fetches current stock levels for all 6 latex SKUs and structures
- * the data by firmness and size for use in the ordering algorithm.
+ * Fetches current stock levels for mattress and pillow latex SKUs and structures
+ * the data for use in the ordering algorithm.
  */
 
 import {
   LATEX_SKUS,
   LATEX_FIRMNESSES,
-  LATEX_SIZES
+  LATEX_SIZES,
+  PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
 
 /**
@@ -20,7 +21,9 @@ const SKU_MAP = {
   latexmediumking: { firmness: 'medium', size: 'King' },
   latexmediumqueen: { firmness: 'medium', size: 'Queen' },
   latexsoftking: { firmness: 'soft', size: 'King' },
-  latexsoftqueen: { firmness: 'soft', size: 'Queen' }
+  latexsoftqueen: { firmness: 'soft', size: 'Queen' },
+  pillowlatexthin: { pillowLatexType: 'thin' },
+  pillowlatexthick: { pillowLatexType: 'thick' }
 }
 
 /**
@@ -33,6 +36,10 @@ function createEmptyInventory() {
     for (const size of LATEX_SIZES) {
       inventory[firmness][size] = 0
     }
+  }
+  inventory.pillowLatex = {}
+  for (const type of PILLOW_LATEX_TYPES) {
+    inventory.pillowLatex[type] = 0
   }
   return inventory
 }
@@ -81,7 +88,11 @@ export function useLatexInventory() {
         const mapping = SKU_MAP[sku.sku]
         if (mapping) {
           const qty = sku.quantity || 0
-          inv[mapping.firmness][mapping.size] = qty
+          if (mapping.pillowLatexType) {
+            inv.pillowLatex[mapping.pillowLatexType] = qty
+          } else {
+            inv[mapping.firmness][mapping.size] = qty
+          }
           total += qty
         }
       }
