@@ -8,6 +8,7 @@ import {
   getChunkIndex,
   emptyChunks,
   trimmedWeeklyRate,
+  roundDemandRate,
   getTrimAnnotations,
   chunkLabel
 } from '~/lib/utils/demandTrimming.js'
@@ -266,8 +267,8 @@ export function useWeeklySales() {
       modelDistribution.value = modelCountsTotal
 
       microCoilDemand.value = {
-        King: Math.round(trimmedWeeklyRate(chunkedMicroKing) * 10) / 10,
-        Queen: Math.round(trimmedWeeklyRate(chunkedMicroQueen) * 10) / 10
+        King: roundDemandRate(trimmedWeeklyRate(chunkedMicroKing)),
+        Queen: roundDemandRate(trimmedWeeklyRate(chunkedMicroQueen))
       }
       thinLatexDemand.value = { ...microCoilDemand.value }
 
@@ -275,7 +276,7 @@ export function useWeeklySales() {
       for (const size of Object.keys(demandTotal)) {
         weekly[size] = {}
         for (const key of ['firm', 'medium', 'soft', 'total']) {
-          weekly[size][key] = Math.round(trimmedWeeklyRate(chunked[size][key]) * 10) / 10
+          weekly[size][key] = roundDemandRate(trimmedWeeklyRate(chunked[size][key]))
         }
       }
       weeklyRates.value = weekly

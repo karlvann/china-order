@@ -27,6 +27,7 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 5. Otherwise, always drop the **single lowest chunk** and the **single highest chunk**.
 6. ALSO drop the **second-lowest chunk** if (and only if) its 2-week period is *time-adjacent* to the lowest chunk's period — i.e., their chunk indices differ by 1. A real ~3-week stockout produces two consecutive low chunks; scattered low chunks are normal weekly variance and should not both be trimmed.
 7. Average the remaining 3 or 4 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
+8. Round the internal algorithm rate to **3 decimal places**. UI tables may still display 1 decimal place for readability.
 
 > ⚠️ "Adjacent" means **consecutive in time** (e.g., the `0-2w ago` chunk and the `2-4w ago` chunk). It is NOT about the sorted-by-value order — that would be trivially always-adjacent.
 

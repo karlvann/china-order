@@ -23,6 +23,7 @@ import {
   getChunkIndex,
   emptyChunks,
   trimmedWeeklyRate,
+  roundDemandRate,
   getTrimAnnotations,
   chunkLabel
 } from '~/lib/utils/demandTrimming.js'
@@ -288,7 +289,7 @@ export function useLatexSales() {
 
       for (const firmness of LATEX_FIRMNESSES) {
         for (const size of LATEX_SIZES) {
-          const rate = Math.round(trimmedWeeklyRate(chunked[firmness][size]) * 10) / 10
+          const rate = roundDemandRate(trimmedWeeklyRate(chunked[firmness][size]))
           weekly[firmness][size] = rate
           totals[size] += rate
         }
@@ -296,13 +297,13 @@ export function useLatexSales() {
 
       const pillowWeekly = createEmptyPillowLatexDemand()
       for (const type of PILLOW_LATEX_TYPES) {
-        pillowWeekly[type] = Math.round(trimmedWeeklyRate(chunkedPillow[type]) * 10) / 10
+        pillowWeekly[type] = roundDemandRate(trimmedWeeklyRate(chunkedPillow[type]))
       }
 
       weeklyRates.value = weekly
       weeklyTotalBySize.value = {
-        King: Math.round(totals.King * 10) / 10,
-        Queen: Math.round(totals.Queen * 10) / 10
+        King: roundDemandRate(totals.King),
+        Queen: roundDemandRate(totals.Queen)
       }
       pillowLatexWeeklyRates.value = pillowWeekly
 
