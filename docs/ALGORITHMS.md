@@ -23,14 +23,18 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
    - The 12-week window is chosen because the mattress recommendation algorithm changed in late February 2026; older data reflects a different product mix.
 2. Bucket each sale into one of **6 chunks of 2 weeks** based on its date, where chunk 0 = most recent 2 weeks, chunk 5 = oldest.
 3. For each metric (per size, per firmness, micro coils, etc.), sum the values per chunk.
-4. Drop the **2 lowest chunks** (a typical 3-week stockout spans 2 of the 2-week chunks) and the **single highest chunk** (1-2 week post-restock recovery spike).
-5. Average the remaining 3 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
+4. Always drop the **single lowest chunk** and the **single highest chunk**.
+5. ALSO drop the **second-lowest chunk** if (and only if) its 2-week period is *time-adjacent* to the lowest chunk's period — i.e., their chunk indices differ by 1. A real ~3-week stockout produces two consecutive low chunks; scattered low chunks are normal weekly variance and should not both be trimmed.
+6. Average the remaining 3 or 4 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
+
+> ⚠️ "Adjacent" means **consecutive in time** (e.g., the `0-2w ago` chunk and the `2-4w ago` chunk). It is NOT about the sorted-by-value order — that would be trivially always-adjacent.
 
 ### Why this rule
 
 | Distortion | Pattern in chunks | How the rule handles it |
 |------------|-------------------|-------------------------|
-| ~3-week stockout | 2 low chunks | Both lowest dropped |
+| ~3-week stockout | 2 time-adjacent low chunks | Both dropped |
+| One-off slow week | 1 low chunk (or 2 non-adjacent lows) | Only the lowest dropped |
 | 1-2 week recovery spike | 1 high chunk | Highest dropped |
 | Sustained baseline | Chunks roughly equal | Trim has little effect; result ≈ mean |
 
