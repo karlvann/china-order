@@ -45,5 +45,15 @@ export default defineNuxtConfig({
   // Alias for lib folder
   alias: {
     '~/lib': './lib'
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@vue/devtools-core',
+        '@vue/devtools-kit',
+      ]
+    }
   }
+
 })

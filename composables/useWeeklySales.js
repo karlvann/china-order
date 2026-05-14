@@ -282,13 +282,14 @@ export function useWeeklySales() {
 
       // Per-metric trim summary so the rate can be audited.
       const logTrim = (label, counts, rate) => {
-        const { lows, high } = getTrimAnnotations(counts)
+        const { lows, high, strategy, reason } = getTrimAnnotations(counts)
         const lowSet = new Set(lows)
-        console.log(`[Sales] ${label} → ${rate}/w`)
+        const suffix = strategy === 'raw-average' ? ` (${reason})` : ''
+        console.log(`[Sales] ${label} → ${rate}/w${suffix}`)
         counts.forEach((v, i) => {
           let marker = ''
           if (lowSet.has(i)) marker = ' (low ✗)'
-          else if (i === high) marker = ' (high ✗)'
+          else if (high !== null && i === high) marker = ' (high ✗)'
           console.log(`  ${chunkLabel(i)}: ${v}${marker}`)
         })
         console.log('')
