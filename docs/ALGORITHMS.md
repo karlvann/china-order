@@ -23,14 +23,14 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
    - The 12-week window is chosen because the mattress recommendation algorithm changed in late February 2026; older data reflects a different product mix.
 2. Bucket each sale into one of **6 chunks of 2 weeks** based on its date, where chunk 0 = most recent 2 weeks, chunk 5 = oldest.
 3. For each metric (per size, per firmness, micro coils, etc.), sum the values per chunk.
-4. Drop the **single lowest chunk** (stockout-suppressed weeks) and the **single highest chunk** (post-restock recovery spike).
-5. Average the remaining 4 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
+4. Drop the **2 lowest chunks** (a typical 3-week stockout spans 2 of the 2-week chunks) and the **single highest chunk** (1-2 week post-restock recovery spike).
+5. Average the remaining 3 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
 
 ### Why this rule
 
 | Distortion | Pattern in chunks | How the rule handles it |
 |------------|-------------------|-------------------------|
-| Stockout dip | 1+ low chunks | Lowest dropped |
+| ~3-week stockout | 2 low chunks | Both lowest dropped |
 | 1-2 week recovery spike | 1 high chunk | Highest dropped |
 | Sustained baseline | Chunks roughly equal | Trim has little effect; result ≈ mean |
 
