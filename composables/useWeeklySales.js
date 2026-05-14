@@ -1,14 +1,18 @@
 /**
- * Composable for fetching and analyzing weekly sales data from Directus
- *
- * Fetches orders from the last 84 days (12 weeks) and analyzes mattress sales
- * to determine spring demand by size and firmness.
- * Uses blended 6/12 week lookback — takes the higher weekly rate from either window.
+ * Composable for fetching and analyzing weekly sales data from Directus.
+ * Uses chunked trimmed-mean rate calculation — see lib/utils/demandTrimming.js.
  */
 
+import {
+  LOOKBACK_DAYS,
+  getChunkIndex,
+  emptyChunks,
+  trimmedWeeklyRate,
+  getTrimAnnotations,
+  chunkLabel
+} from '~/lib/utils/demandTrimming.js'
+
 const MATTRESS_RANGES = ['cooper', 'cloud', 'aurora']
-const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
-const LOOKBACK_DAYS_LONG = 63 // 9 weeks
 
 // Size mapping from SKU suffix to standard size names
 // Order matters! Check longer matches first (kingsingle before single, king before checking others)
@@ -133,17 +137,13 @@ export function useWeeklySales() {
     error.value = null
 
     try {
-      // Calculate date ranges (6-week and 12-week windows)
       const endDate = new Date()
-      const startDateLong = new Date()
-      startDateLong.setDate(startDateLong.getDate() - LOOKBACK_DAYS_LONG)
-      const startDateShort = new Date()
-      startDateShort.setDate(startDateShort.getDate() - LOOKBACK_DAYS_SHORT)
-
-      console.log(`Fetching orders from last ${LOOKBACK_DAYS_LONG} days (blended 6/12 week lookback)`)
+      const referenceTime = endDate.getTime()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
 
       dateRange.value = {
-        start: startDateLong.toISOString().split('T')[0],
+        start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
       }
 
@@ -153,7 +153,7 @@ export function useWeeklySales() {
         params: {
           filter: {
             date_created: {
-              _gte: startDateLong.toISOString()
+              _gte: startDate.toISOString()
             },
             payment_status: {
               _eq: 'paid'
@@ -199,11 +199,6 @@ export function useWeeklySales() {
       salesData.value = sales
       totalSales.value = sales.length
 
-      // Split sales into 12-week (all) and 6-week (recent) windows
-      const shortCutoff = startDateShort.getTime()
-      const salesShort = sales.filter(s => new Date(s.dateCreated).getTime() >= shortCutoff)
-
-      // Helper to create empty demand structure
       const emptyDemand = () => ({
         King: { firm: 0, medium: 0, soft: 0, total: 0 },
         Queen: { firm: 0, medium: 0, soft: 0, total: 0 },
@@ -220,88 +215,98 @@ export function useWeeklySales() {
         Single: { cloud: 0, aurora: 0, cooper: 0 }
       })
 
-      // Aggregate both windows
-      const demandLong = emptyDemand()
-      const demandShort = emptyDemand()
-      const modelCountsLong = emptyModelCounts()
+      // Full-window totals (used for firmness + model distribution percentages)
+      const demandTotal = emptyDemand()
+      const modelCountsTotal = emptyModelCounts()
+
+      // Per-chunk counts drive the trimmed weekly rate calculation
+      const chunked = {}
+      for (const size of Object.keys(demandTotal)) {
+        chunked[size] = {
+          firm: emptyChunks(),
+          medium: emptyChunks(),
+          soft: emptyChunks(),
+          total: emptyChunks()
+        }
+      }
+      const chunkedMicroKing = emptyChunks()
+      const chunkedMicroQueen = emptyChunks()
 
       for (const sale of sales) {
-        if (demandLong[sale.size]) {
-          demandLong[sale.size][sale.firmnessType]++
-          demandLong[sale.size].total++
-          if (modelCountsLong[sale.size] && sale.range) {
-            modelCountsLong[sale.size][sale.range]++
+        const idx = getChunkIndex(sale.dateCreated, referenceTime)
+        if (idx < 0) continue
+
+        if (demandTotal[sale.size]) {
+          demandTotal[sale.size][sale.firmnessType]++
+          demandTotal[sale.size].total++
+          if (modelCountsTotal[sale.size] && sale.range) {
+            modelCountsTotal[sale.size][sale.range]++
           }
         }
-      }
 
-      for (const sale of salesShort) {
-        if (demandShort[sale.size]) {
-          demandShort[sale.size][sale.firmnessType]++
-          demandShort[sale.size].total++
+        if (chunked[sale.size]) {
+          chunked[sale.size][sale.firmnessType][idx]++
+          chunked[sale.size].total[idx]++
         }
-      }
 
-      demandBySize.value = demandLong
-      modelDistribution.value = modelCountsLong
-
-      // Calculate micro coil/thin latex demand for both windows
-      function addMicroDemand(sale, mkRef, mqRef) {
+        // Micro coil / thin latex layers: Cloud=2, Aurora=1, Cooper=0
         const layers = sale.range === 'cloud' ? 2 : sale.range === 'aurora' ? 1 : 0
         if (layers > 0) {
           if (sale.size === 'King') {
-            mkRef.value += layers * 1.0
+            chunkedMicroKing[idx] += layers
           } else if (sale.size === 'Single') {
-            mkRef.value += layers * 0.5
+            chunkedMicroKing[idx] += layers * 0.5
           } else {
-            mqRef.value += layers * 1.0
+            chunkedMicroQueen[idx] += layers
           }
         }
       }
 
-      // Use wrapper objects for pass-by-reference
-      const mkL = { value: 0 }, mqL = { value: 0 }, mkS = { value: 0 }, mqS = { value: 0 }
-      for (const sale of sales) addMicroDemand(sale, mkL, mqL)
-      for (const sale of salesShort) addMicroDemand(sale, mkS, mqS)
-
-      // Calculate weekly rates for both windows, take the max
-      const weeksShort = LOOKBACK_DAYS_SHORT / 7
-      const weeksLong = LOOKBACK_DAYS_LONG / 7
-
-      const microKingRateShort = mkS.value / weeksShort
-      const microKingRateLong = mkL.value / weeksLong
-      const microQueenRateShort = mqS.value / weeksShort
-      const microQueenRateLong = mqL.value / weeksLong
+      demandBySize.value = demandTotal
+      modelDistribution.value = modelCountsTotal
 
       microCoilDemand.value = {
-        King: Math.round(Math.max(microKingRateShort, microKingRateLong) * 10) / 10,
-        Queen: Math.round(Math.max(microQueenRateShort, microQueenRateLong) * 10) / 10
+        King: Math.round(trimmedWeeklyRate(chunkedMicroKing) * 10) / 10,
+        Queen: Math.round(trimmedWeeklyRate(chunkedMicroQueen) * 10) / 10
       }
       thinLatexDemand.value = { ...microCoilDemand.value }
 
-      // Blended weekly rates: max of 6-week and 12-week rate for each metric
       const weekly = {}
-      for (const size of Object.keys(demandLong)) {
+      for (const size of Object.keys(demandTotal)) {
         weekly[size] = {}
         for (const key of ['firm', 'medium', 'soft', 'total']) {
-          const rateShort = demandShort[size][key] / weeksShort
-          const rateLong = demandLong[size][key] / weeksLong
-          weekly[size][key] = Math.round(Math.max(rateShort, rateLong) * 10) / 10
+          weekly[size][key] = Math.round(trimmedWeeklyRate(chunked[size][key]) * 10) / 10
         }
       }
       weeklyRates.value = weekly
 
-      console.log('[Sales] Blended 6/12 week rates (higher of two windows):', weekly)
+      // Per-metric trim summary so the rate can be audited.
+      const logTrim = (label, counts, rate) => {
+        const { low, high } = getTrimAnnotations(counts)
+        console.log(`[Sales] ${label} → ${rate}/w`)
+        counts.forEach((v, i) => {
+          let marker = ''
+          if (i === low) marker = ' (low ✗)'
+          else if (i === high) marker = ' (high ✗)'
+          console.log(`  ${chunkLabel(i)}: ${v}${marker}`)
+        })
+        console.log('')
+      }
+      for (const size of Object.keys(demandTotal)) {
+        logTrim(size, chunked[size].total, weekly[size].total)
+      }
+      logTrim('Micro King', chunkedMicroKing, microCoilDemand.value.King)
+      logTrim('Micro Queen', chunkedMicroQueen, microCoilDemand.value.Queen)
 
       // Firmness distribution from 12-week window (larger sample = more stable)
       const distribution = {}
-      for (const size of Object.keys(demandLong)) {
-        const total = demandLong[size].total
+      for (const size of Object.keys(demandTotal)) {
+        const total = demandTotal[size].total
         if (total > 0) {
           distribution[size] = {
-            firm: Math.round((demandLong[size].firm / total) * 100),
-            medium: Math.round((demandLong[size].medium / total) * 100),
-            soft: Math.round((demandLong[size].soft / total) * 100)
+            firm: Math.round((demandTotal[size].firm / total) * 100),
+            medium: Math.round((demandTotal[size].medium / total) * 100),
+            soft: Math.round((demandTotal[size].soft / total) * 100)
           }
         } else {
           distribution[size] = { firm: 0, medium: 0, soft: 0 }

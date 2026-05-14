@@ -1,9 +1,6 @@
 /**
- * Composable for fetching and analyzing latex demand from sales data
- *
- * Fetches orders from the last 63 days (9 weeks) and analyzes mattress and pillow sales
- * to determine latex demand.
- * Uses blended 6/9 week lookback — takes the higher weekly rate from either window.
+ * Composable for fetching and analyzing latex demand from sales data.
+ * Uses chunked trimmed-mean rate calculation — see lib/utils/demandTrimming.js.
  *
  * Key business rules:
  * - Cooper mattresses use polyfoam, NOT latex (excluded from calculations)
@@ -21,9 +18,14 @@ import {
   PILLOW_LATEX_SKUS,
   PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
-
-const LOOKBACK_DAYS_SHORT = 42 // 6 weeks
-const LOOKBACK_DAYS_LONG = 63 // 9 weeks
+import {
+  LOOKBACK_DAYS,
+  getChunkIndex,
+  emptyChunks,
+  trimmedWeeklyRate,
+  getTrimAnnotations,
+  chunkLabel
+} from '~/lib/utils/demandTrimming.js'
 
 const PILLOW_LATEX_SKU_MAP = {
   pillowlatexthin: 'thin',
@@ -169,17 +171,13 @@ export function useLatexSales() {
     error.value = null
 
     try {
-      // Calculate date ranges (6-week and 12-week windows)
       const endDate = new Date()
-      const startDateLong = new Date()
-      startDateLong.setDate(startDateLong.getDate() - LOOKBACK_DAYS_LONG)
-      const startDateShort = new Date()
-      startDateShort.setDate(startDateShort.getDate() - LOOKBACK_DAYS_SHORT)
-
-      console.log(`[Latex] Fetching orders from last ${LOOKBACK_DAYS_LONG} days (blended 6/12 week lookback)`)
+      const referenceTime = endDate.getTime()
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
 
       dateRange.value = {
-        start: startDateLong.toISOString().split('T')[0],
+        start: startDate.toISOString().split('T')[0],
         end: endDate.toISOString().split('T')[0]
       }
 
@@ -189,7 +187,7 @@ export function useLatexSales() {
         params: {
           filter: {
             date_created: {
-              _gte: startDateLong.toISOString()
+              _gte: startDate.toISOString()
             },
             payment_status: {
               _eq: 'paid'
@@ -252,44 +250,45 @@ export function useLatexSales() {
       salesData.value = sales
       totalSales.value = sales.reduce((sum, sale) => sum + sale.quantity, 0)
 
-      // Split sales into 12-week (all) and 6-week (recent) windows
-      const shortCutoff = startDateShort.getTime()
-      const salesShort = sales.filter(s => new Date(s.dateCreated).getTime() >= shortCutoff)
+      // Full-window totals drive the firmness distribution percentages
+      const demandTotal = createEmptyDemand()
+      const pillowDemandTotal = createEmptyPillowLatexDemand()
 
-      // Aggregate demand for both windows
-      const demandLong = createEmptyDemand()
-      const demandShort = createEmptyDemand()
-      const pillowDemandLong = createEmptyPillowLatexDemand()
-      const pillowDemandShort = createEmptyPillowLatexDemand()
+      // Per-chunk amounts drive the trimmed weekly rate
+      const chunked = {}
+      for (const firmness of LATEX_FIRMNESSES) {
+        chunked[firmness] = {}
+        for (const size of LATEX_SIZES) {
+          chunked[firmness][size] = emptyChunks()
+        }
+      }
+      const chunkedPillow = {}
+      for (const type of PILLOW_LATEX_TYPES) {
+        chunkedPillow[type] = emptyChunks()
+      }
 
       for (const sale of sales) {
+        const idx = getChunkIndex(sale.dateCreated, referenceTime)
+        if (idx < 0) continue
+
+        const amount = sale.deduction * sale.quantity
         if (sale.type === 'pillow_latex') {
-          pillowDemandLong[sale.pillowLatexType] += sale.deduction * sale.quantity
+          pillowDemandTotal[sale.pillowLatexType] += amount
+          chunkedPillow[sale.pillowLatexType][idx] += amount
         } else {
-          demandLong[sale.latexFirmness][sale.latexSize] += sale.deduction * sale.quantity
-        }
-      }
-      for (const sale of salesShort) {
-        if (sale.type === 'pillow_latex') {
-          pillowDemandShort[sale.pillowLatexType] += sale.deduction * sale.quantity
-        } else {
-          demandShort[sale.latexFirmness][sale.latexSize] += sale.deduction * sale.quantity
+          demandTotal[sale.latexFirmness][sale.latexSize] += amount
+          chunked[sale.latexFirmness][sale.latexSize][idx] += amount
         }
       }
 
-      demandByFirmnessSize.value = demandLong
+      demandByFirmnessSize.value = demandTotal
 
-      // Calculate blended weekly rates: max of 6-week and 12-week rate
-      const weeksShort = LOOKBACK_DAYS_SHORT / 7
-      const weeksLong = LOOKBACK_DAYS_LONG / 7
       const weekly = createEmptyDemand()
       const totals = { King: 0, Queen: 0 }
 
       for (const firmness of LATEX_FIRMNESSES) {
         for (const size of LATEX_SIZES) {
-          const rateShort = demandShort[firmness][size] / weeksShort
-          const rateLong = demandLong[firmness][size] / weeksLong
-          const rate = Math.round(Math.max(rateShort, rateLong) * 10) / 10
+          const rate = Math.round(trimmedWeeklyRate(chunked[firmness][size]) * 10) / 10
           weekly[firmness][size] = rate
           totals[size] += rate
         }
@@ -297,9 +296,7 @@ export function useLatexSales() {
 
       const pillowWeekly = createEmptyPillowLatexDemand()
       for (const type of PILLOW_LATEX_TYPES) {
-        const rateShort = pillowDemandShort[type] / weeksShort
-        const rateLong = pillowDemandLong[type] / weeksLong
-        pillowWeekly[type] = Math.round(Math.max(rateShort, rateLong) * 10) / 10
+        pillowWeekly[type] = Math.round(trimmedWeeklyRate(chunkedPillow[type]) * 10) / 10
       }
 
       weeklyRates.value = weekly
@@ -316,20 +313,40 @@ export function useLatexSales() {
       }
 
       for (const size of LATEX_SIZES) {
-        let longTotal = 0
+        let sizeTotal = 0
         for (const firmness of LATEX_FIRMNESSES) {
-          longTotal += demandLong[firmness][size]
+          sizeTotal += demandTotal[firmness][size]
         }
-        if (longTotal > 0) {
+        if (sizeTotal > 0) {
           for (const firmness of LATEX_FIRMNESSES) {
-            distribution[size][firmness] = Math.round((demandLong[firmness][size] / longTotal) * 100)
+            distribution[size][firmness] = Math.round((demandTotal[firmness][size] / sizeTotal) * 100)
           }
         }
       }
 
       firmnessDistribution.value = distribution
 
-      console.log('[Latex] Blended 6/12 week rates (higher of two windows):', weekly)
+      // Per-metric trim summary so the rate can be audited.
+      const logTrim = (label, counts, rate) => {
+        const { low, high } = getTrimAnnotations(counts)
+        console.log(`[Latex] ${label} → ${rate}/w`)
+        counts.forEach((v, i) => {
+          let marker = ''
+          if (i === low) marker = ' (low ✗)'
+          else if (i === high) marker = ' (high ✗)'
+          console.log(`  ${chunkLabel(i)}: ${v}${marker}`)
+        })
+        console.log('')
+      }
+      console.log(`[Latex] ${sales.length} sales from ${orders.length} orders`)
+      for (const firmness of LATEX_FIRMNESSES) {
+        for (const size of LATEX_SIZES) {
+          logTrim(`${firmness} ${size}`, chunked[firmness][size], weekly[firmness][size])
+        }
+      }
+      for (const type of PILLOW_LATEX_TYPES) {
+        logTrim(`Pillow ${type}`, chunkedPillow[type], pillowWeekly[type])
+      }
 
       // Update settings store with live data
       sriLankaSettingsStore.setLatexSalesRates(
@@ -338,11 +355,6 @@ export function useLatexSales() {
         distribution,
         pillowWeekly
       )
-
-      console.log(`[Latex] Processed ${sales.length} latex-relevant sales from ${orders.length} orders`)
-      console.log('[Latex] Weekly rates:', weekly)
-      console.log('[Latex] Pillow latex weekly rates:', pillowWeekly)
-      console.log('[Latex] Totals by size:', weeklyTotalBySize.value)
 
     } catch (e) {
       error.value = e.message
