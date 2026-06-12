@@ -26,11 +26,11 @@ export const useSettingsStore = defineStore('settings', () => {
       Single: 0
     },
     FIRMNESS_DISTRIBUTION: {
-      King: { firm: 0.13, medium: 0.84, soft: 0.03 },
-      Queen: { firm: 0.13, medium: 0.84, soft: 0.03 },
-      Double: { firm: 0.2, medium: 0.6, soft: 0.2 },
-      'King Single': { firm: 0.2, medium: 0.6, soft: 0.2 },
-      Single: { firm: 0.2, medium: 0.6, soft: 0.2 }
+      King: { veryfirm: 0, firm: 0.13, medium: 0.84, soft: 0.03 },
+      Queen: { veryfirm: 0, firm: 0.13, medium: 0.84, soft: 0.03 },
+      Double: { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 },
+      'King Single': { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 },
+      Single: { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 }
     },
     MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 }
@@ -165,6 +165,7 @@ export const useSettingsStore = defineStore('settings', () => {
       // Convert percentage (0-100) to decimal (0-1)
       for (const size of Object.keys(firmnessDistribution)) {
         liveSalesRates.value.FIRMNESS_DISTRIBUTION[size] = {
+          veryfirm: (firmnessDistribution[size]?.veryfirm || 0) / 100,
           firm: (firmnessDistribution[size]?.firm || 0) / 100,
           medium: (firmnessDistribution[size]?.medium || 0) / 100,
           soft: (firmnessDistribution[size]?.soft || 0) / 100

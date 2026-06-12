@@ -5,6 +5,7 @@
 
 // Combined SKU mappings from springs and components
 const SPRING_SKUS = [
+  'springsveryfirmking', 'springsveryfirmqueen', 'springsveryfirmdouble', 'springsveryfirmkingsingle', 'springsveryfirmsingle',
   'springsfirmking', 'springsfirmqueen', 'springsfirmdouble', 'springsfirmkingsingle', 'springsfirmsingle',
   'springsmediumking', 'springsmediumqueen', 'springsmediumdouble', 'springsmediumkingsingle', 'springsmediumsingle',
   'springssoftking', 'springssoftqueen', 'springssoftdouble', 'springssoftkingsingle', 'springssoftsingle'

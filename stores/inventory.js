@@ -25,7 +25,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   // Actions
   const getTotalSpringsForSize = (size) => {
-    return ['firm', 'medium', 'soft'].reduce(
+    return ['veryfirm', 'firm', 'medium', 'soft'].reduce(
       (sum, firmness) => sum + (springs.value[firmness][size] || 0),
       0
     )

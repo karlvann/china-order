@@ -202,7 +202,7 @@ export function useInventoryOrders() {
   /**
    * Get spring quantity from an order for a specific firmness/size
    * @param {Object} order - Order object with expanded skus
-   * @param {string} firmness - 'firm', 'medium', or 'soft'
+   * @param {string} firmness - 'veryfirm', 'firm', 'medium', or 'soft'
    * @param {string} size - 'King', 'Queen', 'Double', 'King Single', 'Single'
    * @returns {number} Quantity or 0
    */

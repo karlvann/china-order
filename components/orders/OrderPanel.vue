@@ -64,7 +64,7 @@ const convertSpringOrderToSkuQuantities = (springOrder) => {
   const quantities = {}
   if (!springOrder?.springs) return quantities
 
-  const firmnesses = ['firm', 'medium', 'soft']
+  const firmnesses = ['veryfirm', 'firm', 'medium', 'soft']
   const sizes = ['King', 'Queen', 'Double', 'King Single', 'Single']
 
   for (const firmness of firmnesses) {
@@ -111,12 +111,13 @@ const convertComponentOrderToSkuQuantities = (componentOrder) => {
 // Convert SKU quantities back to spring order format (for draft preview)
 const convertSkuQuantitiesToSpringOrder = () => {
   const springs = {
+    veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
   }
 
-  const firmnesses = ['firm', 'medium', 'soft']
+  const firmnesses = ['veryfirm', 'firm', 'medium', 'soft']
   const sizes = ['King', 'Queen', 'Double', 'King Single', 'Single']
 
   for (const firmness of firmnesses) {
@@ -253,6 +254,7 @@ const convertPendingOrdersForAlgorithm = () => {
     const arrivalWeekIndex = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
 
     const springsByFirmness = {
+      veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
       firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
       medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
       soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
@@ -264,7 +266,8 @@ const convertPendingOrdersForAlgorithm = () => {
         const qty = item.quantity || 0
         if (sku.startsWith('springs')) {
           let firmness = null
-          if (sku.includes('firm')) firmness = 'firm'
+          if (sku.includes('veryfirm')) firmness = 'veryfirm'
+          else if (sku.includes('firm')) firmness = 'firm'
           else if (sku.includes('medium')) firmness = 'medium'
           else if (sku.includes('soft')) firmness = 'soft'
           if (!firmness) continue

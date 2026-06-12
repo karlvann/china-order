@@ -26,17 +26,18 @@ const SIZE_MAP_ORDERED = [
 ]
 
 // Firmness level to spring type mapping
-// 2-4 = Soft, 5-10 = Medium, 11+ = Firm
+// 2-4 = Soft, 5-10 = Medium, 11-13 = Firm, 14-19 = Very Firm
 function getFirmnessType(level) {
   const num = parseInt(level, 10)
   if (num >= 2 && num <= 4) return 'soft'
   if (num >= 5 && num <= 10) return 'medium'
-  if (num >= 11) return 'firm'
+  if (num >= 11 && num <= 13) return 'firm'
+  if (num >= 14) return 'veryfirm'
   return null
 }
 
 // Parse a mattress SKU to extract range, firmness level, and size
-// Format: range[cooper|cloud|aurora] + firmnessLevel[2-16] + size[single|kingsingle|double|queen|king]
+// Format: range[cooper|cloud|aurora] + firmnessLevel[2-19] + size[single|kingsingle|double|queen|king]
 function parseMattressSku(sku) {
   if (!sku || typeof sku !== 'string') return null
 
@@ -64,7 +65,7 @@ function parseMattressSku(sku) {
   // Extract firmness level (what's between range and size)
   const firmnessStr = remainder.slice(0, remainder.length - sizeKey.length)
   const firmnessLevel = parseInt(firmnessStr, 10)
-  if (isNaN(firmnessLevel) || firmnessLevel < 2 || firmnessLevel > 16) return null
+  if (isNaN(firmnessLevel) || firmnessLevel < 2 || firmnessLevel > 19) return null
 
   const firmnessType = getFirmnessType(firmnessLevel)
   if (!firmnessType) return null
@@ -89,30 +90,30 @@ export function useWeeklySales() {
 
   // Aggregated demand by size and firmness
   const demandBySize = ref({
-    King: { firm: 0, medium: 0, soft: 0, total: 0 },
-    Queen: { firm: 0, medium: 0, soft: 0, total: 0 },
-    Double: { firm: 0, medium: 0, soft: 0, total: 0 },
-    'King Single': { firm: 0, medium: 0, soft: 0, total: 0 },
-    Single: { firm: 0, medium: 0, soft: 0, total: 0 }
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
   })
 
   // Weekly averages
   const weeklyRates = ref({
-    King: { firm: 0, medium: 0, soft: 0, total: 0 },
-    Queen: { firm: 0, medium: 0, soft: 0, total: 0 },
-    Double: { firm: 0, medium: 0, soft: 0, total: 0 },
-    'King Single': { firm: 0, medium: 0, soft: 0, total: 0 },
-    Single: { firm: 0, medium: 0, soft: 0, total: 0 }
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
   })
 
 
   // Firmness distribution percentages by size
   const firmnessDistribution = ref({
-    King: { firm: 0, medium: 0, soft: 0 },
-    Queen: { firm: 0, medium: 0, soft: 0 },
-    Double: { firm: 0, medium: 0, soft: 0 },
-    'King Single': { firm: 0, medium: 0, soft: 0 },
-    Single: { firm: 0, medium: 0, soft: 0 }
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
   })
 
   // Model (range) distribution by size - needed for accurate component demand
@@ -201,11 +202,11 @@ export function useWeeklySales() {
       totalSales.value = sales.length
 
       const emptyDemand = () => ({
-        King: { firm: 0, medium: 0, soft: 0, total: 0 },
-        Queen: { firm: 0, medium: 0, soft: 0, total: 0 },
-        Double: { firm: 0, medium: 0, soft: 0, total: 0 },
-        'King Single': { firm: 0, medium: 0, soft: 0, total: 0 },
-        Single: { firm: 0, medium: 0, soft: 0, total: 0 }
+        King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+        Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+        Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+        'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
+        Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
       })
 
       const emptyModelCounts = () => ({
@@ -224,6 +225,7 @@ export function useWeeklySales() {
       const chunked = {}
       for (const size of Object.keys(demandTotal)) {
         chunked[size] = {
+          veryfirm: emptyChunks(),
           firm: emptyChunks(),
           medium: emptyChunks(),
           soft: emptyChunks(),
@@ -275,7 +277,7 @@ export function useWeeklySales() {
       const weekly = {}
       for (const size of Object.keys(demandTotal)) {
         weekly[size] = {}
-        for (const key of ['firm', 'medium', 'soft', 'total']) {
+        for (const key of ['veryfirm', 'firm', 'medium', 'soft', 'total']) {
           weekly[size][key] = roundDemandRate(trimmedWeeklyRate(chunked[size][key]))
         }
       }
@@ -307,12 +309,13 @@ export function useWeeklySales() {
         const total = demandTotal[size].total
         if (total > 0) {
           distribution[size] = {
+            veryfirm: Math.round((demandTotal[size].veryfirm / total) * 100),
             firm: Math.round((demandTotal[size].firm / total) * 100),
             medium: Math.round((demandTotal[size].medium / total) * 100),
             soft: Math.round((demandTotal[size].soft / total) * 100)
           }
         } else {
-          distribution[size] = { firm: 0, medium: 0, soft: 0 }
+          distribution[size] = { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
         }
       }
       firmnessDistribution.value = distribution

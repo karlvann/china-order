@@ -1,5 +1,5 @@
 <script setup>
-import { MATTRESS_SIZES, FIRMNESS_TYPES, SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import { MATTRESS_SIZES, FIRMNESS_TYPES, FIRMNESS_LABELS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
@@ -225,7 +225,7 @@ const rows = computed(() => {
       result.push({
         size: size.id,
         firmness,
-        label: `${size.name} ${firmness.charAt(0).toUpperCase() + firmness.slice(1)}`,
+        label: `${size.name} ${FIRMNESS_LABELS[firmness]}`,
         currentStock,
         orderAmount,
         weeklyRate: Math.round(weeklyRate * 10) / 10,
@@ -252,7 +252,7 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <h3 class="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-3">
       Spring timeline
-      <span class="text-sm font-normal text-zinc-500">(15 rows: 5 sizes × 3 firmnesses)</span>
+      <span class="text-sm font-normal text-zinc-500">(20 rows: 5 sizes × 4 firmnesses)</span>
     </h3>
 
     <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">

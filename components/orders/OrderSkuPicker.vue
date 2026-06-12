@@ -1,4 +1,6 @@
 <script setup>
+import { FIRMNESS_TYPES, FIRMNESS_LABELS } from '~/lib/constants/index.js'
+
 const props = defineProps({
   modelValue: {
     type: Object,
@@ -18,7 +20,6 @@ const activeTab = ref('springs')
 // Sizes in display order
 const SIZES = ['King', 'Queen', 'Double', 'King Single', 'Single']
 const SIZE_ABBREV = { King: 'K', Queen: 'Q', Double: 'D', 'King Single': 'KS', Single: 'S' }
-const FIRMNESS_TYPES = ['firm', 'medium', 'soft']
 const COMPONENT_TYPES = [
   { key: 'micro_coils', label: 'Micro Coils', sizesOnly: ['King', 'Queen'] },
   { key: 'thin_latex', label: 'Thin Latex', sizesOnly: ['King', 'Queen'] },
@@ -178,9 +179,13 @@ const clearComponents = () => {
           <thead>
             <tr class="text-zinc-400 text-left">
               <th class="py-2 pr-4 font-medium">Size</th>
-              <th class="py-2 px-2 font-medium text-center">Firm</th>
-              <th class="py-2 px-2 font-medium text-center">Medium</th>
-              <th class="py-2 px-2 font-medium text-center">Soft</th>
+              <th
+                v-for="firmness in FIRMNESS_TYPES"
+                :key="firmness"
+                class="py-2 px-2 font-medium text-center"
+              >
+                {{ FIRMNESS_LABELS[firmness] }}
+              </th>
             </tr>
           </thead>
           <tbody>

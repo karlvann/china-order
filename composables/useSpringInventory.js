@@ -3,6 +3,11 @@
  */
 
 const SKU_MAP = {
+  springsveryfirmking: { firmness: 'veryfirm', size: 'King' },
+  springsveryfirmqueen: { firmness: 'veryfirm', size: 'Queen' },
+  springsveryfirmdouble: { firmness: 'veryfirm', size: 'Double' },
+  springsveryfirmkingsingle: { firmness: 'veryfirm', size: 'King Single' },
+  springsveryfirmsingle: { firmness: 'veryfirm', size: 'Single' },
   springsfirmking: { firmness: 'firm', size: 'King' },
   springsfirmqueen: { firmness: 'firm', size: 'Queen' },
   springsfirmdouble: { firmness: 'firm', size: 'Double' },
@@ -24,6 +29,7 @@ export function useSpringInventory() {
   const { getItems } = useDirectusItems()
 
   const springs = ref({
+    veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
     soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
@@ -53,6 +59,7 @@ export function useSpringInventory() {
 
       // Reset springs to defaults first
       springs.value = {
+        veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
         firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
         medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
         soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
