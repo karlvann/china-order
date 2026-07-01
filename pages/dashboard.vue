@@ -51,16 +51,28 @@ watch(activeChinaInventory, (inventory) => {
   inventoryStore.setComponents(inventory.components)
 }, { immediate: true, deep: true })
 
-watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, springsLoading], ([modeLoaded, isLiveMode, isLoading]) => {
-  inventoryStore.setSpringsLoading(!modeLoaded || (isLiveMode && isLoading))
+watch([
+  () => appModeStore.loaded,
+  () => appModeStore.isLiveMode,
+  () => appModeStore.isTestMode,
+  () => testInventoryStore.loaded,
+  springsLoading
+], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
+  inventoryStore.setSpringsLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
 }, { immediate: true })
 
 watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, springsError], ([modeLoaded, isLiveMode, err]) => {
   inventoryStore.setSpringsError(modeLoaded && isLiveMode ? err : null)
 }, { immediate: true })
 
-watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, componentsLoading], ([modeLoaded, isLiveMode, isLoading]) => {
-  inventoryStore.setComponentsLoading(!modeLoaded || (isLiveMode && isLoading))
+watch([
+  () => appModeStore.loaded,
+  () => appModeStore.isLiveMode,
+  () => appModeStore.isTestMode,
+  () => testInventoryStore.loaded,
+  componentsLoading
+], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
+  inventoryStore.setComponentsLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
 }, { immediate: true })
 
 watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, componentsError], ([modeLoaded, isLiveMode, err]) => {

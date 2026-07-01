@@ -7,10 +7,20 @@ const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
 const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
+const appModeStore = useAppModeStore()
+const testInventoryStore = useTestInventoryStore()
 const skuLookup = useSkuLookup()
 
 // Props for usage rates (passed from parent via provide/inject or we get from settings)
 const usageRates = computed(() => settingsStore.liveSalesRates)
+
+const activeChinaInventory = computed(() => {
+  if (appModeStore.isTestMode) {
+    return testInventoryStore.chinaInventory
+  }
+
+  return inventoryStore.fullInventory
+})
 
 // Local order settings (independent of global settingsStore)
 const localPalletCount = ref(8)
@@ -343,21 +353,23 @@ const computeOrderFromSettings = () => {
   if (!usageRates.value?.WEEKLY_SALES_RATE) return { springOrder: null, componentOrder: null }
 
   const pendingOrders = convertPendingOrdersForAlgorithm()
+  const inventory = activeChinaInventory.value
 
   const springOrder = calculateDemandBasedOrder(
     localPalletCount.value,
-    inventoryStore.fullInventory,
+    inventory,
     usageRates.value,
     pendingOrders,
-    localOrderWeekOffset.value
+    localOrderWeekOffset.value,
+    localDeliveryWeeks.value
   )
 
   const pendingComponentOrders = convertPendingOrdersForComponentAlgorithm()
 
   const componentOrder = calculateComponentOrder(
     springOrder,
-    inventoryStore.springs,
-    inventoryStore.components,
+    inventory.springs,
+    inventory.components,
     usageRates.value,
     pendingComponentOrders,
     localOrderWeekOffset.value,
@@ -393,6 +405,11 @@ const updateFromAlgorithm = async () => {
 watch([localPalletCount, localComponentScale], () => {
   updateFromAlgorithm()
 })
+
+watch(activeChinaInventory, () => {
+  if (!uiStore.orderPanelOpen || isInitializing.value || isEditing.value) return
+  updateFromAlgorithm()
+}, { deep: true })
 
 // Watch order week offset - update order date and recalculate
 watch(localOrderWeekOffset, (offset) => {
