@@ -11,13 +11,13 @@
     "dev": "nuxi dev"
   },
   "dependencies": {
-    "@nuxt/icon": "^2.2.1",
+    "@nuxt/icon": "^2.2.5",
     "@pinia/nuxt": "^0.11.3",
     "nuxt": "^4.4.8",
     "nuxt-directus": "^5.7.0",
     "pinia": "^3.0.1",
     "pinia-plugin-persistedstate": "4.7.1",
-    "vue": "^3.5.13"
+    "vue": "^3.5.39"
   },
   "devDependencies": {
     "@nuxtjs/tailwindcss": "^6.13.2"

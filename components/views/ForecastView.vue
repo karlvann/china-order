@@ -10,6 +10,7 @@ const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
+const appModeStore = useAppModeStore()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -69,18 +70,18 @@ onMounted(() => {
         <div class="flex items-center gap-5">
           <!-- Warn low stock Toggle -->
           <div class="flex items-center gap-3">
-            <label class="text-sm text-zinc-300">Warn low stock</label>
+            <label class="text-sm text-muted">Warn low stock</label>
             <button
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                showYellowWarnings ? 'bg-brand' : 'bg-zinc-600'
+                showYellowWarnings ? 'bg-brand' : 'bg-toggle-off'
               ]"
               @click="showYellowWarnings = !showYellowWarnings"
             >
               <span
                 :class="[
-                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   showYellowWarnings ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
@@ -89,28 +90,40 @@ onMounted(() => {
 
           <!-- Seasonal Demand Toggle -->
           <div class="flex items-center gap-3">
-            <label class="text-sm text-zinc-300">Seasonal demand</label>
+            <label class="text-sm text-muted">Seasonal demand</label>
             <button
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-zinc-600'
+                settingsStore.useSeasonalDemand ? 'bg-brand' : 'bg-toggle-off'
               ]"
               @click="settingsStore.toggleSeasonalDemand()"
             >
               <span
                 :class="[
-                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   settingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
           </div>
 
+          <!-- Test inventory button -->
+          <button
+            v-if="appModeStore.isTestMode"
+            @click="appModeStore.openTestInventoryModal()"
+            class="ml-auto px-4 py-1.5 bg-surface hover:bg-surface-hover border border-border text-primary text-sm font-medium rounded transition-colors"
+          >
+            Test inventory
+          </button>
+
           <!-- New order button -->
           <button
             @click="uiStore.openOrderPanelWithNewOrder()"
-            class="ml-auto px-4 py-1.5 bg-brand hover:bg-brand-hover text-white text-sm font-medium rounded transition-colors"
+            :class="[
+              'px-4 py-1.5 bg-brand hover:bg-brand-hover text-inverse text-sm font-medium rounded transition-colors',
+              appModeStore.isLiveMode ? 'ml-auto' : ''
+            ]"
           >
             + New order
           </button>
@@ -122,10 +135,10 @@ onMounted(() => {
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Header -->
       <!-- <div class="mb-6">
-        <h1 class="text-2xl font-bold text-zinc-50 mb-2">
+        <h1 class="text-2xl font-bold text-primary mb-2">
           40-week inventory forecast
         </h1>
-        <p class="text-sm text-zinc-400">
+        <p class="text-sm text-muted">
           Projected stock levels with container arrival {{ settingsStore.deliveryWeeks }} weeks from order. Components match spring quantities (1:1).
           <span v-if="usageRates" class="ml-3 text-brand-light">
             ({{ usageRates.TOTAL_WEEKLY_SALES }} units/week)
@@ -138,17 +151,17 @@ onMounted(() => {
 
       <!-- Pallet Allocation Summary -->
       <!-- <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
-        <h3 class="text-sm font-semibold text-zinc-50 mb-3">New order breakdown</h3>
+        <h3 class="text-sm font-semibold text-primary mb-3">New order breakdown</h3>
         <div class="flex flex-wrap items-center gap-4 text-sm">
           <div
             v-for="size in ['King', 'Queen', 'Double', 'King Single', 'Single']"
             :key="size"
             class="flex items-center gap-2"
           >
-            <span class="text-zinc-400">{{ size }}:</span>
-            <span class="font-mono text-zinc-50">
+            <span class="text-muted">{{ size }}:</span>
+            <span class="font-mono text-primary">
               {{ getPalletsForSize(size) }} pallets
-              <span class="text-zinc-500">({{ getSpringsForSize(size) }})</span>
+              <span class="text-subtle">({{ getSpringsForSize(size) }})</span>
             </span>
           </div>
           <div class="ml-auto flex items-center gap-2 text-brand-light">

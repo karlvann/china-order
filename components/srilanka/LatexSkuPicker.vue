@@ -97,9 +97,9 @@ const grandTotal = computed(() => {
     <!-- Size columns -->
     <div class="grid grid-cols-2 gap-4">
       <div v-for="size in LATEX_SIZES" :key="size" class="space-y-2">
-        <div class="text-sm font-medium text-zinc-300 mb-3">
+        <div class="text-sm font-medium text-muted mb-3">
           {{ size }} Latex
-          <span class="text-zinc-500 font-normal">({{ totalBySize[size] }} total)</span>
+          <span class="text-subtle font-normal">({{ totalBySize[size] }} total)</span>
         </div>
 
         <!-- Firmness rows for this size -->
@@ -108,13 +108,13 @@ const grandTotal = computed(() => {
           :key="`${firmness}-${size}`"
           class="flex flex-col items-center bg-surface border border-border rounded-lg p-3"
         >
-          <div class="text-sm text-zinc-50">{{ capitalize(firmness) }}</div>
-          <div class="text-xs text-zinc-500 mb-2">Stock: {{ getInventory(firmness, size) }}</div>
+          <div class="text-sm text-primary">{{ capitalize(firmness) }}</div>
+          <div class="text-xs text-subtle mb-2">Stock: {{ getInventory(firmness, size) }}</div>
 
           <div class="flex items-center gap-2">
             <button
               @click="decrement(firmness, size)"
-              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
               :disabled="getQuantity(firmness, size) <= 0"
             >
               -
@@ -123,12 +123,12 @@ const grandTotal = computed(() => {
               type="number"
               :value="getQuantity(firmness, size)"
               @input="setQuantity(firmness, size, $event.target.value)"
-              class="w-16 h-8 text-center bg-zinc-800 border border-border rounded text-zinc-50 text-sm"
+              class="w-16 h-8 text-center bg-input-surface border border-border rounded text-primary text-sm"
               min="0"
             >
             <button
               @click="increment(firmness, size)"
-              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
             >
               +
             </button>
@@ -139,9 +139,9 @@ const grandTotal = computed(() => {
 
     <!-- Pillow latex rows -->
     <div class="space-y-2">
-      <div class="text-sm font-medium text-zinc-300 mb-3">
+      <div class="text-sm font-medium text-muted mb-3">
         Pillow latex
-        <span class="text-zinc-500 font-normal">({{ totalPillowLatex }} total)</span>
+        <span class="text-subtle font-normal">({{ totalPillowLatex }} total)</span>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -150,13 +150,13 @@ const grandTotal = computed(() => {
           :key="type"
           class="flex flex-col items-center bg-surface border border-border rounded-lg p-3"
         >
-          <div class="text-sm text-zinc-50">{{ PILLOW_LATEX_LABELS[type] }}</div>
-          <div class="text-xs text-zinc-500 mb-2">Stock: {{ Math.round(currentInventory.pillowLatex?.[type] || 0) }}</div>
+          <div class="text-sm text-primary">{{ PILLOW_LATEX_LABELS[type] }}</div>
+          <div class="text-xs text-subtle mb-2">Stock: {{ Math.round(currentInventory.pillowLatex?.[type] || 0) }}</div>
 
           <div class="flex items-center gap-2">
             <button
               @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) - 1)"
-              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
               :disabled="getPillowLatexQuantity(type) <= 0"
             >
               -
@@ -165,12 +165,12 @@ const grandTotal = computed(() => {
               type="number"
               :value="getPillowLatexQuantity(type)"
               @input="setPillowLatexQuantity(type, $event.target.value)"
-              class="w-16 h-8 text-center bg-zinc-800 border border-border rounded text-zinc-50 text-sm"
+              class="w-16 h-8 text-center bg-input-surface border border-border rounded text-primary text-sm"
               min="0"
             >
             <button
               @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) + 1)"
-              class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
             >
               +
             </button>
@@ -182,8 +182,8 @@ const grandTotal = computed(() => {
     <!-- Grand Total -->
     <div class="pt-3 border-t border-border">
       <div class="flex items-center justify-between">
-        <span class="text-sm font-medium text-zinc-300">Total latex items</span>
-        <span class="text-lg font-bold text-orange-400">{{ grandTotal }}</span>
+        <span class="text-sm font-medium text-muted">Total latex items</span>
+        <span class="text-lg font-bold text-accent-sri-lanka-light">{{ grandTotal }}</span>
       </div>
     </div>
   </div>

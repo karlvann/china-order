@@ -2,10 +2,15 @@
 const sriLankaSettingsStore = useSriLankaSettingsStore()
 const sriLankaUIStore = useSriLankaUIStore()
 const sriLankaOrdersStore = useSriLankaOrdersStore()
+const appModeStore = useAppModeStore()
+const testInventoryStore = useTestInventoryStore()
+const sriLankaInventoryStore = useSriLankaInventoryStore()
+
+const latexInventoryEnabled = computed(() => appModeStore.loaded && appModeStore.isLiveMode)
 
 // Fetch latex sales data
 const latexSales = useLatexSales()
-const latexInventory = useLatexInventory()
+const latexInventory = useLatexInventory({ enabled: latexInventoryEnabled })
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -27,8 +32,41 @@ const draftArrivalWeek = computed(() => sriLankaUIStore.draftArrivalWeek)
 // Usage rates for timeline
 const usageRates = computed(() => sriLankaSettingsStore.latexSalesRates)
 
+const activeSriLankaInventory = computed(() => {
+  if (appModeStore.isTestMode) {
+    return testInventoryStore.sriLankaInventory
+  }
+
+  return latexInventory.inventory.value
+})
+
+const refreshLatexInventory = () => {
+  if (!appModeStore.isLiveMode) return
+  latexInventory.refresh()
+}
+
+watch(activeSriLankaInventory, (inventory) => {
+  sriLankaInventoryStore.setInventory(inventory)
+}, { immediate: true, deep: true })
+
+watch([
+  () => appModeStore.loaded,
+  () => appModeStore.isLiveMode,
+  () => appModeStore.isTestMode,
+  () => testInventoryStore.loaded,
+  latexInventory.loading
+], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
+  sriLankaInventoryStore.setLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
+}, { immediate: true })
+
+watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, latexInventory.error], ([modeLoaded, isLiveMode, err]) => {
+  sriLankaInventoryStore.setError(modeLoaded && isLiveMode ? err : null)
+}, { immediate: true })
+
 // Fetch orders on mount
 onMounted(() => {
+  appModeStore.loadFromStorage()
+  testInventoryStore.loadFromStorage()
   sriLankaSettingsStore.loadFromStorage()
   sriLankaOrdersStore.fetchOrders()
 })
@@ -42,18 +80,18 @@ onMounted(() => {
         <div class="flex items-center gap-5">
           <!-- Warn low stock Toggle -->
           <div class="flex items-center gap-3">
-            <label class="text-sm text-zinc-300">Warn low stock</label>
+            <label class="text-sm text-muted">Warn low stock</label>
             <button
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                showYellowWarnings ? 'bg-orange-500' : 'bg-zinc-600'
+                showYellowWarnings ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
               ]"
               @click="showYellowWarnings = !showYellowWarnings"
             >
               <span
                 :class="[
-                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   showYellowWarnings ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
@@ -62,28 +100,40 @@ onMounted(() => {
 
           <!-- Seasonal Demand Toggle -->
           <div class="flex items-center gap-3">
-            <label class="text-sm text-zinc-300">Seasonal demand</label>
+            <label class="text-sm text-muted">Seasonal demand</label>
             <button
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                sriLankaSettingsStore.useSeasonalDemand ? 'bg-orange-500' : 'bg-zinc-600'
+                sriLankaSettingsStore.useSeasonalDemand ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
               ]"
               @click="sriLankaSettingsStore.toggleSeasonalDemand()"
             >
               <span
                 :class="[
-                  'inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform',
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   sriLankaSettingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
           </div>
 
+          <!-- Test inventory button -->
+          <button
+            v-if="appModeStore.isTestMode"
+            @click="appModeStore.openTestInventoryModal()"
+            class="ml-auto px-4 py-1.5 bg-surface hover:bg-surface-hover border border-border text-primary text-sm font-medium rounded transition-colors"
+          >
+            Test inventory
+          </button>
+
           <!-- New order button -->
           <button
             @click="sriLankaUIStore.openOrderPanelWithNewOrder()"
-            class="ml-auto px-4 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded transition-colors"
+            :class="[
+              'px-4 py-1.5 bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse text-sm font-medium rounded transition-colors',
+              appModeStore.isLiveMode ? 'ml-auto' : ''
+            ]"
           >
             + New order
           </button>
@@ -94,18 +144,18 @@ onMounted(() => {
     <!-- Main Content -->
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Loading State -->
-      <div v-if="latexSales.loading.value || latexInventory.loading.value" class="text-center py-10">
-        <div class="text-zinc-400">Loading latex data...</div>
+      <div v-if="latexSales.loading.value || sriLankaInventoryStore.loading" class="text-center py-10">
+        <div class="text-muted">Loading latex data...</div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="latexSales.error.value || latexInventory.error.value" class="text-center py-10">
-        <div class="text-red-400">
-          {{ latexSales.error.value || latexInventory.error.value }}
+      <div v-else-if="latexSales.error.value || sriLankaInventoryStore.error" class="text-center py-10">
+        <div class="text-danger">
+          {{ latexSales.error.value || sriLankaInventoryStore.error }}
         </div>
         <button
-          @click="latexSales.refresh(); latexInventory.refresh()"
-          class="mt-4 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-50 rounded"
+          @click="latexSales.refresh(); refreshLatexInventory()"
+          class="mt-4 px-4 py-2 bg-control-surface hover:bg-control-hover text-primary rounded"
         >
           Retry
         </button>
@@ -118,7 +168,7 @@ onMounted(() => {
 
         <!-- Latex timeline -->
         <SrilankaLatexTimeline
-          :inventory="latexInventory.inventory.value"
+          :inventory="sriLankaInventoryStore.inventory"
           :latex-order="activeLatexOrder"
           :has-draft-order="hasDraftOrder"
           :draft-arrival-week="draftArrivalWeek"

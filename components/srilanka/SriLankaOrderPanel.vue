@@ -6,7 +6,8 @@ import { getCurrentMonday } from '~/lib/utils/index.js'
 const sriLankaUIStore = useSriLankaUIStore()
 const sriLankaOrdersStore = useSriLankaOrdersStore()
 const sriLankaSettingsStore = useSriLankaSettingsStore()
-const latexInventory = useLatexInventory()
+const sriLankaInventoryStore = useSriLankaInventoryStore()
+const latexSkuLookup = useLatexSkuLookup()
 
 // Usage rates from settings store
 const usageRates = computed(() => sriLankaSettingsStore.latexSalesRates)
@@ -144,7 +145,7 @@ const convertLatexOrderToSkuQuantities = (latexOrder) => {
   const quantities = {}
   if (!latexOrder?.latex) return quantities
 
-  const skuIdMap = latexInventory.getSkuIdMap()
+  const skuIdMap = latexSkuLookup.getSkuIdMap()
 
   for (const firmness of LATEX_FIRMNESSES) {
     for (const size of LATEX_SIZES) {
@@ -185,7 +186,7 @@ const convertSkuQuantitiesToLatexOrder = () => {
     thick: 0
   }
 
-  const skuIdMap = latexInventory.getSkuIdMap()
+  const skuIdMap = latexSkuLookup.getSkuIdMap()
 
   for (const firmness of LATEX_FIRMNESSES) {
     for (const size of LATEX_SIZES) {
@@ -234,7 +235,7 @@ const computeOrderFromSettings = () => {
 
   return calculateLatexOrder(
     containerCapacity.value,
-    latexInventory.inventory.value,
+    sriLankaInventoryStore.inventory,
     usageRates.value,
     pendingOrders,
     localOrderWeekOffset.value,
@@ -246,7 +247,7 @@ const computeOrderFromSettings = () => {
 const updateFromAlgorithm = async () => {
   if (isInitializing.value) return
 
-  await latexInventory.refresh()
+  await latexSkuLookup.fetchSkus()
 
   const latexOrder = computeOrderFromSettings()
   if (!latexOrder) return
@@ -288,7 +289,7 @@ watch(skuQuantities, () => {
 
 // Initialize with algorithm when creating new order
 const initializeNewOrder = async () => {
-  await latexInventory.refresh()
+  await latexSkuLookup.fetchSkus()
 
   const latexOrder = computeOrderFromSettings()
   if (!latexOrder) return
@@ -333,7 +334,7 @@ const initForm = () => {
       localOrderWeekOffset.value = getWeekOffsetForDate(order.order_date)
 
       // Set draft order for real-time preview
-      latexInventory.refresh().then(() => {
+      latexSkuLookup.fetchSkus().then(() => {
         const latexOrder = convertSkuQuantitiesToLatexOrder()
         sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeek)
       })
@@ -448,25 +449,25 @@ watch(() => sriLankaUIStore.editingOrderId, () => {
   }
 })
 
-// Get SKU ID map from inventory composable
-const skuIdMap = computed(() => latexInventory.getSkuIdMap())
-const currentInventory = computed(() => latexInventory.inventory.value)
+// Get SKU ID map from latex SKU lookup
+const skuIdMap = computed(() => latexSkuLookup.getSkuIdMap())
+const currentInventory = computed(() => sriLankaInventoryStore.inventory)
 </script>
 
 <template>
   <Transition name="slide">
     <aside
       v-if="sriLankaUIStore.orderPanelOpen"
-      class="fixed right-0 top-0 h-screen w-[30rem] bg-[#0a0a0b] border-l border-border shadow-[-4px_0_15px_rgba(0,0,0,0.3)] z-40 flex flex-col"
+      class="fixed right-0 top-0 h-screen w-[30rem] bg-modal-surface border-l border-border shadow-panel z-40 flex flex-col"
     >
       <!-- Header -->
-      <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-zinc-900/50 shrink-0">
-        <h2 class="text-lg font-semibold text-orange-400">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-modal-header/50 shrink-0">
+        <h2 class="text-lg font-semibold text-accent-sri-lanka-light">
           {{ isEditing ? 'Edit latex order' : 'New latex order' }}
         </h2>
         <button
           @click="handleClose"
-          class="text-zinc-400 hover:text-zinc-50 transition-colors"
+          class="text-muted hover:text-primary transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -477,31 +478,31 @@ const currentInventory = computed(() => latexInventory.inventory.value)
       <!-- Body -->
       <div class="flex-1 overflow-y-auto p-4 scrollbar-hide">
         <!-- Error -->
-        <div v-if="error" class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+        <div v-if="error" class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
           {{ error }}
         </div>
 
         <!-- Order Settings -->
-        <div class="mb-6 p-3 bg-zinc-800/50 rounded-lg space-y-4">
-          <h3 class="text-sm font-medium text-zinc-300">Order settings</h3>
+        <div class="mb-6 p-3 bg-surface-muted/50 rounded-lg space-y-4">
+          <h3 class="text-sm font-medium text-muted">Order settings</h3>
 
           <!-- Capacity -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-zinc-400">Capacity</label>
+            <label class="text-sm text-muted">Capacity</label>
             <div class="flex items-center gap-2">
               <button
                 @click="decrementCapacity"
-                class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+                class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
                 :disabled="localCapacity <= MIN_LATEX_CAPACITY"
               >
                 -
               </button>
-              <div class="w-20 h-8 flex items-center justify-center bg-zinc-800 border border-border rounded text-zinc-50 text-sm font-mono">
+              <div class="w-20 h-8 flex items-center justify-center bg-input-surface border border-border rounded text-primary text-sm font-mono">
                 {{ localCapacity }}
               </div>
               <button
                 @click="incrementCapacity"
-                class="w-8 h-8 flex items-center justify-center rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 transition-colors"
+                class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
               >
                 +
               </button>
@@ -510,10 +511,10 @@ const currentInventory = computed(() => latexInventory.inventory.value)
 
           <!-- Order Week -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-zinc-400">Order week</label>
+            <label class="text-sm text-muted">Order week</label>
             <select
               v-model="localOrderWeekOffset"
-              class="py-1.5 px-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-50 text-sm"
+              class="py-1.5 px-2 bg-control-surface border border-border-strong rounded text-primary text-sm"
             >
               <option v-for="opt in orderWeekOptions" :key="opt.value" :value="opt.value">
                 {{ opt.label }}
@@ -523,10 +524,10 @@ const currentInventory = computed(() => latexInventory.inventory.value)
 
           <!-- Delivery Weeks -->
           <div class="flex items-center justify-between">
-            <label class="text-sm text-zinc-400">Delivery weeks</label>
+            <label class="text-sm text-muted">Delivery weeks</label>
             <select
               v-model="localDeliveryWeeks"
-              class="py-1.5 px-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-50 text-sm"
+              class="py-1.5 px-2 bg-control-surface border border-border-strong rounded text-primary text-sm"
             >
               <option v-for="n in 15" :key="n" :value="n">{{ n }}</option>
             </select>
@@ -537,33 +538,33 @@ const currentInventory = computed(() => latexInventory.inventory.value)
         <div class="space-y-4 mb-6">
           <!-- Order Date -->
           <div>
-            <label class="block text-sm font-medium text-zinc-300 mb-1">Order date</label>
+            <label class="block text-sm font-medium text-muted mb-1">Order date</label>
             <input
               v-model="orderDate"
               type="date"
-              class="w-full px-3 py-2 bg-zinc-800 border border-border rounded-lg text-zinc-50 text-sm"
+              class="w-full px-3 py-2 bg-input-surface border border-border rounded-lg text-primary text-sm"
             />
           </div>
 
           <!-- Expected Arrival -->
           <div>
-            <label class="block text-sm font-medium text-zinc-300 mb-1">Expected arrival</label>
+            <label class="block text-sm font-medium text-muted mb-1">Expected arrival</label>
             <input
               v-model="expectedArrival"
               type="date"
-              class="w-full px-3 py-2 bg-zinc-800 border border-border rounded-lg text-zinc-50 text-sm"
+              class="w-full px-3 py-2 bg-input-surface border border-border rounded-lg text-primary text-sm"
             />
-            <p class="text-xs text-zinc-500 mt-1">Auto-calculated, can be adjusted</p>
+            <p class="text-xs text-subtle mt-1">Auto-calculated, can be adjusted</p>
           </div>
 
           <!-- Notes -->
           <div>
-            <label class="block text-sm font-medium text-zinc-300 mb-1">Notes</label>
+            <label class="block text-sm font-medium text-muted mb-1">Notes</label>
             <input
               v-model="notes"
               type="text"
               placeholder="e.g., Soft latex priority"
-              class="w-full px-3 py-2 bg-zinc-800 border border-border rounded-lg text-zinc-50 text-sm placeholder-zinc-500"
+              class="w-full px-3 py-2 bg-input-surface border border-border rounded-lg text-primary text-sm placeholder:text-subtle"
             />
           </div>
 
@@ -573,16 +574,16 @@ const currentInventory = computed(() => latexInventory.inventory.value)
               <input
                 v-model="ordered"
                 type="checkbox"
-                class="w-4 h-4 rounded border-border bg-zinc-800 text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+                class="w-4 h-4 rounded border-border bg-input-surface text-accent-sri-lanka focus:ring-accent-sri-lanka focus:ring-offset-0"
               />
-              <span class="text-sm text-zinc-300">Order placed with supplier</span>
+              <span class="text-sm text-muted">Order placed with supplier</span>
             </label>
           </div>
         </div>
 
         <!-- SKU Picker -->
         <div class="border-t border-border pt-4">
-          <h3 class="text-sm font-medium text-zinc-300 mb-4">Latex items</h3>
+          <h3 class="text-sm font-medium text-muted mb-4">Latex items</h3>
           <SrilankaLatexSkuPicker
             v-model="skuQuantities"
             :sku-id-map="skuIdMap"
@@ -592,14 +593,14 @@ const currentInventory = computed(() => latexInventory.inventory.value)
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-zinc-900/50 shrink-0">
-        <div class="text-sm text-zinc-400">
-          Total: <span class="font-medium text-orange-400">{{ totalItems }}</span> / {{ containerCapacity }} items
+      <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-modal-header/50 shrink-0">
+        <div class="text-sm text-muted">
+          Total: <span class="font-medium text-accent-sri-lanka-light">{{ totalItems }}</span> / {{ containerCapacity }} items
         </div>
         <div class="flex gap-3">
           <button
             @click="handleClose"
-            class="px-3 py-1.5 text-sm font-medium text-zinc-400 hover:text-zinc-50 transition-colors"
+            class="px-3 py-1.5 text-sm font-medium text-muted hover:text-primary transition-colors"
           >
             Cancel
           </button>
@@ -609,8 +610,8 @@ const currentInventory = computed(() => latexInventory.inventory.value)
             :class="[
               'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors',
               saving || totalItems === 0
-                ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600 text-white'
+                ? 'bg-control-surface text-subtle cursor-not-allowed'
+                : 'bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse'
             ]"
           >
             {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Create') }}

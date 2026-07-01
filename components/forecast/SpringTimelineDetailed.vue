@@ -239,48 +239,48 @@ const rows = computed(() => {
 
 // Get cell background based on stock level (weeks of coverage)
 const getCellBg = (stock, weeklyRate) => {
-  if (stock <= 0) return 'bg-red-500/20'
+  if (stock <= 0) return 'bg-danger/20'
   const weeksOfStock = weeklyRate > 0 ? stock / weeklyRate : Infinity
-  if (weeksOfStock > 30) return 'bg-blue-500/20'
+  if (weeksOfStock > 30) return 'bg-info/20'
   if (!props.showYellowWarnings) return ''
-  if (weeksOfStock <= 4) return 'bg-yellow-500/20'
+  if (weeksOfStock <= 4) return 'bg-warning/20'
   return ''
 }
 </script>
 
 <template>
   <div class="mb-8">
-    <h3 class="text-lg font-semibold text-zinc-50 mb-4 flex items-center gap-3">
+    <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-3">
       Spring timeline
-      <span class="text-sm font-normal text-zinc-500">(20 rows: 5 sizes × 4 firmnesses)</span>
+      <span class="text-sm font-normal text-subtle">(20 rows: 5 sizes × 4 firmnesses)</span>
     </h3>
 
     <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">
       <table class="w-full text-xs">
         <thead>
-          <tr class="bg-surfaceHover">
-            <th class="table-header sticky left-0 bg-surfaceHover z-10 min-w-[180px]">Size/Firmness</th>
-            <th class="table-header sticky left-[180px] bg-surfaceHover z-10 text-center w-[70px]">Demand</th>
-            <th class="table-header sticky left-[250px] bg-zinc-700 z-10 text-center w-[70px] text-zinc-50">
+          <tr class="bg-table-header">
+            <th class="table-header sticky left-0 bg-table-header z-10 min-w-[180px]">Size/Firmness</th>
+            <th class="table-header sticky left-[180px] bg-table-header z-10 text-center w-[70px]">Demand</th>
+            <th class="table-header sticky left-[250px] bg-table-current z-10 text-center w-[70px] text-primary">
               <div>Now</div>
-              <div class="text-[9px] text-zinc-400 font-normal">{{ currentWeekRange }}</div>
+              <div class="text-[9px] text-muted font-normal">{{ currentWeekRange }}</div>
             </th>
             <th
               v-for="week in weeks"
               :key="week.index"
               :class="[
                 'table-header text-center',
-                week.hasStoredOrders ? 'min-w-[95px] bg-green-500/10' : week.isDraftArrival ? 'min-w-[95px] bg-blue-500/10' : 'min-w-[62px]'
+                week.hasStoredOrders ? 'min-w-[95px] bg-success/10' : week.isDraftArrival ? 'min-w-[95px] bg-info/10' : 'min-w-[62px]'
               ]"
             >
               <div>W{{ week.number }}</div>
-              <div class="text-[9px] text-zinc-500 font-normal">{{ week.date }}</div>
+              <div class="text-[9px] text-subtle font-normal">{{ week.date }}</div>
               <span v-if="week.isDraftArrival" class="block text-[10px] text-brand-light">Draft</span>
               <div v-if="week.hasStoredOrders">
                 <span
                   v-for="order in week.storedOrders"
                   :key="order.id"
-                  class="block text-[10px] text-green-400"
+                  class="block text-[10px] text-success"
                   :title="order.notes || 'No notes'"
                 >
                   Order {{ inventoryOrdersStore.getOrderLetter(order.id) }}
@@ -293,28 +293,28 @@ const getCellBg = (stock, weeklyRate) => {
           <tr
             v-for="row in rows"
             :key="`${row.size}-${row.firmness}`"
-            class="border-b border-border hover:bg-surfaceHover/30"
+            class="border-b border-border hover:bg-surface-hover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium">{{ row.label }}</td>
-            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-zinc-400 w-[70px]">{{ row.weeklyRate }}/wk</td>
-            <td class="table-cell sticky left-[250px] bg-zinc-800 z-10 text-center font-mono w-[70px] text-zinc-50">{{ row.currentStock }}</td>
+            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate }}/wk</td>
+            <td class="table-cell sticky left-[250px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-green-500/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-blue-500/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-info/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
               <span>{{ proj.stock }}</span>
-              <span v-if="proj.added > 0" class="text-green-400 text-[10px]"> (+{{ proj.added }})</span>
+              <span v-if="proj.added > 0" class="text-success text-[10px]"> (+{{ proj.added }})</span>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <p class="text-xs text-zinc-500 mt-3">
+    <p class="text-xs text-subtle mt-3">
       Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
     </p>
   </div>

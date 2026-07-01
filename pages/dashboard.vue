@@ -6,48 +6,71 @@ definePageMeta({
 // Initialize stores
 const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
+const appModeStore = useAppModeStore()
+const testInventoryStore = useTestInventoryStore()
+
+const liveInventoryEnabled = computed(() => appModeStore.loaded && appModeStore.isLiveMode)
 
 // Initialize composables
-const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory()
-const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory()
+const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory({ enabled: liveInventoryEnabled })
+const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory({ enabled: liveInventoryEnabled })
 const { loading: salesLoading } = useWeeklySales()
 
+const activeChinaInventory = computed(() => {
+  if (appModeStore.isTestMode) {
+    return testInventoryStore.chinaInventory
+  }
+
+  return {
+    springs: springs.value,
+    components: components.value
+  }
+})
+
 // Combined loading/error state
-const loading = computed(() => springsLoading.value || componentsLoading.value)
-const error = computed(() => springsError.value || componentsError.value)
+const loading = computed(() => {
+  if (!appModeStore.loaded) return true
+  if (appModeStore.isTestMode) return !testInventoryStore.loaded
+  return springsLoading.value || componentsLoading.value
+})
+
+const error = computed(() => {
+  if (!appModeStore.loaded || appModeStore.isTestMode) return null
+  return springsError.value || componentsError.value
+})
+
 const refresh = () => {
+  if (!appModeStore.isLiveMode) return
   refreshSprings()
   refreshComponents()
 }
 
-// Watch for spring inventory changes and update store
-watch(springs, (newSprings) => {
-  inventoryStore.setSprings(newSprings)
+// Sync active inventory into the China inventory store
+watch(activeChinaInventory, (inventory) => {
+  inventoryStore.setSprings(inventory.springs)
+  inventoryStore.setComponents(inventory.components)
 }, { immediate: true, deep: true })
 
-watch(springsLoading, (isLoading) => {
-  inventoryStore.setSpringsLoading(isLoading)
+watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, springsLoading], ([modeLoaded, isLiveMode, isLoading]) => {
+  inventoryStore.setSpringsLoading(!modeLoaded || (isLiveMode && isLoading))
 }, { immediate: true })
 
-watch(springsError, (err) => {
-  inventoryStore.setSpringsError(err)
+watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, springsError], ([modeLoaded, isLiveMode, err]) => {
+  inventoryStore.setSpringsError(modeLoaded && isLiveMode ? err : null)
 }, { immediate: true })
 
-// Watch for component inventory changes and update store
-watch(components, (newComponents) => {
-  inventoryStore.setComponents(newComponents)
-}, { immediate: true, deep: true })
-
-watch(componentsLoading, (isLoading) => {
-  inventoryStore.setComponentsLoading(isLoading)
+watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, componentsLoading], ([modeLoaded, isLiveMode, isLoading]) => {
+  inventoryStore.setComponentsLoading(!modeLoaded || (isLiveMode && isLoading))
 }, { immediate: true })
 
-watch(componentsError, (err) => {
-  inventoryStore.setComponentsError(err)
+watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, componentsError], ([modeLoaded, isLiveMode, err]) => {
+  inventoryStore.setComponentsError(modeLoaded && isLiveMode ? err : null)
 }, { immediate: true })
 
 // Load settings on mount
 onMounted(() => {
+  appModeStore.loadFromStorage()
+  testInventoryStore.loadFromStorage()
   settingsStore.loadFromStorage()
 })
 
@@ -70,7 +93,7 @@ useHead({
 </script>
 
 <template>
-  <div class="min-h-screen bg-background text-zinc-200 font-sans">
+  <div class="min-h-screen bg-background text-primary font-sans">
     <!-- Header -->
     <AppHeader />
 
@@ -80,20 +103,20 @@ useHead({
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="text-center">
           <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand mx-auto mb-4"></div>
-          <p class="text-zinc-400">Loading inventory from Directus...</p>
+          <p class="text-muted">Loading inventory from Directus...</p>
         </div>
       </div>
 
       <!-- Error State -->
       <div v-else-if="error" class="section-container py-8">
-        <div class="bg-red-900/20 border border-red-800 rounded-lg p-6 text-center">
-          <p class="text-red-400 font-semibold mb-2">Failed to load inventory</p>
-          <p class="text-zinc-400 text-sm mb-4">{{ error }}</p>
+        <div class="bg-danger/20 border border-danger/30 rounded-lg p-6 text-center">
+          <p class="text-danger font-semibold mb-2">Failed to load inventory</p>
+          <p class="text-muted text-sm mb-4">{{ error }}</p>
           <button
             @click="refresh"
             class="btn-secondary"
           >
-            Try Again
+            Try again
           </button>
         </div>
       </div>
@@ -105,5 +128,6 @@ useHead({
       </template>
     </main>
 
+    <TestInventoryModal />
   </div>
 </template>

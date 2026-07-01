@@ -143,7 +143,7 @@ const clearComponents = () => {
           'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
           activeTab === 'springs'
             ? 'border-brand text-brand-light'
-            : 'border-transparent text-zinc-400 hover:text-zinc-50'
+            : 'border-transparent text-muted hover:text-primary'
         ]"
       >
         Springs ({{ springTotal }})
@@ -154,7 +154,7 @@ const clearComponents = () => {
           'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
           activeTab === 'components'
             ? 'border-brand text-brand-light'
-            : 'border-transparent text-zinc-400 hover:text-zinc-50'
+            : 'border-transparent text-muted hover:text-primary'
         ]"
       >
         Components ({{ componentTotal }})
@@ -167,7 +167,7 @@ const clearComponents = () => {
         <button
           v-if="springTotal > 0"
           @click="clearSprings"
-          class="text-xs text-zinc-400 hover:text-zinc-50"
+          class="text-xs text-muted hover:text-primary"
         >
           Clear all
         </button>
@@ -177,7 +177,7 @@ const clearComponents = () => {
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead>
-            <tr class="text-zinc-400 text-left">
+            <tr class="text-muted text-left">
               <th class="py-2 pr-4 font-medium">Size</th>
               <th
                 v-for="firmness in FIRMNESS_TYPES"
@@ -190,12 +190,12 @@ const clearComponents = () => {
           </thead>
           <tbody>
             <tr v-for="size in SIZES" :key="size" class="border-t border-border">
-              <td class="py-2 pr-4 text-zinc-50 font-medium">{{ SIZE_ABBREV[size] }}</td>
+              <td class="py-2 pr-4 text-primary font-medium">{{ SIZE_ABBREV[size] }}</td>
               <td v-for="firmness in FIRMNESS_TYPES" :key="firmness" class="py-2 px-2">
                 <div class="flex items-center justify-center gap-1">
                   <button
                     @click="adjustQuantity(getSpringSkuString(firmness, size), -10)"
-                    class="w-6 h-6 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
+                    class="w-6 h-6 text-muted hover:text-primary hover:bg-control-surface rounded text-xs"
                   >
                     −
                   </button>
@@ -203,12 +203,12 @@ const clearComponents = () => {
                     type="number"
                     :value="getQuantity(getSpringSkuString(firmness, size))"
                     @input="setQuantity(getSpringSkuString(firmness, size), $event.target.value)"
-                    class="w-16 px-2 py-1 bg-zinc-800 border border-border rounded text-center text-zinc-50 text-sm"
+                    class="w-16 px-2 py-1 bg-input-surface border border-border rounded text-center text-primary text-sm"
                     min="0"
                   />
                   <button
                     @click="adjustQuantity(getSpringSkuString(firmness, size), 10)"
-                    class="w-6 h-6 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
+                    class="w-6 h-6 text-muted hover:text-primary hover:bg-control-surface rounded text-xs"
                   >
                     +
                   </button>
@@ -226,7 +226,7 @@ const clearComponents = () => {
         <button
           v-if="componentTotal > 0"
           @click="clearComponents"
-          class="text-xs text-zinc-400 hover:text-zinc-50"
+          class="text-xs text-muted hover:text-primary"
         >
           Clear all
         </button>
@@ -235,19 +235,19 @@ const clearComponents = () => {
       <!-- Components by Type -->
       <div class="space-y-6">
         <div v-for="comp in COMPONENT_TYPES" :key="comp.key">
-          <h4 class="text-sm font-medium text-zinc-300 mb-2">{{ comp.label }}</h4>
+          <h4 class="text-sm font-medium text-muted mb-2">{{ comp.label }}</h4>
           <div class="grid grid-cols-5 gap-2">
             <div
               v-for="size in SIZES"
               :key="size"
               class="text-center"
             >
-              <div class="text-xs text-zinc-500 mb-1">{{ SIZE_ABBREV[size] }}</div>
+              <div class="text-xs text-subtle mb-1">{{ SIZE_ABBREV[size] }}</div>
               <template v-if="!comp.sizesOnly || comp.sizesOnly.includes(size)">
                 <div class="flex items-center justify-center gap-1">
                   <button
                     @click="adjustQuantity(getComponentSkuString(comp.key, size), -10)"
-                    class="w-5 h-5 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
+                    class="w-5 h-5 text-muted hover:text-primary hover:bg-control-surface rounded text-xs"
                   >
                     -
                   </button>
@@ -255,19 +255,19 @@ const clearComponents = () => {
                     type="number"
                     :value="getQuantity(getComponentSkuString(comp.key, size))"
                     @input="setQuantity(getComponentSkuString(comp.key, size), $event.target.value)"
-                    class="w-14 px-1 py-1 bg-zinc-800 border border-border rounded text-center text-zinc-50 text-xs"
+                    class="w-14 px-1 py-1 bg-input-surface border border-border rounded text-center text-primary text-xs"
                     min="0"
                   />
                   <button
                     @click="adjustQuantity(getComponentSkuString(comp.key, size), 10)"
-                    class="w-5 h-5 text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded text-xs"
+                    class="w-5 h-5 text-muted hover:text-primary hover:bg-control-surface rounded text-xs"
                   >
                     +
                   </button>
                 </div>
               </template>
               <template v-else>
-                <span class="text-zinc-600 text-xs">N/A</span>
+                <span class="text-disabled text-xs">N/A</span>
               </template>
             </div>
           </div>

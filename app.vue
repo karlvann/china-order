@@ -1,9 +1,14 @@
 <script setup>
-// Global app setup
-useHead({
+const appModeStore = useAppModeStore()
+
+useHead(() => ({
   htmlAttrs: {
-    class: 'dark'
+    class: ['dark', appModeStore.isTestMode ? 'test-mode' : null].filter(Boolean).join(' ')
   }
+}))
+
+onMounted(() => {
+  appModeStore.loadFromStorage()
 })
 </script>
 
@@ -13,7 +18,7 @@ useHead({
 
 <style>
 /* Ensure dark theme is applied to html element */
-html.dark {
+html.dark:not(.test-mode) {
   color-scheme: dark;
 }
 </style>

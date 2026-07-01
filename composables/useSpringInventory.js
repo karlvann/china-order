@@ -2,6 +2,8 @@
  * Composable for fetching spring inventory from Directus (READ ONLY)
  */
 
+import { createEmptySpringInventory } from '~/lib/utils/index.js'
+
 const SKU_MAP = {
   springsveryfirmking: { firmness: 'veryfirm', size: 'King' },
   springsveryfirmqueen: { firmness: 'veryfirm', size: 'Queen' },
@@ -25,20 +27,26 @@ const SKU_MAP = {
   springssoftsingle: { firmness: 'soft', size: 'Single' }
 }
 
-export function useSpringInventory() {
+export const useSpringInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
 
-  const springs = ref({
-    veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
+  const enabled = computed(() => {
+    if (options.enabled === undefined) return true
+    if (typeof options.enabled === 'boolean') return options.enabled
+    return !!options.enabled.value
   })
 
-  const loading = ref(true)
+  const springs = ref(createEmptySpringInventory())
+  const loading = ref(false)
   const error = ref(null)
 
   const fetchSprings = async () => {
+    if (!enabled.value) {
+      loading.value = false
+      error.value = null
+      return
+    }
+
     loading.value = true
     error.value = null
 
@@ -54,24 +62,17 @@ export function useSpringInventory() {
         }
       })
 
-      // Handle both direct array and { data: [] } response formats
       const items = Array.isArray(response) ? response : (response?.data || [])
+      const nextSprings = createEmptySpringInventory()
 
-      // Reset springs to defaults first
-      springs.value = {
-        veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-      }
-
-      // Map Directus data to springs structure
       items.forEach(item => {
         const mapping = SKU_MAP[item.sku]
         if (mapping) {
-          springs.value[mapping.firmness][mapping.size] = Number(item.quantity) || 0
+          nextSprings[mapping.firmness][mapping.size] = Number(item.quantity) || 0
         }
       })
+
+      springs.value = nextSprings
     } catch (e) {
       error.value = e.message
       console.error('Failed to fetch spring inventory:', e)
@@ -80,11 +81,24 @@ export function useSpringInventory() {
     }
   }
 
-  // Fetch on mount
-  onMounted(fetchSprings)
+  onMounted(() => {
+    if (enabled.value) {
+      fetchSprings()
+    }
+  })
+
+  watch(enabled, (isEnabled) => {
+    if (isEnabled) {
+      fetchSprings()
+      return
+    }
+
+    loading.value = false
+    error.value = null
+  })
 
   return {
-    springs: readonly(springs),  // READ ONLY
+    springs: readonly(springs),
     loading,
     error,
     refresh: fetchSprings

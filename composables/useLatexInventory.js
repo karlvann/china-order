@@ -11,6 +11,7 @@ import {
   LATEX_SIZES,
   PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
+import { createEmptyLatexInventory } from '~/lib/utils/index.js'
 
 /**
  * SKU string to firmness/size mapping
@@ -26,32 +27,20 @@ const SKU_MAP = {
   pillowlatexthick: { pillowLatexType: 'thick' }
 }
 
-/**
- * Create empty inventory structure
- */
-function createEmptyInventory() {
-  const inventory = {}
-  for (const firmness of LATEX_FIRMNESSES) {
-    inventory[firmness] = {}
-    for (const size of LATEX_SIZES) {
-      inventory[firmness][size] = 0
-    }
-  }
-  inventory.pillowLatex = {}
-  for (const type of PILLOW_LATEX_TYPES) {
-    inventory.pillowLatex[type] = 0
-  }
-  return inventory
-}
-
-export function useLatexInventory() {
+export const useLatexInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
 
-  const loading = ref(true)
+  const enabled = computed(() => {
+    if (options.enabled === undefined) return true
+    if (typeof options.enabled === 'boolean') return options.enabled
+    return !!options.enabled.value
+  })
+
+  const loading = ref(false)
   const error = ref(null)
 
   // Structured inventory by firmness and size
-  const inventory = ref(createEmptyInventory())
+  const inventory = ref(createEmptyLatexInventory())
 
   // Raw SKU data from Directus
   const rawSkuData = ref([])
@@ -59,12 +48,17 @@ export function useLatexInventory() {
   // Total inventory count
   const totalInventory = ref(0)
 
-  async function fetchInventory() {
+  const fetchInventory = async () => {
+    if (!enabled.value) {
+      loading.value = false
+      error.value = null
+      return
+    }
+
     loading.value = true
     error.value = null
 
     try {
-      // Fetch latex SKUs from Directus
       const response = await getItems({
         collection: 'skus',
         params: {
@@ -80,8 +74,7 @@ export function useLatexInventory() {
       const skus = Array.isArray(response) ? response : (response?.data || [])
       rawSkuData.value = skus
 
-      // Build structured inventory
-      const inv = createEmptyInventory()
+      const inv = createEmptyLatexInventory()
       let total = 0
 
       for (const sku of skus) {
@@ -102,7 +95,6 @@ export function useLatexInventory() {
 
       console.log('[Latex Inventory] Loaded:', inv)
       console.log('[Latex Inventory] Total:', total)
-
     } catch (e) {
       error.value = e.message
       console.error('[Latex Inventory] Failed to fetch:', e)
@@ -111,17 +103,11 @@ export function useLatexInventory() {
     }
   }
 
-  /**
-   * Get quantity for a specific firmness and size
-   */
-  function getQuantity(firmness, size) {
+  const getQuantity = (firmness, size) => {
     return inventory.value[firmness]?.[size] || 0
   }
 
-  /**
-   * Get total quantity for a size (all firmnesses)
-   */
-  function getTotalForSize(size) {
+  const getTotalForSize = (size) => {
     let total = 0
     for (const firmness of LATEX_FIRMNESSES) {
       total += inventory.value[firmness]?.[size] || 0
@@ -129,10 +115,7 @@ export function useLatexInventory() {
     return total
   }
 
-  /**
-   * Get total quantity for a firmness (all sizes)
-   */
-  function getTotalForFirmness(firmness) {
+  const getTotalForFirmness = (firmness) => {
     let total = 0
     for (const size of LATEX_SIZES) {
       total += inventory.value[firmness]?.[size] || 0
@@ -140,18 +123,12 @@ export function useLatexInventory() {
     return total
   }
 
-  /**
-   * Get SKU ID by sku string
-   */
-  function getSkuId(skuString) {
+  const getSkuId = (skuString) => {
     const found = rawSkuData.value.find(s => s.sku === skuString)
     return found?.id || null
   }
 
-  /**
-   * Get all SKU IDs mapped to their sku strings
-   */
-  function getSkuIdMap() {
+  const getSkuIdMap = () => {
     const map = {}
     for (const sku of rawSkuData.value) {
       map[sku.sku] = sku.id
@@ -159,8 +136,21 @@ export function useLatexInventory() {
     return map
   }
 
-  // Fetch on mount
-  onMounted(fetchInventory)
+  onMounted(() => {
+    if (enabled.value) {
+      fetchInventory()
+    }
+  })
+
+  watch(enabled, (isEnabled) => {
+    if (isEnabled) {
+      fetchInventory()
+      return
+    }
+
+    loading.value = false
+    error.value = null
+  })
 
   return {
     loading: readonly(loading),

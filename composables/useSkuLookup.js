@@ -57,7 +57,7 @@ export function useSkuLookup() {
             filter: {
               sku: { _in: allSkuNames }
             },
-            fields: ['id', 'sku', 'size', 'name', 'quantity']
+            fields: ['id', 'sku', 'size', 'name']
           }
         })
 
@@ -70,7 +70,6 @@ export function useSkuLookup() {
             sku: item.sku,
             size: item.size,
             name: item.name,
-            quantity: item.quantity,
             isSpring: SPRING_SKUS.includes(item.sku),
             isComponent: COMPONENT_SKUS.includes(item.sku)
           })

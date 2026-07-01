@@ -2,6 +2,8 @@
  * Composable for fetching component inventory from Directus (READ ONLY)
  */
 
+import { createEmptyComponentInventory } from '~/lib/utils/index.js'
+
 const SKU_MAP = {
   // Micro Coils (King/Queen only)
   microcoilsking: { component: 'micro_coils', size: 'King' },
@@ -38,22 +40,26 @@ const SKU_MAP = {
   panelsidedouble: { component: 'side_panel', size: 'Double' }
 }
 
-export function useComponentInventory() {
+export const useComponentInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
 
-  const components = ref({
-    micro_coils: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    thin_latex: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    felt: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    top_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    bottom_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    side_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
+  const enabled = computed(() => {
+    if (options.enabled === undefined) return true
+    if (typeof options.enabled === 'boolean') return options.enabled
+    return !!options.enabled.value
   })
 
-  const loading = ref(true)
+  const components = ref(createEmptyComponentInventory())
+  const loading = ref(false)
   const error = ref(null)
 
   const fetchComponents = async () => {
+    if (!enabled.value) {
+      loading.value = false
+      error.value = null
+      return
+    }
+
     loading.value = true
     error.value = null
 
@@ -69,26 +75,17 @@ export function useComponentInventory() {
         }
       })
 
-      // Handle both direct array and { data: [] } response formats
       const items = Array.isArray(response) ? response : (response?.data || [])
+      const nextComponents = createEmptyComponentInventory()
 
-      // Reset components to defaults first
-      components.value = {
-        micro_coils: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        thin_latex: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        felt: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        top_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        bottom_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-        side_panel: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-      }
-
-      // Map Directus data to components structure
       items.forEach(item => {
         const mapping = SKU_MAP[item.sku]
         if (mapping) {
-          components.value[mapping.component][mapping.size] = Number(item.quantity) || 0
+          nextComponents[mapping.component][mapping.size] = Number(item.quantity) || 0
         }
       })
+
+      components.value = nextComponents
     } catch (e) {
       error.value = e.message
       console.error('Failed to fetch component inventory:', e)
@@ -97,11 +94,24 @@ export function useComponentInventory() {
     }
   }
 
-  // Fetch on mount
-  onMounted(fetchComponents)
+  onMounted(() => {
+    if (enabled.value) {
+      fetchComponents()
+    }
+  })
+
+  watch(enabled, (isEnabled) => {
+    if (isEnabled) {
+      fetchComponents()
+      return
+    }
+
+    loading.value = false
+    error.value = null
+  })
 
   return {
-    components: readonly(components),  // READ ONLY
+    components: readonly(components),
     loading,
     error,
     refresh: fetchComponents

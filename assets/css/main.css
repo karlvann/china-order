@@ -5,11 +5,89 @@
 /* Base styles */
 @layer base {
   html {
-    @apply bg-background text-zinc-200;
+    --color-background: 10 10 11;
+    --color-surface: 24 24 27;
+    --color-surface-hover: 39 39 42;
+    --color-surface-muted: 39 39 42;
+    --color-modal-surface: 10 10 11;
+    --color-modal-header: 24 24 27;
+    --color-input-surface: 39 39 42;
+    --color-control-surface: 63 63 70;
+    --color-control-hover: 82 82 91;
+    --color-overlay: 0 0 0;
+    --color-border: 39 39 42;
+    --color-border-strong: 82 82 91;
+    --color-text: 250 250 250;
+    --color-text-muted: 161 161 170;
+    --color-text-subtle: 113 113 122;
+    --color-text-disabled: 82 82 91;
+    --color-text-inverse: 255 255 255;
+    --color-table-header: 39 39 42;
+    --color-table-current: 39 39 42;
+    --color-toggle-off: 82 82 91;
+    --color-toggle-knob: 255 255 255;
+    --color-button-primary: 255 255 255;
+    --color-button-primary-hover: 244 244 245;
+    --color-button-primary-text: 0 0 0;
+    --color-brand: 14 165 233;
+    --color-brand-hover: 2 132 199;
+    --color-brand-light: 56 189 248;
+    --color-brand-dark: 2 132 199;
+    --color-accent-sri-lanka: 249 115 22;
+    --color-accent-sri-lanka-hover: 234 88 12;
+    --color-accent-sri-lanka-light: 251 146 60;
+    --color-success: 74 222 128;
+    --color-warning: 250 204 21;
+    --color-danger: 248 113 113;
+    --color-danger-hover: 252 165 165;
+    --color-info: 96 165 250;
+
+    @apply bg-background text-primary;
+  }
+
+  html.test-mode {
+    --color-background: 229 229 229;
+    --color-surface: 245 245 245;
+    --color-surface-hover: 235 235 235;
+    --color-surface-muted: 238 238 238;
+    --color-modal-surface: 250 250 250;
+    --color-modal-header: 238 238 238;
+    --color-input-surface: 255 255 255;
+    --color-control-surface: 255 255 255;
+    --color-control-hover: 240 240 240;
+    --color-overlay: 0 0 0;
+    --color-border: 190 190 190;
+    --color-border-strong: 150 150 150;
+    --color-text: 0 0 0;
+    --color-text-muted: 38 38 38;
+    --color-text-subtle: 82 82 82;
+    --color-text-disabled: 140 140 140;
+    --color-text-inverse: 255 255 255;
+    --color-table-header: 214 214 214;
+    --color-table-current: 255 255 255;
+    --color-toggle-off: 170 170 170;
+    --color-toggle-knob: 255 255 255;
+    --color-button-primary: 0 0 0;
+    --color-button-primary-hover: 38 38 38;
+    --color-button-primary-text: 255 255 255;
+    --color-brand: 2 132 199;
+    --color-brand-hover: 3 105 161;
+    --color-brand-light: 3 105 161;
+    --color-brand-dark: 7 89 133;
+    --color-accent-sri-lanka: 194 65 12;
+    --color-accent-sri-lanka-hover: 154 52 18;
+    --color-accent-sri-lanka-light: 194 65 12;
+    --color-success: 22 101 52;
+    --color-warning: 133 77 14;
+    --color-danger: 185 28 28;
+    --color-danger-hover: 153 27 27;
+    --color-info: 30 64 175;
+
+    color-scheme: light;
   }
 
   body {
-    @apply font-sans antialiased;
+    @apply font-sans antialiased bg-background text-primary;
   }
 
   /* Hide scrollbar */
@@ -27,8 +105,8 @@
 @layer components {
   /* Input fields */
   .input-field {
-    @apply w-[70px] bg-surface border border-border rounded-md px-2 py-1.5
-           text-center font-mono text-zinc-50 text-sm
+    @apply w-[70px] bg-input-surface border border-border rounded-md px-2 py-1.5
+           text-center font-mono text-primary text-sm
            focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand;
   }
 
@@ -39,23 +117,23 @@
 
   /* Button styles */
   .btn-primary {
-    @apply px-5 py-3 bg-white text-black font-semibold rounded-lg
-           hover:bg-zinc-100 transition-colors;
+    @apply px-5 py-3 bg-button-primary text-button-primary-text font-semibold rounded-lg
+           hover:bg-button-primary-hover transition-colors;
   }
 
   .btn-secondary {
-    @apply px-5 py-3 bg-surface text-zinc-50 border border-border font-semibold rounded-lg
-           hover:bg-surfaceHover transition-colors;
+    @apply px-5 py-3 bg-surface text-primary border border-border font-semibold rounded-lg
+           hover:bg-surface-hover transition-colors;
   }
 
   /* Toggle button styles */
   .toggle-btn {
-    @apply px-4 py-2 bg-transparent border-none rounded-md text-zinc-400 text-sm font-semibold
+    @apply px-4 py-2 bg-transparent border-none rounded-md text-muted text-sm font-semibold
            cursor-pointer transition-colors;
   }
 
   .toggle-btn-active {
-    @apply bg-surfaceHover text-zinc-50;
+    @apply bg-surface-hover text-primary;
   }
 
   /* Badge styles */
@@ -64,42 +142,288 @@
   }
 
   .badge-info {
-    @apply bg-zinc-800 border border-zinc-700 text-zinc-400;
+    @apply bg-info/10 border border-info/30 text-info;
   }
 
   .badge-success {
-    @apply bg-green-900/20 border border-green-800 text-green-400;
+    @apply bg-success/20 border border-success/30 text-success;
   }
 
   .badge-warning {
-    @apply bg-yellow-900/20 border border-yellow-800 text-yellow-400;
+    @apply bg-warning/20 border border-warning/30 text-warning;
   }
 
   .badge-error {
-    @apply bg-red-900/20 border border-red-800 text-red-400;
+    @apply bg-danger/20 border border-danger/30 text-danger;
   }
 
   /* Table styles */
   .table-header {
-    @apply px-3 py-2.5 text-left text-xs uppercase tracking-wide font-semibold text-zinc-400 bg-surfaceHover;
+    @apply px-3 py-2.5 text-left text-xs uppercase tracking-wide font-semibold text-muted bg-table-header;
   }
 
   .table-cell {
-    @apply px-3 py-2.5 border-b border-border;
+    @apply px-3 py-2.5 border-b border-border text-primary;
   }
 
   /* Accordion header */
   .accordion-header {
-    @apply w-full py-3 bg-transparent border-none text-zinc-50 text-[15px] font-semibold
+    @apply w-full py-3 bg-transparent border-none text-primary text-[15px] font-semibold
            cursor-pointer flex items-center gap-2.5 text-left transition-colors;
   }
 
   .accordion-icon {
-    @apply text-xs text-zinc-400 transition-transform w-3.5;
+    @apply text-xs text-muted transition-transform w-3.5;
   }
 
   /* Section container */
   .section-container {
     @apply max-w-[900px] mx-auto px-6;
+  }
+}
+
+/* Semantic theme utilities. These are explicit so theme classes do not depend on Tailwind config hot-reload. */
+@layer utilities {
+  .text-primary,
+  .hover\:text-primary:hover {
+    color: rgb(var(--color-text) / 1);
+  }
+
+  .text-muted,
+  .hover\:text-muted:hover {
+    color: rgb(var(--color-text-muted) / 1);
+  }
+
+  .text-subtle {
+    color: rgb(var(--color-text-subtle) / 1);
+  }
+
+  .text-disabled {
+    color: rgb(var(--color-text-disabled) / 1);
+  }
+
+  .text-inverse {
+    color: rgb(var(--color-text-inverse) / 1);
+  }
+
+  .text-button-primary-text {
+    color: rgb(var(--color-button-primary-text) / 1);
+  }
+
+  .text-brand {
+    color: rgb(var(--color-brand) / 1);
+  }
+
+  .text-brand-light {
+    color: rgb(var(--color-brand-light) / 1);
+  }
+
+  .text-accent-sri-lanka {
+    color: rgb(var(--color-accent-sri-lanka) / 1);
+  }
+
+  .text-accent-sri-lanka-light {
+    color: rgb(var(--color-accent-sri-lanka-light) / 1);
+  }
+
+  .text-success {
+    color: rgb(var(--color-success) / 1);
+  }
+
+  .text-warning {
+    color: rgb(var(--color-warning) / 1);
+  }
+
+  .text-danger,
+  .hover\:text-danger:hover {
+    color: rgb(var(--color-danger) / 1);
+  }
+
+  .hover\:text-danger-hover:hover {
+    color: rgb(var(--color-danger-hover) / 1);
+  }
+
+  .bg-background {
+    background-color: rgb(var(--color-background) / 1);
+  }
+
+  .bg-surface {
+    background-color: rgb(var(--color-surface) / 1);
+  }
+
+  .bg-surface\/40 {
+    background-color: rgb(var(--color-surface) / 0.4);
+  }
+
+  .bg-surface-hover,
+  .hover\:bg-surface-hover:hover {
+    background-color: rgb(var(--color-surface-hover) / 1);
+  }
+
+  .hover\:bg-surface-hover\/30:hover {
+    background-color: rgb(var(--color-surface-hover) / 0.3);
+  }
+
+  .bg-surface-muted\/50 {
+    background-color: rgb(var(--color-surface-muted) / 0.5);
+  }
+
+  .bg-modal-surface {
+    background-color: rgb(var(--color-modal-surface) / 1);
+  }
+
+  .bg-modal-header\/50 {
+    background-color: rgb(var(--color-modal-header) / 0.5);
+  }
+
+  .bg-input-surface {
+    background-color: rgb(var(--color-input-surface) / 1);
+  }
+
+  .bg-control-surface,
+  .hover\:bg-control-surface:hover {
+    background-color: rgb(var(--color-control-surface) / 1);
+  }
+
+  .hover\:bg-control-hover:hover {
+    background-color: rgb(var(--color-control-hover) / 1);
+  }
+
+  .bg-overlay\/70 {
+    background-color: rgb(var(--color-overlay) / 0.7);
+  }
+
+  .bg-table-header {
+    background-color: rgb(var(--color-table-header) / 1);
+  }
+
+  .bg-table-current {
+    background-color: rgb(var(--color-table-current) / 1);
+  }
+
+  .bg-toggle-off {
+    background-color: rgb(var(--color-toggle-off) / 1);
+  }
+
+  .bg-toggle-knob {
+    background-color: rgb(var(--color-toggle-knob) / 1);
+  }
+
+  .bg-button-primary {
+    background-color: rgb(var(--color-button-primary) / 1);
+  }
+
+  .hover\:bg-button-primary-hover:hover {
+    background-color: rgb(var(--color-button-primary-hover) / 1);
+  }
+
+  .bg-brand {
+    background-color: rgb(var(--color-brand) / 1);
+  }
+
+  .bg-brand\/20 {
+    background-color: rgb(var(--color-brand) / 0.2);
+  }
+
+  .hover\:bg-brand-hover:hover {
+    background-color: rgb(var(--color-brand-hover) / 1);
+  }
+
+  .bg-accent-sri-lanka {
+    background-color: rgb(var(--color-accent-sri-lanka) / 1);
+  }
+
+  .bg-accent-sri-lanka\/10 {
+    background-color: rgb(var(--color-accent-sri-lanka) / 0.1);
+  }
+
+  .bg-accent-sri-lanka\/20 {
+    background-color: rgb(var(--color-accent-sri-lanka) / 0.2);
+  }
+
+  .hover\:bg-accent-sri-lanka-hover:hover {
+    background-color: rgb(var(--color-accent-sri-lanka-hover) / 1);
+  }
+
+  .bg-success\/10 {
+    background-color: rgb(var(--color-success) / 0.1);
+  }
+
+  .bg-success\/20 {
+    background-color: rgb(var(--color-success) / 0.2);
+  }
+
+  .bg-warning\/20 {
+    background-color: rgb(var(--color-warning) / 0.2);
+  }
+
+  .bg-danger\/10,
+  .hover\:bg-danger\/10:hover {
+    background-color: rgb(var(--color-danger) / 0.1);
+  }
+
+  .bg-danger\/20 {
+    background-color: rgb(var(--color-danger) / 0.2);
+  }
+
+  .bg-info\/10 {
+    background-color: rgb(var(--color-info) / 0.1);
+  }
+
+  .bg-info\/20 {
+    background-color: rgb(var(--color-info) / 0.2);
+  }
+
+  .border-border {
+    border-color: rgb(var(--color-border) / 1);
+  }
+
+  .border-border-strong {
+    border-color: rgb(var(--color-border-strong) / 1);
+  }
+
+  .border-brand {
+    border-color: rgb(var(--color-brand) / 1);
+  }
+
+  .border-brand\/40 {
+    border-color: rgb(var(--color-brand) / 0.4);
+  }
+
+  .border-accent-sri-lanka\/40 {
+    border-color: rgb(var(--color-accent-sri-lanka) / 0.4);
+  }
+
+  .border-danger\/20 {
+    border-color: rgb(var(--color-danger) / 0.2);
+  }
+
+  .border-danger\/30 {
+    border-color: rgb(var(--color-danger) / 0.3);
+  }
+
+  .placeholder\:text-subtle::placeholder {
+    color: rgb(var(--color-text-subtle) / 1);
+  }
+
+  .accent-brand {
+    accent-color: rgb(var(--color-brand) / 1);
+  }
+
+  .focus\:ring-brand:focus {
+    --tw-ring-color: rgb(var(--color-brand) / 1);
+  }
+
+  .focus\:ring-accent-sri-lanka:focus {
+    --tw-ring-color: rgb(var(--color-accent-sri-lanka) / 1);
+  }
+
+  .focus\:border-brand:focus {
+    border-color: rgb(var(--color-brand) / 1);
+  }
+
+  .shadow-panel {
+    --tw-shadow: -4px 0 15px rgb(var(--color-overlay) / 0.3);
+    --tw-shadow-colored: -4px 0 15px var(--tw-shadow-color);
   }
 }

@@ -11,13 +11,13 @@ const handleChange = (event) => {
 
 <template>
   <div class="flex items-center gap-3">
-    <label class="text-sm font-semibold text-zinc-50 whitespace-nowrap">
+    <label class="text-sm font-semibold text-primary whitespace-nowrap">
       Starting Month:
     </label>
     <select
       :value="settingsStore.startingMonth"
       @change="handleChange"
-      class="py-2.5 px-4 bg-surface border border-border rounded-lg text-zinc-50 text-sm font-semibold cursor-pointer min-w-[140px]"
+      class="py-2.5 px-4 bg-surface border border-border rounded-lg text-primary text-sm font-semibold cursor-pointer min-w-[140px]"
     >
       <option
         v-for="option in monthOptions"

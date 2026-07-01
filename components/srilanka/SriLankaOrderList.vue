@@ -83,17 +83,17 @@ const exportOrderTSV = (order) => {
   <div class="mb-10">
     <!-- Header -->
     <div class="mb-4">
-      <h2 class="text-lg font-semibold text-zinc-50">Pending orders</h2>
+      <h2 class="text-lg font-semibold text-primary">Pending orders</h2>
     </div>
 
     <!-- Loading State -->
-    <div v-if="sriLankaOrdersStore.loading" class="text-zinc-400 text-sm py-4">
+    <div v-if="sriLankaOrdersStore.loading" class="text-muted text-sm py-4">
       Loading orders...
     </div>
 
     <!-- Empty State -->
     <div v-else-if="sriLankaOrdersStore.pendingOrders.length === 0" class="bg-surface border border-border rounded-lg p-6 text-center">
-      <p class="text-zinc-400 text-sm">No pending orders. Create one to track incoming latex inventory.</p>
+      <p class="text-muted text-sm">No pending orders. Create one to track incoming latex inventory.</p>
     </div>
 
     <!-- Order List -->
@@ -108,32 +108,32 @@ const exportOrderTSV = (order) => {
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-3 mb-2">
               <!-- Order Letter Badge -->
-              <span class="w-6 h-6 flex items-center justify-center text-xs font-bold rounded bg-green-500/20 text-green-400">
+              <span class="w-6 h-6 flex items-center justify-center text-xs font-bold rounded bg-success/20 text-success">
                 {{ sriLankaOrdersStore.getOrderLetter(order.id) }}
               </span>
 
               <!-- Arrival Info -->
-              <span class="text-zinc-50 font-medium">
+              <span class="text-primary font-medium">
                 Arrives {{ formatDate(order.expected_arrival) }}
               </span>
-              <span class="text-zinc-400 text-sm">
+              <span class="text-muted text-sm">
                 ({{ weeksUntilArrival(order.expected_arrival) }} weeks)
               </span>
-              <span v-if="order.ordered" class="px-2 py-0.5 text-xs font-medium rounded bg-green-500/20 text-green-400">
+              <span v-if="order.ordered" class="px-2 py-0.5 text-xs font-medium rounded bg-success/20 text-success">
                 Ordered
               </span>
-              <span v-else class="px-2 py-0.5 text-xs font-medium rounded bg-yellow-500/20 text-yellow-400">
+              <span v-else class="px-2 py-0.5 text-xs font-medium rounded bg-warning/20 text-warning">
                 Pending
               </span>
             </div>
 
             <!-- Total Items -->
-            <div class="text-sm text-zinc-400">
+            <div class="text-sm text-muted">
               {{ getTotalItems(order) }} latex items
             </div>
 
             <!-- Notes -->
-            <p v-if="order.notes" class="text-sm text-zinc-500 mt-1 truncate">
+            <p v-if="order.notes" class="text-sm text-subtle mt-1 truncate">
               {{ order.notes }}
             </p>
           </div>
@@ -146,8 +146,8 @@ const exportOrderTSV = (order) => {
               :class="[
                 'px-3 py-1.5 text-sm rounded transition-colors',
                 order.ordered
-                  ? 'text-zinc-600 cursor-not-allowed'
-                  : 'text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700'
+                  ? 'text-disabled cursor-not-allowed'
+                  : 'text-muted hover:text-primary hover:bg-control-surface'
               ]"
               :title="order.ordered ? 'Order already placed' : 'Export as TSV'"
             >
@@ -155,7 +155,7 @@ const exportOrderTSV = (order) => {
             </button>
             <button
               @click="sriLankaUIStore.openOrderPanel(order.id)"
-              class="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-50 hover:bg-zinc-700 rounded transition-colors"
+              class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
             >
               Edit
             </button>
@@ -165,8 +165,8 @@ const exportOrderTSV = (order) => {
               :class="[
                 'px-3 py-1.5 text-sm rounded transition-colors',
                 order.ordered
-                  ? 'text-zinc-600 cursor-not-allowed'
-                  : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
+                  ? 'text-disabled cursor-not-allowed'
+                  : 'text-danger hover:text-danger-hover hover:bg-danger/10'
               ]"
               :title="order.ordered ? 'Cannot delete an order that has been placed' : 'Delete order'"
             >
