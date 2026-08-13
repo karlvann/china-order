@@ -382,6 +382,12 @@ const totalItems = computed(() => {
   return Object.values(skuQuantities.value).reduce((sum, qty) => sum + (qty || 0), 0)
 })
 
+const overCapacityAmount = computed(() => {
+  return Math.max(0, totalItems.value - containerCapacity.value)
+})
+
+const isOverCapacity = computed(() => overCapacityAmount.value > 0)
+
 // Convert quantities map to API format
 const getSkuItemsForApi = () => {
   return Object.entries(skuQuantities.value)
@@ -417,10 +423,10 @@ const handleSave = async () => {
     if (result) {
       sriLankaUIStore.closeOrderPanel()
     } else {
-      error.value = 'Failed to save order'
+      error.value = sriLankaOrdersStore.error || 'Failed to save order'
     }
   } catch (e) {
-    error.value = e.message
+    error.value = e.message || 'Failed to save order'
   } finally {
     saving.value = false
   }
@@ -480,6 +486,10 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
         <!-- Error -->
         <div v-if="error" class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
           {{ error }}
+        </div>
+
+        <div v-if="isOverCapacity" class="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg text-warning text-sm">
+          Over capacity by {{ overCapacityAmount }} items. Saving is still allowed.
         </div>
 
         <!-- Order Settings -->
@@ -594,7 +604,12 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
 
       <!-- Footer -->
       <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-modal-header/50 shrink-0">
-        <div class="text-sm text-muted">
+        <div
+          :class="[
+            'text-sm',
+            isOverCapacity ? 'text-warning' : 'text-muted'
+          ]"
+        >
           Total: <span class="font-medium text-accent-sri-lanka-light">{{ totalItems }}</span> / {{ containerCapacity }} items
         </div>
         <div class="flex gap-3">
