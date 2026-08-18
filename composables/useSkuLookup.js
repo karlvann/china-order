@@ -26,6 +26,7 @@ let fetchPromise = null
 
 export function useSkuLookup() {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const skuMap = ref(new Map())
   const loading = ref(false)
@@ -78,7 +79,9 @@ export function useSkuLookup() {
         skuCache = map
         skuMap.value = map
       } catch (e) {
-        error.value = e.message
+        if (await handleDirectusAuthError(e)) return
+
+        error.value = getDirectusErrorMessage(e, 'Failed to fetch SKU lookup')
         console.error('Failed to fetch SKU lookup:', e)
       } finally {
         loading.value = false

@@ -6,22 +6,12 @@
 
 export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
   const { getItems, createItems, updateItem, deleteItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   // State
   const orders = ref([])
   const loading = ref(false)
   const error = ref(null)
-
-  const getDirectusErrorMessage = (e, fallback = 'Directus request failed') => {
-    const directusErrors = e?.errors || e?.data?.errors || e?.response?._data?.errors || e?.response?.data?.errors
-
-    if (Array.isArray(directusErrors) && directusErrors.length > 0) {
-      const messages = directusErrors.map(item => item?.message).filter(Boolean)
-      if (messages.length > 0) return messages.join(', ')
-    }
-
-    return e?.data?.message || e?.response?._data?.message || e?.response?.data?.message || e?.message || fallback
-  }
 
   /**
    * Get week index for a date relative to a reference Monday
@@ -69,6 +59,8 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       orders.value = items
       console.log('[Sri Lanka Orders] Loaded', items.length, 'orders')
     } catch (e) {
+      if (await handleDirectusAuthError(e)) return
+
       error.value = getDirectusErrorMessage(e, 'Failed to fetch Sri Lanka orders')
       console.error('[Sri Lanka Orders] Failed to fetch:', e)
     } finally {
@@ -106,6 +98,8 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       console.log('[Sri Lanka Orders] Created order:', created?.id)
       return created
     } catch (e) {
+      if (await handleDirectusAuthError(e)) return null
+
       error.value = getDirectusErrorMessage(e, 'Failed to create Sri Lanka order')
       console.error('[Sri Lanka Orders] Failed to create:', e)
       return null
@@ -143,6 +137,8 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       console.log('[Sri Lanka Orders] Updated order:', id)
       return response
     } catch (e) {
+      if (await handleDirectusAuthError(e)) return null
+
       error.value = getDirectusErrorMessage(e, 'Failed to update Sri Lanka order')
       console.error('[Sri Lanka Orders] Failed to update:', e)
       return null
@@ -168,6 +164,8 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       console.log('[Sri Lanka Orders] Deleted order:', id)
       return true
     } catch (e) {
+      if (await handleDirectusAuthError(e)) return false
+
       error.value = getDirectusErrorMessage(e, 'Failed to delete Sri Lanka order')
       console.error('[Sri Lanka Orders] Failed to delete:', e)
       return false

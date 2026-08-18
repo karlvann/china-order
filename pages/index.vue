@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-background flex items-center justify-center p-4">
     <div class="bg-surface border border-border rounded-xl p-8 max-w-md w-full">
-      <h2 class="text-xl font-bold text-primary mb-6">Login</h2>
+      <h2 class="text-xl font-bold text-primary mb-6">Log in</h2>
       <form @submit.prevent="onSubmit" class="space-y-4">
         <div>
           <label class="block text-sm text-muted mb-1">Email</label>
@@ -26,9 +26,11 @@
           class="w-full bg-brand hover:bg-brand-hover text-inverse font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
         >
           <span v-if="loading">Logging in...</span>
-          <span v-else>Login</span>
+          <span v-else>Log in</span>
         </button>
-        <div v-if="loginError" class="text-danger text-sm">{{ loginError }}</div>
+        <div v-if="loginError || sessionMessage" class="text-danger text-sm">
+          {{ loginError || sessionMessage }}
+        </div>
       </form>
     </div>
   </div>
@@ -37,10 +39,14 @@
 <script setup>
 const { login } = useDirectusAuth()
 const router = useRouter()
+const route = useRoute()
 const user = useDirectusUser()
 
 const loading = ref(false)
 const loginError = ref(null)
+const sessionMessage = computed(() => {
+  return route.query.session === 'expired' ? 'Your session expired. Please log in again.' : null
+})
 
 const formState = ref({
   email: '',
@@ -56,7 +62,7 @@ const onSubmit = async () => {
       password: formState.value.password
     })
     router.push('/dashboard')
-  } catch (e) {
+  } catch {
     loginError.value = 'Invalid email or password'
   } finally {
     loading.value = false

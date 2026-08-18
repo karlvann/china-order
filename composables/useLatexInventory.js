@@ -29,6 +29,7 @@ const SKU_MAP = {
 
 export const useLatexInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const enabled = computed(() => {
     if (options.enabled === undefined) return true
@@ -96,7 +97,9 @@ export const useLatexInventory = (options = {}) => {
       console.log('[Latex Inventory] Loaded:', inv)
       console.log('[Latex Inventory] Total:', total)
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch latex inventory')
       console.error('[Latex Inventory] Failed to fetch:', e)
     } finally {
       loading.value = false

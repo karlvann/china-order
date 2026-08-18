@@ -80,6 +80,7 @@ function parseMattressSku(sku) {
 
 export function useWeeklySales() {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
   const settingsStore = useSettingsStore()
 
   const loading = ref(true)
@@ -330,7 +331,9 @@ export function useWeeklySales() {
       settingsStore.setLiveSalesRates(weeklyTotals, distribution, microCoilDemand.value, thinLatexDemand.value)
 
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch sales data')
       console.error('Failed to fetch sales data:', e)
     } finally {
       loading.value = false

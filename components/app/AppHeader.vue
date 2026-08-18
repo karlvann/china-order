@@ -3,6 +3,7 @@ const settingsStore = useSettingsStore()
 const appModeStore = useAppModeStore()
 const router = useRouter()
 const { logout } = useDirectusAuth()
+const { clearDirectusSession } = useDirectusSession()
 
 const views = [
   { id: 'forecast', label: 'China' },
@@ -18,7 +19,12 @@ const modes = [
 const isSriLanka = computed(() => settingsStore.currentView === 'builder')
 
 const handleSignOut = async () => {
-  await logout()
+  try {
+    await logout()
+  } catch (e) {
+    clearDirectusSession()
+  }
+
   router.push('/')
 }
 </script>
@@ -40,9 +46,6 @@ const handleSignOut = async () => {
         >
           {{ isSriLanka ? 'SRI LANKA' : 'CHINA' }}
         </span>
-      </div>
-      <div class="text-[11px] text-subtle">
-        Demand-based ordering tool
       </div>
     </div>
 

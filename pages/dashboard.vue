@@ -14,7 +14,7 @@ const liveInventoryEnabled = computed(() => appModeStore.loaded && appModeStore.
 // Initialize composables
 const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory({ enabled: liveInventoryEnabled })
 const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory({ enabled: liveInventoryEnabled })
-const { loading: salesLoading } = useWeeklySales()
+const { loading: salesLoading, error: salesError, refresh: refreshSales } = useWeeklySales()
 
 const activeChinaInventory = computed(() => {
   if (appModeStore.isTestMode) {
@@ -31,18 +31,19 @@ const activeChinaInventory = computed(() => {
 const loading = computed(() => {
   if (!appModeStore.loaded) return true
   if (appModeStore.isTestMode) return !testInventoryStore.loaded
-  return springsLoading.value || componentsLoading.value
+  return springsLoading.value || componentsLoading.value || salesLoading.value
 })
 
 const error = computed(() => {
   if (!appModeStore.loaded || appModeStore.isTestMode) return null
-  return springsError.value || componentsError.value
+  return springsError.value || componentsError.value || salesError.value
 })
 
 const refresh = () => {
   if (!appModeStore.isLiveMode) return
   refreshSprings()
   refreshComponents()
+  refreshSales()
 }
 
 // Sync active inventory into the China inventory store
@@ -115,7 +116,7 @@ useHead({
       <div v-if="loading" class="flex items-center justify-center py-20">
         <div class="text-center">
           <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand mx-auto mb-4"></div>
-          <p class="text-muted">Loading inventory from Directus...</p>
+          <p class="text-muted">Loading Directus data...</p>
         </div>
       </div>
 

@@ -310,7 +310,6 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-3">
       Component timeline
-      <span class="text-sm font-normal text-subtle">({{ rows.length }} rows)</span>
     </h3>
 
     <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">
@@ -371,12 +370,5 @@ const getCellBg = (stock, weeklyRate) => {
         </tbody>
       </table>
     </div>
-
-    <p class="text-xs text-subtle mt-3">
-      Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
-      Micro coils/Thin latex demand calculated directly from Cloud/Aurora/Cooper sales (Cloud=2 layers, Aurora=1, Cooper=0).
-      King inventory = King + 0.5×Single. Queen inventory = Queen + Double + King Single.
-      Side Panel Double = Double + King Single + Single.
-    </p>
   </div>
 </template>

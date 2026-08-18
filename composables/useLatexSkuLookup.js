@@ -5,6 +5,7 @@ let fetchPromise = null
 
 export const useLatexSkuLookup = () => {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const skuMap = ref(new Map())
   const loading = ref(false)
@@ -52,7 +53,9 @@ export const useLatexSkuLookup = () => {
         skuCache = map
         skuMap.value = map
       } catch (e) {
-        error.value = e.message
+        if (await handleDirectusAuthError(e)) return
+
+        error.value = getDirectusErrorMessage(e, 'Failed to fetch latex SKU lookup')
         console.error('[Latex SKU lookup] Failed to fetch:', e)
       } finally {
         loading.value = false

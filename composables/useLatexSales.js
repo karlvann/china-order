@@ -138,6 +138,7 @@ function createEmptyPillowLatexDemand() {
 
 export function useLatexSales() {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
   const sriLankaSettingsStore = useSriLankaSettingsStore()
 
   const loading = ref(true)
@@ -360,7 +361,9 @@ export function useLatexSales() {
       )
 
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch latex sales data')
       console.error('[Latex] Failed to fetch sales data:', e)
     } finally {
       loading.value = false

@@ -5,6 +5,7 @@
 
 export function useInventoryOrders() {
   const { getItems, createItems, updateItem, deleteItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const orders = ref([])
   const loading = ref(false)
@@ -44,7 +45,9 @@ export function useInventoryOrders() {
       const items = Array.isArray(response) ? response : (response?.data || [])
       orders.value = items
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch inventory orders')
       console.error('Failed to fetch inventory orders:', e)
     } finally {
       loading.value = false
@@ -82,7 +85,9 @@ export function useInventoryOrders() {
       await fetchOrders() // Refresh the list
       return created
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return null
+
+      error.value = getDirectusErrorMessage(e, 'Failed to create inventory order')
       console.error('Failed to create inventory order:', e)
       return null
     } finally {
@@ -121,7 +126,9 @@ export function useInventoryOrders() {
       await fetchOrders() // Refresh the list
       return response
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return null
+
+      error.value = getDirectusErrorMessage(e, 'Failed to update inventory order')
       console.error('Failed to update inventory order:', e)
       return null
     } finally {
@@ -147,7 +154,9 @@ export function useInventoryOrders() {
       await fetchOrders() // Refresh the list
       return true
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return false
+
+      error.value = getDirectusErrorMessage(e, 'Failed to delete inventory order')
       console.error('Failed to delete inventory order:', e)
       return false
     } finally {

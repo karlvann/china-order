@@ -42,6 +42,7 @@ const SKU_MAP = {
 
 export const useComponentInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const enabled = computed(() => {
     if (options.enabled === undefined) return true
@@ -87,7 +88,9 @@ export const useComponentInventory = (options = {}) => {
 
       components.value = nextComponents
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch component inventory')
       console.error('Failed to fetch component inventory:', e)
     } finally {
       loading.value = false

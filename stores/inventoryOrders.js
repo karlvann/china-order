@@ -5,6 +5,7 @@
 
 export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
   const { getItems, createItems, updateItem, deleteItems } = useDirectusItems()
+  const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   // State
   const orders = ref([])
@@ -42,7 +43,9 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       const items = Array.isArray(response) ? response : (response?.data || [])
       orders.value = items
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return
+
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch inventory orders')
       console.error('Failed to fetch inventory orders:', e)
     } finally {
       loading.value = false
@@ -78,7 +81,9 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       await fetchOrders()
       return created
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return null
+
+      error.value = getDirectusErrorMessage(e, 'Failed to create inventory order')
       console.error('Failed to create inventory order:', e)
       return null
     } finally {
@@ -114,7 +119,9 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       await fetchOrders()
       return response
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return null
+
+      error.value = getDirectusErrorMessage(e, 'Failed to update inventory order')
       console.error('Failed to update inventory order:', e)
       return null
     } finally {
@@ -138,7 +145,9 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
       await fetchOrders()
       return true
     } catch (e) {
-      error.value = e.message
+      if (await handleDirectusAuthError(e)) return false
+
+      error.value = getDirectusErrorMessage(e, 'Failed to delete inventory order')
       console.error('Failed to delete inventory order:', e)
       return false
     } finally {

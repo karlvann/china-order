@@ -262,7 +262,6 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-3">
       Latex timeline
-      <span class="text-sm font-normal text-subtle">(8 rows: latex sheets and pillow latex)</span>
     </h3>
 
     <div ref="scrollContainer" class="overflow-x-auto" @scroll="$emit('scroll', $event.target.scrollLeft)">
@@ -323,9 +322,5 @@ const getCellBg = (stock, weeklyRate) => {
         </tbody>
       </table>
     </div>
-
-    <p class="text-xs text-subtle mt-3">
-      Blue = overstock (&gt;30 weeks), Yellow = low stock (≤4 weeks), Red = depleted.
-    </p>
   </div>
 </template>
