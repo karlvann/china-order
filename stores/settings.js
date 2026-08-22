@@ -33,7 +33,14 @@ export const useSettingsStore = defineStore('settings', () => {
       Single: { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 }
     },
     MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
-    THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 }
+    THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 },
+    RAW_SKU_WEEKLY_DEMAND: {
+      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+    }
   })
   const liveSalesLoaded = ref(false)
 
@@ -159,7 +166,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand) => {
+  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand) => {
     liveSalesRates.value.WEEKLY_SALES_RATE = { ...weeklyRates }
     if (firmnessDistribution) {
       // Convert percentage (0-100) to decimal (0-1)
@@ -177,6 +184,9 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     if (thinLatexDemand) {
       liveSalesRates.value.THIN_LATEX_WEEKLY_DEMAND = { ...thinLatexDemand }
+    }
+    if (rawSkuWeeklyDemand) {
+      liveSalesRates.value.RAW_SKU_WEEKLY_DEMAND = JSON.parse(JSON.stringify(rawSkuWeeklyDemand))
     }
     liveSalesLoaded.value = true
   }

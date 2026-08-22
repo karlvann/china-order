@@ -1,5 +1,5 @@
 <script setup>
-import { SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import { FELT_TO_SPRING_RATIO, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
@@ -168,7 +168,7 @@ const weeks = computed(() => {
  * - microcoilsqueen: Queen (1x) + Double (1x) + King Single (1x), multiplied by model factor
  * - thinlatexking: Same as microcoilsking
  * - thinlatexqueen: Same as microcoilsqueen
- * - felt{size}: 1:1 with mattress sales
+ * - felt{size}: 1:3 with mattress sales (springs arrive packaged in usable felt)
  * - paneltop{size}: 1:1 with mattress sales
  * - panelbottom{size}: 1:1 with mattress sales
  * - panelsideking: King only (1:1)
@@ -190,12 +190,12 @@ const componentRows = computed(() => {
     // Micro Coils & Thin Latex - Queen inventory
     { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen },
     { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen },
-    // Felt - 1:1 with mattress sales by size
-    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King },
-    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen },
-    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', weeklyDemand: rates.Double },
-    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', weeklyDemand: rates['King Single'] },
-    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', weeklyDemand: rates.Single },
+    // Felt - extra top-up only; springs arrive packaged in usable felt
+    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', weeklyDemand: rates.Double * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', weeklyDemand: rates['King Single'] * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', weeklyDemand: rates.Single * FELT_TO_SPRING_RATIO },
     // Top Panel - 1:1 with mattress sales by size
     { id: 'top_panel', inventorySize: 'King', label: 'Top Panel (King)', weeklyDemand: rates.King },
     { id: 'top_panel', inventorySize: 'Queen', label: 'Top Panel (Queen)', weeklyDemand: rates.Queen },
@@ -287,7 +287,7 @@ const rows = computed(() => {
       label: comp.label,
       currentStock,
       orderAmount,
-      weeklyRate: Math.round(weeklyRate * 10) / 10,
+      weeklyRate,
       projections
     })
   })
@@ -353,7 +353,7 @@ const getCellBg = (stock, weeklyRate) => {
             class="border-b border-border hover:bg-surface-hover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium text-xs">{{ row.label }}</td>
-            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate }}/wk</td>
+            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate.toFixed(2) }}/wk</td>
             <td class="table-cell sticky left-[250px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"

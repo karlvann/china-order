@@ -197,7 +197,7 @@ const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate
     label,
     currentStock: Math.round(currentStock),
     orderAmount,
-    weeklyRate: Math.round(weeklyRate * 10) / 10,
+    weeklyRate,
     projections
   }
 }
@@ -305,7 +305,7 @@ const getCellBg = (stock, weeklyRate) => {
             class="border-b border-border hover:bg-surface-hover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[140px] font-medium">{{ row.label }}</td>
-            <td class="table-cell sticky left-[140px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate }}/wk</td>
+            <td class="table-cell sticky left-[140px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate.toFixed(2) }}/wk</td>
             <td class="table-cell sticky left-[210px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"

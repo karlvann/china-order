@@ -1,6 +1,6 @@
 <script setup>
 import { MATTRESS_SIZES, FIRMNESS_TYPES, FIRMNESS_LABELS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
-import { getCurrentMonday } from '~/lib/utils/index.js'
+import { calculateSkuWeeklyDemand, getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
 
@@ -169,9 +169,11 @@ const rows = computed(() => {
 
   MATTRESS_SIZES.forEach(size => {
     FIRMNESS_TYPES.forEach(firmness => {
-      // Use weekly rate directly, apply firmness distribution
+      // Use the same low-selling SKU floor as the spring order algorithm
+      const sizeWeeklyRate = props.usageRates.WEEKLY_SALES_RATE[size.id] || 0
       const firmnessDistribution = props.usageRates.FIRMNESS_DISTRIBUTION?.[size.id]?.[firmness] || 0
-      const weeklyRate = props.usageRates.WEEKLY_SALES_RATE[size.id] * firmnessDistribution
+      const rawSkuWeeklyDemand = props.usageRates.RAW_SKU_WEEKLY_DEMAND?.[size.id]?.[firmness] || 0
+      const weeklyRate = calculateSkuWeeklyDemand(sizeWeeklyRate, firmnessDistribution, rawSkuWeeklyDemand)
 
       const currentStock = props.inventory.springs[firmness][size.id] || 0
       const orderAmount = props.springOrder?.springs[firmness][size.id] || 0
@@ -228,7 +230,7 @@ const rows = computed(() => {
         label: `${size.name} ${FIRMNESS_LABELS[firmness]}`,
         currentStock,
         orderAmount,
-        weeklyRate: Math.round(weeklyRate * 10) / 10,
+        weeklyRate,
         projections
       })
     })
@@ -295,7 +297,7 @@ const getCellBg = (stock, weeklyRate) => {
             class="border-b border-border hover:bg-surface-hover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium">{{ row.label }}</td>
-            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate }}/wk</td>
+            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate.toFixed(2) }}/wk</td>
             <td class="table-cell sticky left-[250px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"

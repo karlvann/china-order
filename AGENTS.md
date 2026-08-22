@@ -56,13 +56,14 @@ This file provides guidance to coding agents when working with code in this repo
 
 ## Critical Business Constraint: Components Match Springs
 
-Components and springs MUST ship together. The component algorithm ensures balanced coverage across all component types.
+Components and springs MUST ship together. The component algorithm ensures balanced coverage across runout-managed component types; felt is a fixed 1:3 spring top-up.
 
 **See `docs/ALGORITHMS.md` for detailed algorithm documentation.**
 
 Each mattress requires **1 spring + multiple components**:
 - 1 spring (firm/medium/soft)
-- 1 felt, 1 top panel, 1 bottom panel, 1 side panel (1:1 with springs)
+- 1 top panel, 1 bottom panel, 1 side panel (1:1 with springs)
+- Felt top-up: order approximately 1 felt per 3 springs; springs arrive packaged in usable felt, so felt runout rules do not apply
 - Micro coils & thin latex (King/Queen only):
   - King inventory: King springs + 0.5× Single springs (Singles cut King in half)
   - Queen inventory: Queen + Double + King Single springs (cut from Queen)
@@ -277,6 +278,7 @@ The app manages two independent supply chains:
 ### Firmness Distribution
 - King/Queen: ~83% Medium, ~13% Firm, ~3% Soft
 - Smaller sizes: More balanced distribution
+- Low-selling spring SKUs use a demand floor: if normal SKU demand (`size weekly rate × firmness ratio`) is below 1.75/wk, use the higher of normal demand and the raw 12-week SKU average
 
 ### Component Consolidation
 - Micro Coils & Thin Latex: King/Queen only

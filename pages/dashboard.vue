@@ -93,6 +93,7 @@ const usageRates = computed(() => {
   return {
     WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
     FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION,
+    RAW_SKU_WEEKLY_DEMAND: settingsStore.liveSalesRates.RAW_SKU_WEEKLY_DEMAND,
     MICRO_COIL_WEEKLY_DEMAND: settingsStore.liveSalesRates.MICRO_COIL_WEEKLY_DEMAND,
     THIN_LATEX_WEEKLY_DEMAND: settingsStore.liveSalesRates.THIN_LATEX_WEEKLY_DEMAND,
     TOTAL_WEEKLY_SALES: Math.round(totalWeekly * 10) / 10

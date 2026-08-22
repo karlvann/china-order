@@ -107,6 +107,14 @@ export function useWeeklySales() {
     Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
   })
 
+  // Raw 12-week SKU averages used as a floor for low-selling spring SKUs
+  const rawSkuWeeklyDemand = ref({
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+  })
 
   // Firmness distribution percentages by size
   const firmnessDistribution = ref({
@@ -284,6 +292,15 @@ export function useWeeklySales() {
       }
       weeklyRates.value = weekly
 
+      const rawSkuWeekly = {}
+      for (const size of Object.keys(demandTotal)) {
+        rawSkuWeekly[size] = {}
+        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+          rawSkuWeekly[size][firmness] = roundDemandRate(demandTotal[size][firmness] / (LOOKBACK_DAYS / 7))
+        }
+      }
+      rawSkuWeeklyDemand.value = rawSkuWeekly
+
       // Per-metric trim summary so the rate can be audited.
       const logTrim = (label, counts, rate) => {
         const { lows, high, strategy, reason } = getTrimAnnotations(counts)
@@ -328,7 +345,7 @@ export function useWeeklySales() {
       }
 
       // Update settings store with live data
-      settingsStore.setLiveSalesRates(weeklyTotals, distribution, microCoilDemand.value, thinLatexDemand.value)
+      settingsStore.setLiveSalesRates(weeklyTotals, distribution, microCoilDemand.value, thinLatexDemand.value, rawSkuWeeklyDemand.value)
 
     } catch (e) {
       if (await handleDirectusAuthError(e)) return
@@ -349,6 +366,7 @@ export function useWeeklySales() {
     salesData: readonly(salesData),
     demandBySize: readonly(demandBySize),
     weeklyRates: readonly(weeklyRates),
+    rawSkuWeeklyDemand: readonly(rawSkuWeeklyDemand),
     firmnessDistribution: readonly(firmnessDistribution),
     modelDistribution: readonly(modelDistribution),
     microCoilDemand: readonly(microCoilDemand),

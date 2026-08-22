@@ -152,7 +152,8 @@ export const useOrderStore = defineStore('order', () => {
     // Pass live sales data to the algorithm
     const salesRates = {
       WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
-      FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION
+      FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION,
+      RAW_SKU_WEEKLY_DEMAND: settingsStore.liveSalesRates.RAW_SKU_WEEKLY_DEMAND
     }
 
     // Convert pending orders to algorithm format

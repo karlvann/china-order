@@ -37,15 +37,27 @@
 </template>
 
 <script setup>
-const { login } = useDirectusAuth()
+const { login, logout } = useDirectusAuth()
 const router = useRouter()
 const route = useRoute()
 const user = useDirectusUser()
+const {
+  clearDirectusSession,
+  getDirectusErrorMessage,
+  isAllowedUser,
+  isAllowedUserEmail,
+  isAusbedsUserEmail
+} = useDirectusSession()
 
 const loading = ref(false)
 const loginError = ref(null)
+const unauthorizedAusbedsMessage = 'This user is not allowed to access inventory data.'
+const unauthorizedAccountMessage = 'This account is not authorised to access this app.'
 const sessionMessage = computed(() => {
-  return route.query.session === 'expired' ? 'Your session expired. Please log in again.' : null
+  if (route.query.session === 'expired') return 'Your session expired. Please log in again.'
+  if (route.query.session === 'unauthorized') return unauthorizedAccountMessage
+
+  return null
 })
 
 const formState = ref({
@@ -56,22 +68,53 @@ const formState = ref({
 const onSubmit = async () => {
   loading.value = true
   loginError.value = null
+
+  const email = formState.value.email.trim().toLowerCase()
+
+  if (isAusbedsUserEmail(email) && !isAllowedUserEmail(email)) {
+    loginError.value = unauthorizedAusbedsMessage
+    loading.value = false
+    return
+  }
+
   try {
-    await login({
-      email: formState.value.email,
+    const result = await login({
+      email,
       password: formState.value.password
     })
+
+    if (!isAllowedUser(result.user)) {
+      try {
+        await logout()
+      } catch {
+        clearDirectusSession()
+      }
+
+      clearDirectusSession()
+
+      const loggedInEmail = result.user?.email || email
+      loginError.value = isAusbedsUserEmail(loggedInEmail) && !isAllowedUserEmail(loggedInEmail)
+        ? unauthorizedAusbedsMessage
+        : unauthorizedAccountMessage
+      return
+    }
+
     router.push('/dashboard')
-  } catch {
-    loginError.value = 'Invalid email or password'
+  } catch (e) {
+    loginError.value = getDirectusErrorMessage(e, 'Invalid email or password')
   } finally {
     loading.value = false
   }
 }
 
 watchEffect(() => {
-  if (user.value) {
+  if (!user.value) return
+
+  if (isAllowedUser()) {
     router.push('/dashboard')
+    return
   }
+
+  clearDirectusSession()
 })
 </script>

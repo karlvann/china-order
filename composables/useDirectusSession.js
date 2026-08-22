@@ -1,3 +1,5 @@
+import { AUSBEDS_EMAIL_DOMAIN, ALLOWED_USER_EMAILS } from '~/lib/constants/index.js'
+
 const AUTH_ERROR_CODES = [
   'INVALID_TOKEN',
   'TOKEN_EXPIRED',
@@ -53,9 +55,27 @@ const getDirectusErrorMessage = (error, fallback = 'Directus request failed') =>
     || fallback
 }
 
+const getUserEmail = (value) => {
+  if (typeof value === 'string') return value.trim().toLowerCase()
+
+  return String(value?.email || '').trim().toLowerCase()
+}
+
 export const useDirectusSession = () => {
   const user = useDirectusUser()
   const { token, refreshToken, expires, token_expired } = useDirectusToken()
+
+  const isAusbedsUserEmail = (value) => {
+    return getUserEmail(value).endsWith(AUSBEDS_EMAIL_DOMAIN)
+  }
+
+  const isAllowedUserEmail = (value) => {
+    return ALLOWED_USER_EMAILS.includes(getUserEmail(value))
+  }
+
+  const isAllowedUser = (value = user.value) => {
+    return isAllowedUserEmail(value)
+  }
 
   const clearDirectusSession = () => {
     token.value = null
@@ -97,6 +117,9 @@ export const useDirectusSession = () => {
 
   return {
     clearDirectusSession,
+    isAllowedUser,
+    isAllowedUserEmail,
+    isAusbedsUserEmail,
     isDirectusAuthError,
     handleDirectusAuthError,
     getDirectusErrorMessage,

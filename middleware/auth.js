@@ -2,7 +2,7 @@ export default defineNuxtRouteMiddleware(async () => {
   const user = useDirectusUser()
   const { fetchUser } = useDirectusAuth()
   const { token, refreshToken, token_expired, checkAutoRefresh } = useDirectusToken()
-  const { clearDirectusSession } = useDirectusSession()
+  const { clearDirectusSession, isAllowedUser } = useDirectusSession()
 
   const hadSession = !!token.value || !!refreshToken.value || !!user.value
 
@@ -12,7 +12,17 @@ export default defineNuxtRouteMiddleware(async () => {
     await fetchUser()
   }
 
-  if (token.value && !token_expired.value && user.value) return
+  if (token.value && !token_expired.value && user.value) {
+    if (isAllowedUser()) return
+
+    clearDirectusSession()
+    return navigateTo({
+      path: '/',
+      query: {
+        session: 'unauthorized'
+      }
+    })
+  }
 
   clearDirectusSession()
 

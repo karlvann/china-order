@@ -27,7 +27,7 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 5. Otherwise, always drop the **single lowest chunk** and the **single highest chunk**.
 6. ALSO drop the **second-lowest chunk** if (and only if) its 2-week period is *time-adjacent* to the lowest chunk's period — i.e., their chunk indices differ by 1. A real ~3-week stockout produces two consecutive low chunks; scattered low chunks are normal weekly variance and should not both be trimmed.
 7. Average the remaining 3 or 4 chunks and divide by 2 (weeks per chunk) to get the weekly rate.
-8. Round the internal algorithm rate to **3 decimal places**. UI tables may still display 1 decimal place for readability.
+8. Round the internal algorithm rate to **3 decimal places**. UI demand labels display 2 decimal places for readability.
 
 > ⚠️ "Adjacent" means **consecutive in time** (e.g., the `0-2w ago` chunk and the `2-4w ago` chunk). It is NOT about the sorted-by-value order — that would be trivially always-adjacent.
 
@@ -44,6 +44,22 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 ### Firmness and model distribution
 
 The **firmness distribution** (% firm/medium/soft) and **model distribution** (% Cooper/Aurora/Cloud) per size are calculated separately from the **full 12-week totals** (untrimmed), because percentages are more stable with a larger sample and aren't affected by stockout-driven volume changes in the same way absolute rates are.
+
+### Low-selling spring SKU floor
+
+For spring ordering, the normal per-SKU demand starts as:
+
+```javascript
+normalSkuDemand = sizeTrimmedWeeklyRate × firmnessRatio12Weeks
+```
+
+If that normal per-SKU demand is below **1.75 units/week**, the algorithm applies a raw 12-week SKU floor:
+
+```javascript
+skuDemand = max(normalSkuDemand, rawSkuUnitsSoldLast12Weeks / 12)
+```
+
+This lets lumpy low-selling SKUs, such as Soft Double, count their real sales bursts without allowing stockout-suppressed raw sales to lower demand.
 
 ---
 
@@ -69,7 +85,7 @@ Different sizes have different minimum coverage targets based on business priori
 | Size | Target Coverage | Weight |
 |------|-----------------|--------|
 | Queen | 9 weeks | 1.5× |
-| King | 8 weeks | 1.3× |
+| King | 8 weeks | 1.4× |
 | Double | 6 weeks | 1.0× |
 | King Single | 6 weeks | 1.0× |
 | Single | 6 weeks | 1.0× |
@@ -83,7 +99,8 @@ Queen and King get priority weighting because they represent approximately 78% o
 For each of the 15 SKUs (5 sizes × 3 firmnesses):
 
 ```javascript
-weeklyDemand = sizeWeeklyRate × firmnessRatio
+normalWeeklyDemand = sizeWeeklyRate × firmnessRatio
+weeklyDemand = normalWeeklyDemand < 1.75 ? max(normalWeeklyDemand, rawSkuWeeklyDemand) : normalWeeklyDemand
 projectedStock = currentStock - (weeklyDemand × weeksUntilArrival) + pendingArrivals
 projectedCoverage = projectedStock / weeklyDemand
 ```
@@ -135,13 +152,13 @@ For each size that received pallets:
 
 ### Overview
 
-The component ordering algorithm ensures components are ordered to match spring orders while maintaining balanced coverage across all component types. It accounts for container size and allows manual scaling.
+The component ordering algorithm ensures components are ordered to match spring orders while maintaining balanced coverage across runout-managed component types. Felt is handled separately as a fixed spring-ratio top-up.
 
 ### Component Types
 
 | Component | Sizes | Demand Rule |
 |-----------|-------|-------------|
-| Felt | All 5 | 1:1 with mattress sales |
+| Felt | All 5 | 1:3 spring top-up; coverage/runout rules do not apply |
 | Top Panel | All 5 | 1:1 with mattress sales |
 | Bottom Panel | All 5 | 1:1 with mattress sales |
 | Side Panel | King, Queen, Double* | *Double covers Double + KS + Single |
@@ -159,7 +176,15 @@ The component ordering algorithm ensures components are ordered to match spring 
 
 #### Phase 1: Calculate Initial Orders
 
-For each component/size combination:
+Felt is calculated first from the spring order only:
+
+```javascript
+feltOrder = ceil(springsOrdered[size] / 3)
+```
+
+This is because springs arrive packaged in usable felt, but the business needs approximately 33% extra felt beyond what arrives with the springs. Felt is not skipped for high coverage, lifted for low coverage, balanced, or scaled by the component scale slider.
+
+For each runout-managed component/size combination:
 
 ```javascript
 springMatched = springsOrdered[size]  // or scaled for micro/latex
@@ -175,7 +200,7 @@ Calculate projected coverage at arrival for each component with the initial orde
 
 #### Phase 3: Balance Coverage
 
-1. Find the minimum coverage across all components being ordered
+1. Find the minimum coverage across all runout-managed components being ordered
 2. Set target max = min coverage + 4 weeks
 3. For components exceeding target max, reduce order to target max
 4. Never reduce below the 6-week minimum floor
@@ -202,17 +227,19 @@ combinedScale = containerScale × componentScaleOverride
 // componentScaleOverride = user slider (0.3 to 2.0, default 1.0)
 ```
 
-For each component:
+For each runout-managed component:
 - Scale the order by combined factor
 - If scaling down, ensure 6-week minimum is still met
 - If scaling up, just apply the scale
+
+Felt is excluded from scaling so it stays at the 1:3 felt-to-spring ratio.
 
 ### Thresholds
 
 | Threshold | Value | Purpose |
 |-----------|-------|---------|
 | `SKIP_IF_COVERAGE_ABOVE` | 10 weeks | Don't order if already well-stocked at arrival |
-| Minimum coverage at arrival | 6 weeks (default) | Floor for all components |
+| Minimum coverage at arrival | 6 weeks (default) | Floor for runout-managed components |
 | Max coverage spread | 4 weeks | Balance range (min to min+4) |
 | Full container | 12 pallets | Base for container scaling |
 
@@ -241,7 +268,7 @@ This allows smaller orders to fit in smaller containers while still maintaining 
 {
   micro_coils: { King: 45, Queen: 80, Double: 0, 'King Single': 0, Single: 0 },
   thin_latex: { King: 45, Queen: 80, Double: 0, 'King Single': 0, Single: 0 },
-  felt: { King: 30, Queen: 60, Double: 10, 'King Single': 5, Single: 5 },
+  felt: { King: 10, Queen: 20, Double: 0, 'King Single': 0, Single: 0 },
   top_panel: { ... },
   bottom_panel: { ... },
   side_panel: { King: 30, Queen: 60, Double: 20, 'King Single': 0, Single: 0 }
