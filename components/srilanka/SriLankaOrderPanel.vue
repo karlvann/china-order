@@ -10,7 +10,7 @@ const sriLankaInventoryStore = useSriLankaInventoryStore()
 const latexSkuLookup = useLatexSkuLookup()
 
 // Usage rates from settings store
-const usageRates = computed(() => sriLankaSettingsStore.latexSalesRates)
+const usageRates = computed(() => sriLankaSettingsStore.planningLatexSalesRates)
 
 // Local order settings (independent of global settings)
 const localCapacity = ref(DEFAULT_LATEX_CAPACITY)
@@ -263,6 +263,11 @@ const updateFromAlgorithm = async () => {
 watch(localCapacity, () => {
   updateFromAlgorithm()
 })
+
+watch(usageRates, () => {
+  if (!sriLankaUIStore.orderPanelOpen || isInitializing.value || isEditing.value) return
+  updateFromAlgorithm()
+}, { deep: true })
 
 // Watch order week offset - update order date and recalculate
 watch(localOrderWeekOffset, (offset) => {

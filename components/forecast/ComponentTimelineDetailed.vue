@@ -179,39 +179,43 @@ const weeks = computed(() => {
 // Define all component inventory rows with their demand sources (all weekly)
 const componentRows = computed(() => {
   const rates = props.usageRates.WEEKLY_SALES_RATE
+  const rateSpikes = props.usageRates.WEEKLY_SALES_SPIKE || {}
   // Direct demand from sales data (weekly rates)
   const microWeekly = props.usageRates.MICRO_COIL_WEEKLY_DEMAND || { King: 0, Queen: 0 }
+  const microSpikes = props.usageRates.MICRO_COIL_WEEKLY_SPIKE || {}
   const latexWeekly = props.usageRates.THIN_LATEX_WEEKLY_DEMAND || { King: 0, Queen: 0 }
+  const latexSpikes = props.usageRates.THIN_LATEX_WEEKLY_SPIKE || {}
+  const sidePanelSpikes = props.usageRates.SIDE_PANEL_WEEKLY_SPIKE || {}
 
   return [
     // Micro Coils & Thin Latex - King inventory
-    { id: 'micro_coils', inventorySize: 'King', label: 'Micro Coils (King)', weeklyDemand: microWeekly.King },
-    { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King },
+    { id: 'micro_coils', inventorySize: 'King', label: 'Micro Coils (King)', weeklyDemand: microWeekly.King, demandSpike: microSpikes.King ?? 0 },
+    { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King, demandSpike: latexSpikes.King ?? 0 },
     // Micro Coils & Thin Latex - Queen inventory
-    { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen },
-    { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen },
+    { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen, demandSpike: microSpikes.Queen ?? 0 },
+    { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen, demandSpike: latexSpikes.Queen ?? 0 },
     // Felt - extra top-up only; springs arrive packaged in usable felt
-    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King * FELT_TO_SPRING_RATIO },
-    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen * FELT_TO_SPRING_RATIO },
-    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', weeklyDemand: rates.Double * FELT_TO_SPRING_RATIO },
-    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', weeklyDemand: rates['King Single'] * FELT_TO_SPRING_RATIO },
-    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', weeklyDemand: rates.Single * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.King ?? 0) * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.Queen ?? 0) * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Double', label: 'Felt (Double)', weeklyDemand: rates.Double * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.Double ?? 0) * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'King Single', label: 'Felt (King Single)', weeklyDemand: rates['King Single'] * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes['King Single'] ?? 0) * FELT_TO_SPRING_RATIO },
+    { id: 'felt', inventorySize: 'Single', label: 'Felt (Single)', weeklyDemand: rates.Single * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.Single ?? 0) * FELT_TO_SPRING_RATIO },
     // Top Panel - 1:1 with mattress sales by size
-    { id: 'top_panel', inventorySize: 'King', label: 'Top Panel (King)', weeklyDemand: rates.King },
-    { id: 'top_panel', inventorySize: 'Queen', label: 'Top Panel (Queen)', weeklyDemand: rates.Queen },
-    { id: 'top_panel', inventorySize: 'Double', label: 'Top Panel (Double)', weeklyDemand: rates.Double },
-    { id: 'top_panel', inventorySize: 'King Single', label: 'Top Panel (King Single)', weeklyDemand: rates['King Single'] },
-    { id: 'top_panel', inventorySize: 'Single', label: 'Top Panel (Single)', weeklyDemand: rates.Single },
+    { id: 'top_panel', inventorySize: 'King', label: 'Top Panel (King)', weeklyDemand: rates.King, demandSpike: rateSpikes.King ?? 0 },
+    { id: 'top_panel', inventorySize: 'Queen', label: 'Top Panel (Queen)', weeklyDemand: rates.Queen, demandSpike: rateSpikes.Queen ?? 0 },
+    { id: 'top_panel', inventorySize: 'Double', label: 'Top Panel (Double)', weeklyDemand: rates.Double, demandSpike: rateSpikes.Double ?? 0 },
+    { id: 'top_panel', inventorySize: 'King Single', label: 'Top Panel (King Single)', weeklyDemand: rates['King Single'], demandSpike: rateSpikes['King Single'] ?? 0 },
+    { id: 'top_panel', inventorySize: 'Single', label: 'Top Panel (Single)', weeklyDemand: rates.Single, demandSpike: rateSpikes.Single ?? 0 },
     // Bottom Panel - 1:1 with mattress sales by size
-    { id: 'bottom_panel', inventorySize: 'King', label: 'Bottom Panel (King)', weeklyDemand: rates.King },
-    { id: 'bottom_panel', inventorySize: 'Queen', label: 'Bottom Panel (Queen)', weeklyDemand: rates.Queen },
-    { id: 'bottom_panel', inventorySize: 'Double', label: 'Bottom Panel (Double)', weeklyDemand: rates.Double },
-    { id: 'bottom_panel', inventorySize: 'King Single', label: 'Bottom Panel (King Single)', weeklyDemand: rates['King Single'] },
-    { id: 'bottom_panel', inventorySize: 'Single', label: 'Bottom Panel (Single)', weeklyDemand: rates.Single },
+    { id: 'bottom_panel', inventorySize: 'King', label: 'Bottom Panel (King)', weeklyDemand: rates.King, demandSpike: rateSpikes.King ?? 0 },
+    { id: 'bottom_panel', inventorySize: 'Queen', label: 'Bottom Panel (Queen)', weeklyDemand: rates.Queen, demandSpike: rateSpikes.Queen ?? 0 },
+    { id: 'bottom_panel', inventorySize: 'Double', label: 'Bottom Panel (Double)', weeklyDemand: rates.Double, demandSpike: rateSpikes.Double ?? 0 },
+    { id: 'bottom_panel', inventorySize: 'King Single', label: 'Bottom Panel (King Single)', weeklyDemand: rates['King Single'], demandSpike: rateSpikes['King Single'] ?? 0 },
+    { id: 'bottom_panel', inventorySize: 'Single', label: 'Bottom Panel (Single)', weeklyDemand: rates.Single, demandSpike: rateSpikes.Single ?? 0 },
     // Side Panel - King (King only), Queen (Queen only), Double (Double + King Single + Single)
-    { id: 'side_panel', inventorySize: 'King', label: 'Side Panel (King)', weeklyDemand: rates.King },
-    { id: 'side_panel', inventorySize: 'Queen', label: 'Side Panel (Queen)', weeklyDemand: rates.Queen },
-    { id: 'side_panel', inventorySize: 'Double', label: 'Side Panel (Double)', weeklyDemand: rates.Double + rates['King Single'] + rates.Single }
+    { id: 'side_panel', inventorySize: 'King', label: 'Side Panel (King)', weeklyDemand: rates.King, demandSpike: sidePanelSpikes.King ?? 0 },
+    { id: 'side_panel', inventorySize: 'Queen', label: 'Side Panel (Queen)', weeklyDemand: rates.Queen, demandSpike: sidePanelSpikes.Queen ?? 0 },
+    { id: 'side_panel', inventorySize: 'Double', label: 'Side Panel (Double)', weeklyDemand: rates.Double + rates['King Single'] + rates.Single, demandSpike: sidePanelSpikes.Double ?? 0 }
   ]
 })
 
@@ -288,6 +292,7 @@ const rows = computed(() => {
       currentStock,
       orderAmount,
       weeklyRate,
+      demandSpike: comp.demandSpike ?? 0,
       projections
     })
   })
@@ -316,9 +321,10 @@ const getCellBg = (stock, weeklyRate) => {
       <table class="w-full text-xs">
         <thead>
           <tr class="bg-table-header">
-            <th class="table-header sticky left-0 bg-table-header z-10 min-w-[180px]">Component (Size)</th>
-            <th class="table-header sticky left-[180px] bg-table-header z-10 text-center w-[70px]">Demand</th>
-            <th class="table-header sticky left-[250px] bg-table-current z-10 text-center w-[70px] text-primary">
+            <th class="table-header sticky left-0 bg-table-header z-10 w-[172px] min-w-[172px] max-w-[172px]">Component (Size)</th>
+            <th class="table-header sticky left-[172px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]">Demand</th>
+            <th class="table-header sticky left-[242px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]" title="Average demand from the last 2 complete weeks">Spike</th>
+            <th class="table-header sticky left-[312px] bg-table-current z-10 text-center w-[70px] text-primary">
               <div>Now</div>
               <div class="text-[9px] text-muted font-normal">{{ currentWeekRange }}</div>
             </th>
@@ -352,9 +358,17 @@ const getCellBg = (stock, weeklyRate) => {
             :key="`${row.component}-${row.size}`"
             class="border-b border-border hover:bg-surface-hover/30"
           >
-            <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium text-xs">{{ row.label }}</td>
-            <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate.toFixed(2) }}/wk</td>
-            <td class="table-cell sticky left-[250px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
+            <td class="table-cell sticky left-0 bg-background z-10 w-[172px] min-w-[172px] max-w-[172px] font-medium text-xs">{{ row.label }}</td>
+            <td class="table-cell sticky left-[172px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
+            <td
+              :class="[
+                'table-cell sticky left-[242px] bg-background z-10 text-center font-mono w-[70px] min-w-[70px] max-w-[70px]',
+                row.demandSpike < row.weeklyRate ? 'text-danger' : row.demandSpike > row.weeklyRate ? 'text-success' : 'text-muted'
+              ]"
+            >
+              {{ row.demandSpike.toFixed(2) }}/w
+            </td>
+            <td class="table-cell sticky left-[312px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"

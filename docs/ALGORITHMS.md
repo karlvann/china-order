@@ -19,7 +19,7 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 
 ### Method
 
-1. Fetch all paid mattress sales from the last **84 days (12 weeks)**.
+1. Fetch all paid mattress sales from the last **12 complete Mon-Sun weeks**. The current partial week is excluded.
    - The 12-week window is chosen because the mattress recommendation algorithm changed in late February 2026; older data reflects a different product mix.
 2. Bucket each sale into one of **6 chunks of 2 weeks** based on its date, where chunk 0 = most recent 2 weeks, chunk 5 = oldest.
 3. For each metric (per size, per firmness, micro coils, etc.), sum the values per chunk.
@@ -44,6 +44,12 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 ### Firmness and model distribution
 
 The **firmness distribution** (% firm/medium/soft) and **model distribution** (% Cooper/Aurora/Cloud) per size are calculated separately from the **full 12-week totals** (untrimmed), because percentages are more stable with a larger sample and aren't affected by stockout-driven volume changes in the same way absolute rates are.
+
+The timeline **Spike** column is a short-window average: total demand from the last **2 complete Mon-Sun weeks** divided by 2. The **Store split** column is calculated from the last **2 complete Mon-Sun weeks**, excluding only orders where `sale_source` is `website`.
+
+When **Store split demand** is turned on, SKUs with a store split use a showroom-model forecast/order planning rate instead of the 12-week demand rate. The app sums the 2-week spike demand for the whole size, then reallocates that size demand by the store split percentages. For example, Queen latex spike demand of 15/w with a 3.2% firm split gives firm Queen latex demand of 0.48/w.
+
+Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the Sri Lanka top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
 ### Low-selling spring SKU floor
 

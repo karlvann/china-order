@@ -89,13 +89,21 @@ onMounted(() => {
 
 // Usage rates from live Directus data
 const usageRates = computed(() => {
-  const totalWeekly = Object.values(settingsStore.liveSalesRates.WEEKLY_SALES_RATE).reduce((a, b) => a + b, 0)
+  const rates = settingsStore.planningSalesRates
+  const totalWeekly = Object.values(rates.WEEKLY_SALES_RATE).reduce((a, b) => a + b, 0)
+
   return {
-    WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
-    FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION,
-    RAW_SKU_WEEKLY_DEMAND: settingsStore.liveSalesRates.RAW_SKU_WEEKLY_DEMAND,
-    MICRO_COIL_WEEKLY_DEMAND: settingsStore.liveSalesRates.MICRO_COIL_WEEKLY_DEMAND,
-    THIN_LATEX_WEEKLY_DEMAND: settingsStore.liveSalesRates.THIN_LATEX_WEEKLY_DEMAND,
+    WEEKLY_SALES_RATE: rates.WEEKLY_SALES_RATE,
+    FIRMNESS_DISTRIBUTION: rates.FIRMNESS_DISTRIBUTION,
+    RAW_SKU_WEEKLY_DEMAND: rates.RAW_SKU_WEEKLY_DEMAND,
+    WEEKLY_SALES_SPIKE: rates.WEEKLY_SALES_SPIKE,
+    SKU_WEEKLY_DEMAND_SPIKE: rates.SKU_WEEKLY_DEMAND_SPIKE,
+    MICRO_COIL_WEEKLY_DEMAND: rates.MICRO_COIL_WEEKLY_DEMAND,
+    MICRO_COIL_WEEKLY_SPIKE: rates.MICRO_COIL_WEEKLY_SPIKE,
+    THIN_LATEX_WEEKLY_DEMAND: rates.THIN_LATEX_WEEKLY_DEMAND,
+    THIN_LATEX_WEEKLY_SPIKE: rates.THIN_LATEX_WEEKLY_SPIKE,
+    SIDE_PANEL_WEEKLY_SPIKE: rates.SIDE_PANEL_WEEKLY_SPIKE,
+    STORE_SKU_SPLIT: rates.STORE_SKU_SPLIT,
     TOTAL_WEEKLY_SALES: Math.round(totalWeekly * 10) / 10
   }
 })

@@ -3,6 +3,7 @@ import {
   MIN_PALLETS,
   MAX_PALLETS
 } from '~/lib/constants/index.js'
+import { withSpringStoreSplitDemand } from '~/lib/utils/index.js'
 
 const SETTINGS_KEY = 'china_order_settings'
 
@@ -16,6 +17,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
   const currentView = ref('forecast') // 'forecast', 'builder'
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
+  const useStoreSplitDemand = ref(false) // Use recent store split and spike demand for planning
   const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
@@ -35,6 +37,30 @@ export const useSettingsStore = defineStore('settings', () => {
     MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     RAW_SKU_WEEKLY_DEMAND: {
+      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+    },
+    WEEKLY_SALES_SPIKE: {
+      King: 0,
+      Queen: 0,
+      Double: 0,
+      'King Single': 0,
+      Single: 0
+    },
+    SKU_WEEKLY_DEMAND_SPIKE: {
+      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+    },
+    MICRO_COIL_WEEKLY_SPIKE: { King: 0, Queen: 0 },
+    THIN_LATEX_WEEKLY_SPIKE: { King: 0, Queen: 0 },
+    SIDE_PANEL_WEEKLY_SPIKE: { King: 0, Queen: 0, Double: 0 },
+    STORE_SKU_SPLIT: {
       King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
       Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
       Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
@@ -60,6 +86,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const isBuilderView = computed(() => currentView.value === 'builder')
 
   const isForecastView = computed(() => currentView.value === 'forecast')
+
+  const planningSalesRates = computed(() => {
+    if (!useStoreSplitDemand.value) return liveSalesRates.value
+    return withSpringStoreSplitDemand(liveSalesRates.value)
+  })
 
   // Get current ISO week number (1-52)
   const currentWeekNumber = computed(() => {
@@ -137,6 +168,14 @@ export const useSettingsStore = defineStore('settings', () => {
     useSeasonalDemand.value = !useSeasonalDemand.value
   }
 
+  const setUseStoreSplitDemand = (value) => {
+    useStoreSplitDemand.value = value
+  }
+
+  const toggleStoreSplitDemand = () => {
+    useStoreSplitDemand.value = !useStoreSplitDemand.value
+  }
+
   const setComponentScale = (scale) => {
     componentScale.value = Math.max(0.3, Math.min(2.0, Math.round(scale * 10) / 10))
   }
@@ -166,7 +205,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand) => {
+  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand, demandSpikes, storeSplit) => {
     liveSalesRates.value.WEEKLY_SALES_RATE = { ...weeklyRates }
     if (firmnessDistribution) {
       // Convert percentage (0-100) to decimal (0-1)
@@ -188,6 +227,24 @@ export const useSettingsStore = defineStore('settings', () => {
     if (rawSkuWeeklyDemand) {
       liveSalesRates.value.RAW_SKU_WEEKLY_DEMAND = JSON.parse(JSON.stringify(rawSkuWeeklyDemand))
     }
+    if (demandSpikes?.weeklySales) {
+      liveSalesRates.value.WEEKLY_SALES_SPIKE = { ...demandSpikes.weeklySales }
+    }
+    if (demandSpikes?.skuWeeklyDemand) {
+      liveSalesRates.value.SKU_WEEKLY_DEMAND_SPIKE = JSON.parse(JSON.stringify(demandSpikes.skuWeeklyDemand))
+    }
+    if (demandSpikes?.microCoil) {
+      liveSalesRates.value.MICRO_COIL_WEEKLY_SPIKE = { ...demandSpikes.microCoil }
+    }
+    if (demandSpikes?.thinLatex) {
+      liveSalesRates.value.THIN_LATEX_WEEKLY_SPIKE = { ...demandSpikes.thinLatex }
+    }
+    if (demandSpikes?.sidePanel) {
+      liveSalesRates.value.SIDE_PANEL_WEEKLY_SPIKE = { ...demandSpikes.sidePanel }
+    }
+    if (storeSplit) {
+      liveSalesRates.value.STORE_SKU_SPLIT = JSON.parse(JSON.stringify(storeSplit))
+    }
     liveSalesLoaded.value = true
   }
 
@@ -196,6 +253,7 @@ export const useSettingsStore = defineStore('settings', () => {
     exportFormat.value = 'optimized'
     startingMonth.value = new Date().getMonth()
     currentView.value = 'forecast'
+    useStoreSplitDemand.value = false
     saveToStorage()
   }
 
@@ -210,6 +268,7 @@ export const useSettingsStore = defineStore('settings', () => {
     liveSalesRates,
     liveSalesLoaded,
     useSeasonalDemand,
+    useStoreSplitDemand,
     componentScale,
     // Getters
     isMinPallets,
@@ -218,6 +277,7 @@ export const useSettingsStore = defineStore('settings', () => {
     isExactFormat,
     isBuilderView,
     isForecastView,
+    planningSalesRates,
     currentWeekNumber,
     orderWeekNumber,
     // Actions
@@ -232,6 +292,8 @@ export const useSettingsStore = defineStore('settings', () => {
     setCurrentView,
     setUseSeasonalDemand,
     toggleSeasonalDemand,
+    setUseStoreSplitDemand,
+    toggleStoreSplitDemand,
     setComponentScale,
     loadFromStorage,
     saveToStorage,

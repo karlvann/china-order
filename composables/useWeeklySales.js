@@ -5,78 +5,19 @@
 
 import {
   LOOKBACK_DAYS,
+  STORE_SPLIT_WEEKS,
   getChunkIndex,
+  getCompletedWeekIndex,
   emptyChunks,
+  emptyWeeks,
+  recentWeeklyDemandSpike,
   trimmedWeeklyRate,
   roundDemandRate,
   getTrimAnnotations,
   chunkLabel
 } from '~/lib/utils/demandTrimming.js'
-
-const MATTRESS_RANGES = ['cooper', 'cloud', 'aurora']
-
-// Size mapping from SKU suffix to standard size names
-// Order matters! Check longer matches first (kingsingle before single, king before checking others)
-const SIZE_MAP_ORDERED = [
-  { key: 'kingsingle', value: 'King Single' },
-  { key: 'single', value: 'Single' },
-  { key: 'double', value: 'Double' },
-  { key: 'queen', value: 'Queen' },
-  { key: 'king', value: 'King' }
-]
-
-// Firmness level to spring type mapping
-// 2-4 = Soft, 5-10 = Medium, 11-13 = Firm, 14-19 = Very Firm
-function getFirmnessType(level) {
-  const num = parseInt(level, 10)
-  if (num >= 2 && num <= 4) return 'soft'
-  if (num >= 5 && num <= 10) return 'medium'
-  if (num >= 11 && num <= 13) return 'firm'
-  if (num >= 14) return 'veryfirm'
-  return null
-}
-
-// Parse a mattress SKU to extract range, firmness level, and size
-// Format: range[cooper|cloud|aurora] + firmnessLevel[2-19] + size[single|kingsingle|double|queen|king]
-function parseMattressSku(sku) {
-  if (!sku || typeof sku !== 'string') return null
-
-  const lowerSku = sku.toLowerCase()
-
-  // Check if it's a mattress SKU (starts with a valid range)
-  const range = MATTRESS_RANGES.find(r => lowerSku.startsWith(r))
-  if (!range) return null
-
-  // Remove the range prefix
-  const remainder = lowerSku.slice(range.length)
-
-  // Find the size suffix (check longer matches first due to ordered array)
-  let size = null
-  let sizeKey = null
-  for (const { key, value } of SIZE_MAP_ORDERED) {
-    if (remainder.endsWith(key)) {
-      size = value
-      sizeKey = key
-      break
-    }
-  }
-  if (!size) return null
-
-  // Extract firmness level (what's between range and size)
-  const firmnessStr = remainder.slice(0, remainder.length - sizeKey.length)
-  const firmnessLevel = parseInt(firmnessStr, 10)
-  if (isNaN(firmnessLevel) || firmnessLevel < 2 || firmnessLevel > 19) return null
-
-  const firmnessType = getFirmnessType(firmnessLevel)
-  if (!firmnessType) return null
-
-  return {
-    range,
-    firmnessLevel,
-    firmnessType,
-    size
-  }
-}
+import { getCurrentMonday } from '~/lib/utils/dates.js'
+import { parseMattressSku, getSpringFirmnessType } from '~/lib/utils/mattressSku.js'
 
 export function useWeeklySales() {
   const { getItems } = useDirectusItems()
@@ -116,6 +57,35 @@ export function useWeeklySales() {
     Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
   })
 
+  // Average weekly demand from the last 2 complete weeks
+  const weeklySalesSpike = ref({
+    King: 0,
+    Queen: 0,
+    Double: 0,
+    'King Single': 0,
+    Single: 0
+  })
+
+  const skuWeeklyDemandSpike = ref({
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+  })
+
+  const microCoilDemandSpike = ref({ King: 0, Queen: 0 })
+  const thinLatexDemandSpike = ref({ King: 0, Queen: 0 })
+  const sidePanelDemandSpike = ref({ King: 0, Queen: 0, Double: 0 })
+
+  const storeSkuSplit = ref({
+    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
+    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+  })
+
   // Firmness distribution percentages by size
   const firmnessDistribution = ref({
     King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
@@ -148,14 +118,18 @@ export function useWeeklySales() {
     error.value = null
 
     try {
-      const endDate = new Date()
+      const endDate = getCurrentMonday()
       const referenceTime = endDate.getTime()
-      const startDate = new Date()
+      const startDate = new Date(endDate)
       startDate.setDate(startDate.getDate() - LOOKBACK_DAYS)
+      const displayEndDate = new Date(endDate)
+      displayEndDate.setDate(displayEndDate.getDate() - 1)
+      const storeSplitStartDate = new Date(endDate)
+      storeSplitStartDate.setDate(storeSplitStartDate.getDate() - (STORE_SPLIT_WEEKS * 7))
 
       dateRange.value = {
         start: startDate.toISOString().split('T')[0],
-        end: endDate.toISOString().split('T')[0]
+        end: displayEndDate.toISOString().split('T')[0]
       }
 
       // Fetch orders with SKUs from Directus
@@ -164,7 +138,8 @@ export function useWeeklySales() {
         params: {
           filter: {
             date_created: {
-              _gte: startDate.toISOString()
+              _gte: startDate.toISOString(),
+              _lt: endDate.toISOString()
             },
             payment_status: {
               _eq: 'paid'
@@ -176,6 +151,8 @@ export function useWeeklySales() {
           fields: [
             'id',
             'date_created',
+            'sale_source',
+            'skus.quantity',
             'skus.skus_id.sku'
           ],
           limit: -1 // Get all matching orders
@@ -184,6 +161,27 @@ export function useWeeklySales() {
 
       // Handle both direct array and { data: [] } response formats
       const orders = Array.isArray(response) ? response : (response?.data || [])
+
+      const storeSplitResponse = await getItems({
+        collection: 'orders',
+        params: {
+          filter: {
+            date_created: {
+              _gte: storeSplitStartDate.toISOString(),
+              _lt: endDate.toISOString()
+            }
+          },
+          fields: [
+            'id',
+            'date_created',
+            'sale_source',
+            'skus.quantity',
+            'skus.skus_id.sku'
+          ],
+          limit: -1
+        }
+      })
+      const storeSplitOrders = Array.isArray(storeSplitResponse) ? storeSplitResponse : (storeSplitResponse?.data || [])
 
       // Process orders to extract mattress sales
       const sales = []
@@ -197,10 +195,15 @@ export function useWeeklySales() {
 
           const parsed = parseMattressSku(sku)
           if (parsed) {
+            const parsedQuantity = parseInt(skuRelation.quantity, 10)
+            const quantity = Math.max(0, Number.isFinite(parsedQuantity) ? parsedQuantity : 1)
+
             sales.push({
               orderId: order.id,
               dateCreated: order.date_created,
               sku,
+              quantity,
+              saleSource: order.sale_source,
               ...parsed
             })
           }
@@ -208,7 +211,7 @@ export function useWeeklySales() {
       }
 
       salesData.value = sales
-      totalSales.value = sales.length
+      totalSales.value = sales.reduce((sum, sale) => sum + sale.quantity, 0)
 
       const emptyDemand = () => ({
         King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
@@ -243,34 +246,95 @@ export function useWeeklySales() {
       }
       const chunkedMicroKing = emptyChunks()
       const chunkedMicroQueen = emptyChunks()
+      const chunkedThinLatexKing = emptyChunks()
+      const chunkedThinLatexQueen = emptyChunks()
+
+      const weeklyBuckets = {}
+      for (const size of Object.keys(demandTotal)) {
+        weeklyBuckets[size] = {
+          veryfirm: emptyWeeks(),
+          firm: emptyWeeks(),
+          medium: emptyWeeks(),
+          soft: emptyWeeks(),
+          total: emptyWeeks()
+        }
+      }
+      const weeklyMicroKing = emptyWeeks()
+      const weeklyMicroQueen = emptyWeeks()
+      const weeklyThinLatexKing = emptyWeeks()
+      const weeklyThinLatexQueen = emptyWeeks()
+      const storeSplitCounts = emptyDemand()
 
       for (const sale of sales) {
         const idx = getChunkIndex(sale.dateCreated, referenceTime)
         if (idx < 0) continue
 
+        const weekIdx = getCompletedWeekIndex(sale.dateCreated, endDate)
+
         if (demandTotal[sale.size]) {
-          demandTotal[sale.size][sale.firmnessType]++
-          demandTotal[sale.size].total++
+          demandTotal[sale.size][sale.firmnessType] += sale.quantity
+          demandTotal[sale.size].total += sale.quantity
           if (modelCountsTotal[sale.size] && sale.range) {
-            modelCountsTotal[sale.size][sale.range]++
+            modelCountsTotal[sale.size][sale.range] += sale.quantity
           }
         }
 
         if (chunked[sale.size]) {
-          chunked[sale.size][sale.firmnessType][idx]++
-          chunked[sale.size].total[idx]++
+          chunked[sale.size][sale.firmnessType][idx] += sale.quantity
+          chunked[sale.size].total[idx] += sale.quantity
         }
 
-        // Micro coil / thin latex layers: Cloud=2, Aurora=1, Cooper=0
-        const layers = sale.range === 'cloud' ? 2 : sale.range === 'aurora' ? 1 : 0
-        if (layers > 0) {
+        if (weeklyBuckets[sale.size] && weekIdx >= 0) {
+          weeklyBuckets[sale.size][sale.firmnessType][weekIdx] += sale.quantity
+          weeklyBuckets[sale.size].total[weekIdx] += sale.quantity
+        }
+
+        // Each `m` in the recipe expands to thinlatex + microcoils.
+        const microLayerDemand = sale.microLayers * sale.quantity
+        if (microLayerDemand > 0) {
           if (sale.size === 'King') {
-            chunkedMicroKing[idx] += layers
+            chunkedMicroKing[idx] += microLayerDemand
+            if (weekIdx >= 0) weeklyMicroKing[weekIdx] += microLayerDemand
           } else if (sale.size === 'Single') {
-            chunkedMicroKing[idx] += layers * 0.5
+            chunkedMicroKing[idx] += microLayerDemand * 0.5
+            if (weekIdx >= 0) weeklyMicroKing[weekIdx] += microLayerDemand * 0.5
           } else {
-            chunkedMicroQueen[idx] += layers
+            chunkedMicroQueen[idx] += microLayerDemand
+            if (weekIdx >= 0) weeklyMicroQueen[weekIdx] += microLayerDemand
           }
+        }
+
+        const thinLatexLayerDemand = sale.thinLatexLayers * sale.quantity
+        if (thinLatexLayerDemand > 0) {
+          if (sale.size === 'King') {
+            chunkedThinLatexKing[idx] += thinLatexLayerDemand
+            if (weekIdx >= 0) weeklyThinLatexKing[weekIdx] += thinLatexLayerDemand
+          } else if (sale.size === 'Single') {
+            chunkedThinLatexKing[idx] += thinLatexLayerDemand * 0.5
+            if (weekIdx >= 0) weeklyThinLatexKing[weekIdx] += thinLatexLayerDemand * 0.5
+          } else {
+            chunkedThinLatexQueen[idx] += thinLatexLayerDemand
+            if (weekIdx >= 0) weeklyThinLatexQueen[weekIdx] += thinLatexLayerDemand
+          }
+        }
+      }
+
+      for (const order of storeSplitOrders) {
+        if (`${order.sale_source || ''}`.trim().toLowerCase() === 'website') continue
+        if (!order.skus) continue
+
+        for (const skuRelation of order.skus) {
+          const sku = skuRelation?.skus_id?.sku
+          if (!sku) continue
+
+          const parsed = parseMattressSku(sku)
+          if (!parsed || !storeSplitCounts[parsed.size]) continue
+
+          const parsedQuantity = parseInt(skuRelation.quantity, 10)
+          const quantity = Math.max(0, Number.isFinite(parsedQuantity) ? parsedQuantity : 1)
+
+          storeSplitCounts[parsed.size][parsed.firmnessType] += quantity
+          storeSplitCounts[parsed.size].total += quantity
         }
       }
 
@@ -281,7 +345,10 @@ export function useWeeklySales() {
         King: roundDemandRate(trimmedWeeklyRate(chunkedMicroKing)),
         Queen: roundDemandRate(trimmedWeeklyRate(chunkedMicroQueen))
       }
-      thinLatexDemand.value = { ...microCoilDemand.value }
+      thinLatexDemand.value = {
+        King: roundDemandRate(trimmedWeeklyRate(chunkedThinLatexKing)),
+        Queen: roundDemandRate(trimmedWeeklyRate(chunkedThinLatexQueen))
+      }
 
       const weekly = {}
       for (const size of Object.keys(demandTotal)) {
@@ -300,6 +367,47 @@ export function useWeeklySales() {
         }
       }
       rawSkuWeeklyDemand.value = rawSkuWeekly
+
+      const sizeSpikes = {}
+      const skuSpikes = {}
+      for (const size of Object.keys(demandTotal)) {
+        sizeSpikes[size] = roundDemandRate(recentWeeklyDemandSpike(weeklyBuckets[size].total))
+        skuSpikes[size] = {}
+        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+          skuSpikes[size][firmness] = roundDemandRate(recentWeeklyDemandSpike(weeklyBuckets[size][firmness]))
+        }
+      }
+
+      const combinedSmallSizeWeeks = weeklyBuckets.Double.total.map((value, index) => (
+        value + weeklyBuckets['King Single'].total[index] + weeklyBuckets.Single.total[index]
+      ))
+
+      weeklySalesSpike.value = sizeSpikes
+      skuWeeklyDemandSpike.value = skuSpikes
+      microCoilDemandSpike.value = {
+        King: roundDemandRate(recentWeeklyDemandSpike(weeklyMicroKing)),
+        Queen: roundDemandRate(recentWeeklyDemandSpike(weeklyMicroQueen))
+      }
+      thinLatexDemandSpike.value = {
+        King: roundDemandRate(recentWeeklyDemandSpike(weeklyThinLatexKing)),
+        Queen: roundDemandRate(recentWeeklyDemandSpike(weeklyThinLatexQueen))
+      }
+      sidePanelDemandSpike.value = {
+        King: sizeSpikes.King || 0,
+        Queen: sizeSpikes.Queen || 0,
+        Double: roundDemandRate(recentWeeklyDemandSpike(combinedSmallSizeWeeks))
+      }
+
+      const split = {}
+      for (const size of Object.keys(storeSplitCounts)) {
+        split[size] = {}
+        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+          split[size][firmness] = storeSplitCounts[size].total > 0
+            ? Math.round((storeSplitCounts[size][firmness] / storeSplitCounts[size].total) * 1000) / 10
+            : 0
+        }
+      }
+      storeSkuSplit.value = split
 
       // Per-metric trim summary so the rate can be audited.
       const logTrim = (label, counts, rate) => {
@@ -320,6 +428,8 @@ export function useWeeklySales() {
       }
       logTrim('Micro King', chunkedMicroKing, microCoilDemand.value.King)
       logTrim('Micro Queen', chunkedMicroQueen, microCoilDemand.value.Queen)
+      logTrim('Thin latex King', chunkedThinLatexKing, thinLatexDemand.value.King)
+      logTrim('Thin latex Queen', chunkedThinLatexQueen, thinLatexDemand.value.Queen)
 
       // Firmness distribution from 12-week window (larger sample = more stable)
       const distribution = {}
@@ -345,7 +455,21 @@ export function useWeeklySales() {
       }
 
       // Update settings store with live data
-      settingsStore.setLiveSalesRates(weeklyTotals, distribution, microCoilDemand.value, thinLatexDemand.value, rawSkuWeeklyDemand.value)
+      settingsStore.setLiveSalesRates(
+        weeklyTotals,
+        distribution,
+        microCoilDemand.value,
+        thinLatexDemand.value,
+        rawSkuWeeklyDemand.value,
+        {
+          weeklySales: weeklySalesSpike.value,
+          skuWeeklyDemand: skuWeeklyDemandSpike.value,
+          microCoil: microCoilDemandSpike.value,
+          thinLatex: thinLatexDemandSpike.value,
+          sidePanel: sidePanelDemandSpike.value
+        },
+        storeSkuSplit.value
+      )
 
     } catch (e) {
       if (await handleDirectusAuthError(e)) return
@@ -367,6 +491,12 @@ export function useWeeklySales() {
     demandBySize: readonly(demandBySize),
     weeklyRates: readonly(weeklyRates),
     rawSkuWeeklyDemand: readonly(rawSkuWeeklyDemand),
+    weeklySalesSpike: readonly(weeklySalesSpike),
+    skuWeeklyDemandSpike: readonly(skuWeeklyDemandSpike),
+    microCoilDemandSpike: readonly(microCoilDemandSpike),
+    thinLatexDemandSpike: readonly(thinLatexDemandSpike),
+    sidePanelDemandSpike: readonly(sidePanelDemandSpike),
+    storeSkuSplit: readonly(storeSkuSplit),
     firmnessDistribution: readonly(firmnessDistribution),
     modelDistribution: readonly(modelDistribution),
     microCoilDemand: readonly(microCoilDemand),
@@ -378,4 +508,4 @@ export function useWeeklySales() {
 }
 
 // Export parser for testing
-export { parseMattressSku, getFirmnessType }
+export { parseMattressSku, getSpringFirmnessType as getFirmnessType }

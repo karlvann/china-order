@@ -151,7 +151,7 @@ const getRemainingWeekFraction = () => {
   return daysRemaining / 7
 }
 
-const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate }) => {
+const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate, demandSpike, storeSplit }) => {
   const remainingWeekFraction = getRemainingWeekFraction()
   const projections = []
 
@@ -198,6 +198,8 @@ const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate
     currentStock: Math.round(currentStock),
     orderAmount,
     weeklyRate,
+    demandSpike: demandSpike ?? 0,
+    storeSplit: storeSplit ?? null,
     projections
   }
 }
@@ -213,7 +215,10 @@ const rows = computed(() => {
     LATEX_FIRMNESSES.forEach(firmness => {
       // Get weekly rate from usage rates
       const weeklyRates = props.usageRates.WEEKLY_RATES || {}
+      const weeklySpikes = props.usageRates.WEEKLY_SPIKES || {}
       const weeklyRate = weeklyRates[firmness]?.[size] || 0
+      const demandSpike = weeklySpikes[firmness]?.[size] ?? 0
+      const storeSplit = props.usageRates.STORE_SPLIT?.[firmness]?.[size] ?? 0
       const currentStock = props.inventory[firmness]?.[size] || 0
       const orderAmount = props.latexOrder?.latex?.[firmness]?.[size] || 0
       const firmLabel = firmness.charAt(0).toUpperCase() + firmness.slice(1)
@@ -224,13 +229,16 @@ const rows = computed(() => {
         skuString: `latex${firmness}${size.toLowerCase()}`,
         currentStock,
         orderAmount,
-        weeklyRate
+        weeklyRate,
+        demandSpike,
+        storeSplit
       }))
     })
   })
 
   for (const type of PILLOW_LATEX_TYPES) {
     const weeklyRate = props.usageRates.PILLOW_LATEX_WEEKLY_RATES?.[type] || 0
+    const demandSpike = props.usageRates.PILLOW_LATEX_WEEKLY_SPIKES?.[type] ?? 0
     const currentStock = props.inventory.pillowLatex?.[type] || 0
     const orderAmount = props.latexOrder?.pillowLatex?.[type] || 0
 
@@ -240,7 +248,8 @@ const rows = computed(() => {
       skuString: `pillowlatex${type}`,
       currentStock,
       orderAmount,
-      weeklyRate
+      weeklyRate,
+      demandSpike
     }))
   }
 
@@ -269,8 +278,10 @@ const getCellBg = (stock, weeklyRate) => {
         <thead>
           <tr class="bg-table-header">
             <th class="table-header sticky left-0 bg-table-header z-10 min-w-[140px]">Item</th>
-            <th class="table-header sticky left-[140px] bg-table-header z-10 text-center w-[70px]">Demand</th>
-            <th class="table-header sticky left-[210px] bg-table-current z-10 text-center w-[70px] text-primary">
+            <th class="table-header sticky left-[140px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]">Demand</th>
+            <th class="table-header sticky left-[210px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]" title="Average demand from the last 2 complete weeks">Spike</th>
+            <th class="table-header sticky left-[280px] bg-table-header z-10 text-center w-[80px] min-w-[80px] max-w-[80px]" title="Store order firmness split from the last 2 complete weeks, excluding website orders">Store split</th>
+            <th class="table-header sticky left-[360px] bg-table-current z-10 text-center w-[70px] text-primary">
               <div>Now</div>
               <div class="text-[9px] text-muted font-normal">{{ currentWeekRange }}</div>
             </th>
@@ -305,8 +316,19 @@ const getCellBg = (stock, weeklyRate) => {
             class="border-b border-border hover:bg-surface-hover/30"
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[140px] font-medium">{{ row.label }}</td>
-            <td class="table-cell sticky left-[140px] bg-background z-10 text-center font-mono text-muted w-[70px]">{{ row.weeklyRate.toFixed(2) }}/wk</td>
-            <td class="table-cell sticky left-[210px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
+            <td class="table-cell sticky left-[140px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
+            <td
+              :class="[
+                'table-cell sticky left-[210px] bg-background z-10 text-center font-mono w-[70px] min-w-[70px] max-w-[70px]',
+                row.demandSpike < row.weeklyRate ? 'text-danger' : row.demandSpike > row.weeklyRate ? 'text-success' : 'text-muted'
+              ]"
+            >
+              {{ row.demandSpike.toFixed(2) }}/w
+            </td>
+            <td class="table-cell sticky left-[280px] bg-background z-10 text-center font-mono text-muted w-[80px] min-w-[80px] max-w-[80px]">
+              <span v-if="row.storeSplit !== null">{{ row.storeSplit.toFixed(1) }}%</span>
+            </td>
+            <td class="table-cell sticky left-[360px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"

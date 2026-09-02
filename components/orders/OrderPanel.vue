@@ -12,7 +12,7 @@ const testInventoryStore = useTestInventoryStore()
 const skuLookup = useSkuLookup()
 
 // Props for usage rates (passed from parent via provide/inject or we get from settings)
-const usageRates = computed(() => settingsStore.liveSalesRates)
+const usageRates = computed(() => settingsStore.planningSalesRates)
 
 const activeChinaInventory = computed(() => {
   if (appModeStore.isTestMode) {
@@ -407,6 +407,11 @@ watch([localPalletCount, localComponentScale], () => {
 })
 
 watch(activeChinaInventory, () => {
+  if (!uiStore.orderPanelOpen || isInitializing.value || isEditing.value) return
+  updateFromAlgorithm()
+}, { deep: true })
+
+watch(usageRates, () => {
   if (!uiStore.orderPanelOpen || isInitializing.value || isEditing.value) return
   updateFromAlgorithm()
 }, { deep: true })

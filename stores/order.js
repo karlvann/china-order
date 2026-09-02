@@ -145,15 +145,16 @@ export const useOrderStore = defineStore('order', () => {
     const orderOffset = settingsStore.orderWeekOffset
     const deliveryWeeks = settingsStore.deliveryWeeks
     const salesLoaded = settingsStore.liveSalesLoaded
+    const planningRates = settingsStore.planningSalesRates
 
     if (inventoryStore.springsLoading) return null
     if (!salesLoaded) return null
 
     // Pass live sales data to the algorithm
     const salesRates = {
-      WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
-      FIRMNESS_DISTRIBUTION: settingsStore.liveSalesRates.FIRMNESS_DISTRIBUTION,
-      RAW_SKU_WEEKLY_DEMAND: settingsStore.liveSalesRates.RAW_SKU_WEEKLY_DEMAND
+      WEEKLY_SALES_RATE: planningRates.WEEKLY_SALES_RATE,
+      FIRMNESS_DISTRIBUTION: planningRates.FIRMNESS_DISTRIBUTION,
+      RAW_SKU_WEEKLY_DEMAND: planningRates.RAW_SKU_WEEKLY_DEMAND
     }
 
     // Convert pending orders to algorithm format
@@ -180,15 +181,16 @@ export const useOrderStore = defineStore('order', () => {
     const palletCount = settingsStore.palletCount
     const componentScale = settingsStore.componentScale
     const salesLoaded = settingsStore.liveSalesLoaded
+    const planningRates = settingsStore.planningSalesRates
 
     if (!springOrder.value) return null
     if (!salesLoaded) return null
 
     // Pass live sales data including micro coil/thin latex demand
     const salesRates = {
-      WEEKLY_SALES_RATE: settingsStore.liveSalesRates.WEEKLY_SALES_RATE,
-      MICRO_COIL_WEEKLY_DEMAND: settingsStore.liveSalesRates.MICRO_COIL_WEEKLY_DEMAND,
-      THIN_LATEX_WEEKLY_DEMAND: settingsStore.liveSalesRates.THIN_LATEX_WEEKLY_DEMAND
+      WEEKLY_SALES_RATE: planningRates.WEEKLY_SALES_RATE,
+      MICRO_COIL_WEEKLY_DEMAND: planningRates.MICRO_COIL_WEEKLY_DEMAND,
+      THIN_LATEX_WEEKLY_DEMAND: planningRates.THIN_LATEX_WEEKLY_DEMAND
     }
 
     // Convert pending orders to component format

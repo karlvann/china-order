@@ -10,6 +10,7 @@ import {
   LATEX_LEAD_TIME_WEEKS,
   PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
+import { withLatexStoreSplitDemand } from '~/lib/utils/index.js'
 
 const SETTINGS_KEY = 'sri_lanka_order_settings'
 
@@ -20,6 +21,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS) // Default 10 weeks
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
+  const useStoreSplitDemand = ref(false) // Use recent store split and spike demand for planning
 
   // Live sales data (populated by useLatexSales)
   const latexSalesRates = ref({
@@ -29,9 +31,23 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
       medium: { King: 0, Queen: 0 },
       soft: { King: 0, Queen: 0 }
     },
+    WEEKLY_SPIKES: {
+      firm: { King: 0, Queen: 0 },
+      medium: { King: 0, Queen: 0 },
+      soft: { King: 0, Queen: 0 }
+    },
     PILLOW_LATEX_WEEKLY_RATES: {
       thin: 0,
       thick: 0
+    },
+    PILLOW_LATEX_WEEKLY_SPIKES: {
+      thin: 0,
+      thick: 0
+    },
+    STORE_SPLIT: {
+      firm: { King: 0, Queen: 0 },
+      medium: { King: 0, Queen: 0 },
+      soft: { King: 0, Queen: 0 }
     },
     FIRMNESS_DISTRIBUTION: {
       King: { firm: 0.33, medium: 0.34, soft: 0.33 },
@@ -42,6 +58,11 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
 
   // Getters
   const containerCapacity = computed(() => capacity.value)
+
+  const planningLatexSalesRates = computed(() => {
+    if (!useStoreSplitDemand.value) return latexSalesRates.value
+    return withLatexStoreSplitDemand(latexSalesRates.value)
+  })
 
   // Get current ISO week number (1-52)
   const currentWeekNumber = computed(() => {
@@ -63,7 +84,8 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         capacity: capacity.value,
         deliveryWeeks: deliveryWeeks.value,
-        useSeasonalDemand: useSeasonalDemand.value
+        useSeasonalDemand: useSeasonalDemand.value,
+        useStoreSplitDemand: useStoreSplitDemand.value
       }))
     } catch (e) {
       console.error('[Sri Lanka Settings] Failed to save:', e)
@@ -78,6 +100,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
         if (data.capacity !== undefined) capacity.value = Math.max(MIN_LATEX_CAPACITY, parseInt(data.capacity, 10) || DEFAULT_LATEX_CAPACITY)
         if (data.deliveryWeeks !== undefined) deliveryWeeks.value = data.deliveryWeeks
         if (data.useSeasonalDemand !== undefined) useSeasonalDemand.value = data.useSeasonalDemand
+        if (data.useStoreSplitDemand !== undefined) useStoreSplitDemand.value = data.useStoreSplitDemand
       }
     } catch (e) {
       console.error('[Sri Lanka Settings] Failed to load:', e)
@@ -116,7 +139,17 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
     saveToStorage()
   }
 
-  const setLatexSalesRates = (weeklyTotals, weeklyRates, firmnessDistribution, pillowLatexWeeklyRates) => {
+  const setUseStoreSplitDemand = (value) => {
+    useStoreSplitDemand.value = value
+    saveToStorage()
+  }
+
+  const toggleStoreSplitDemand = () => {
+    useStoreSplitDemand.value = !useStoreSplitDemand.value
+    saveToStorage()
+  }
+
+  const setLatexSalesRates = (weeklyTotals, weeklyRates, firmnessDistribution, pillowLatexWeeklyRates, demandSpikes, storeSplit) => {
     latexSalesRates.value.WEEKLY_TOTAL_BY_SIZE = { ...weeklyTotals }
 
     if (weeklyRates) {
@@ -127,6 +160,20 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
       for (const type of PILLOW_LATEX_TYPES) {
         latexSalesRates.value.PILLOW_LATEX_WEEKLY_RATES[type] = pillowLatexWeeklyRates[type] || 0
       }
+    }
+
+    if (demandSpikes?.weekly) {
+      latexSalesRates.value.WEEKLY_SPIKES = JSON.parse(JSON.stringify(demandSpikes.weekly))
+    }
+
+    if (demandSpikes?.pillowLatex) {
+      for (const type of PILLOW_LATEX_TYPES) {
+        latexSalesRates.value.PILLOW_LATEX_WEEKLY_SPIKES[type] = demandSpikes.pillowLatex[type] || 0
+      }
+    }
+
+    if (storeSplit) {
+      latexSalesRates.value.STORE_SPLIT = JSON.parse(JSON.stringify(storeSplit))
     }
 
     if (firmnessDistribution) {
@@ -148,6 +195,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
     orderWeekOffset.value = 0
     deliveryWeeks.value = LATEX_LEAD_TIME_WEEKS
     useSeasonalDemand.value = true
+    useStoreSplitDemand.value = false
     saveToStorage()
   }
 
@@ -157,10 +205,12 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
     orderWeekOffset,
     deliveryWeeks,
     useSeasonalDemand,
+    useStoreSplitDemand,
     latexSalesRates,
     latexSalesLoaded,
     // Getters
     containerCapacity,
+    planningLatexSalesRates,
     currentWeekNumber,
     orderWeekNumber,
     // Actions
@@ -171,6 +221,8 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
     setDeliveryWeeks,
     setUseSeasonalDemand,
     toggleSeasonalDemand,
+    setUseStoreSplitDemand,
+    toggleStoreSplitDemand,
     setLatexSalesRates,
     loadFromStorage,
     saveToStorage,

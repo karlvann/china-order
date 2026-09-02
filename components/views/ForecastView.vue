@@ -108,6 +108,26 @@ onMounted(() => {
             </button>
           </div>
 
+          <!-- Store split demand toggle -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-muted">Store split demand</label>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                settingsStore.useStoreSplitDemand ? 'bg-brand' : 'bg-toggle-off'
+              ]"
+              @click="settingsStore.toggleStoreSplitDemand()"
+            >
+              <span
+                :class="[
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
+                  settingsStore.useStoreSplitDemand ? 'translate-x-5' : 'translate-x-0.5'
+                ]"
+              />
+            </button>
+          </div>
+
           <!-- Test inventory button -->
           <button
             v-if="appModeStore.isTestMode"

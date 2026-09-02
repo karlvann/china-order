@@ -30,7 +30,7 @@ const activeLatexOrder = computed(() => {
 const draftArrivalWeek = computed(() => sriLankaUIStore.draftArrivalWeek)
 
 // Usage rates for timeline
-const usageRates = computed(() => sriLankaSettingsStore.latexSalesRates)
+const usageRates = computed(() => sriLankaSettingsStore.planningLatexSalesRates)
 
 const activeSriLankaInventory = computed(() => {
   if (appModeStore.isTestMode) {
@@ -113,6 +113,26 @@ onMounted(() => {
                 :class="[
                   'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   sriLankaSettingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
+                ]"
+              />
+            </button>
+          </div>
+
+          <!-- Store split demand toggle -->
+          <div class="flex items-center gap-3">
+            <label class="text-sm text-muted">Store split demand</label>
+            <button
+              type="button"
+              :class="[
+                'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
+                sriLankaSettingsStore.useStoreSplitDemand ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
+              ]"
+              @click="sriLankaSettingsStore.toggleStoreSplitDemand()"
+            >
+              <span
+                :class="[
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
+                  sriLankaSettingsStore.useStoreSplitDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
