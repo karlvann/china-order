@@ -36,6 +36,8 @@ export const useSettingsStore = defineStore('settings', () => {
     },
     MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 },
+    MODEL_LAYER_TOTALS: {}, // Quantity-weighted recipe totals from 12-week paid sales
+    STORE_MODEL_LAYER_TOTALS: {}, // Same totals from the two-week store split sample
     RAW_SKU_WEEKLY_DEMAND: {
       King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
       Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
@@ -205,7 +207,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand, demandSpikes, storeSplit) => {
+  const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand, demandSpikes, storeSplit, modelLayerTotals) => {
     liveSalesRates.value.WEEKLY_SALES_RATE = { ...weeklyRates }
     if (firmnessDistribution) {
       // Convert percentage (0-100) to decimal (0-1)
@@ -245,6 +247,8 @@ export const useSettingsStore = defineStore('settings', () => {
     if (storeSplit) {
       liveSalesRates.value.STORE_SKU_SPLIT = JSON.parse(JSON.stringify(storeSplit))
     }
+    liveSalesRates.value.MODEL_LAYER_TOTALS = JSON.parse(JSON.stringify(modelLayerTotals?.allSales || {}))
+    liveSalesRates.value.STORE_MODEL_LAYER_TOTALS = JSON.parse(JSON.stringify(modelLayerTotals?.storeSales || {}))
     liveSalesLoaded.value = true
   }
 

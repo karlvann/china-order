@@ -235,7 +235,11 @@ export function useWeeklySales() {
 
       // Per-chunk counts drive the trimmed weekly rate calculation
       const chunked = {}
+      const modelLayerTotals = {}
+      const storeModelLayerTotals = {}
       for (const size of Object.keys(demandTotal)) {
+        modelLayerTotals[size] = { mattresses: 0, microLayers: 0, thinLatexLayers: 0 }
+        storeModelLayerTotals[size] = { mattresses: 0, microLayers: 0, thinLatexLayers: 0 }
         chunked[size] = {
           veryfirm: emptyChunks(),
           firm: emptyChunks(),
@@ -274,6 +278,9 @@ export function useWeeklySales() {
         if (demandTotal[sale.size]) {
           demandTotal[sale.size][sale.firmnessType] += sale.quantity
           demandTotal[sale.size].total += sale.quantity
+          modelLayerTotals[sale.size].mattresses += sale.quantity
+          modelLayerTotals[sale.size].microLayers += sale.microLayers * sale.quantity
+          modelLayerTotals[sale.size].thinLatexLayers += sale.thinLatexLayers * sale.quantity
           if (modelCountsTotal[sale.size] && sale.range) {
             modelCountsTotal[sale.size][sale.range] += sale.quantity
           }
@@ -335,6 +342,9 @@ export function useWeeklySales() {
 
           storeSplitCounts[parsed.size][parsed.firmnessType] += quantity
           storeSplitCounts[parsed.size].total += quantity
+          storeModelLayerTotals[parsed.size].mattresses += quantity
+          storeModelLayerTotals[parsed.size].microLayers += parsed.microLayers * quantity
+          storeModelLayerTotals[parsed.size].thinLatexLayers += parsed.thinLatexLayers * quantity
         }
       }
 
@@ -468,7 +478,11 @@ export function useWeeklySales() {
           thinLatex: thinLatexDemandSpike.value,
           sidePanel: sidePanelDemandSpike.value
         },
-        storeSkuSplit.value
+        storeSkuSplit.value,
+        {
+          allSales: modelLayerTotals,
+          storeSales: storeModelLayerTotals
+        }
       )
 
     } catch (e) {

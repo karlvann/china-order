@@ -117,6 +117,7 @@ onMounted(() => {
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 settingsStore.useStoreSplitDemand ? 'bg-brand' : 'bg-toggle-off'
               ]"
+              title="Use two-week sales volume with store firmness and model mix for spring and component demand"
               @click="settingsStore.toggleStoreSplitDemand()"
             >
               <span

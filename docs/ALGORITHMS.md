@@ -51,6 +51,39 @@ When **Store split demand** is turned on, SKUs with a store split use a showroom
 
 Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the Sri Lanka top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
+### Store split demand for micro coils and thin latex
+
+**Files:** `composables/useWeeklySales.js`, `stores/settings.js`, `lib/utils/storeSplitDemand.js`
+
+The China toggle also recalculates micro coil and thin latex demand from the **store model mix**, not the spring firmness percentages. For each mattress size:
+
+```javascript
+storeLayersPerMattress = storeRecipeLayerTotal / storeMattressQuantity
+componentDemand = planningMattressesPerWeek * storeLayersPerMattress
+```
+
+- The volume is the same active size demand used by springs: the last **2 complete weeks** of paid sales across all channels where a store split exists.
+- The mix comes from the same **2-week non-website order sample** as the spring store split. Quantities weight each recipe; Cloud contributes 2 micro/thin layers, Aurora 1, Cooper 0. Layer totals are read from parsed recipes rather than inferred from firmness.
+- Calculate each mattress size separately, then consolidate: **King + 0.5 × Single** into King stock; **Queen + Double + King Single** into Queen stock. Round the combined demand to 3 decimal places.
+- If a size has no recent store sample, use its **12-week paid-sales recipe mix** at its unchanged baseline mattress volume. A nonempty all-Cooper sample is genuinely zero layer demand, not missing data.
+- If none of an inventory group's sizes has a store sample, retain that group's original trimmed component demand. Also retain it if a positive-demand size lacks both recent and historical layer data.
+- With the toggle **off**, the original trimmed component rates remain unchanged. The **Spike** columns always show observed two-week layer demand, not the store-model estimate.
+- Both forecast depletion and order coverage/spring-matching calculations receive these planning rates. Existing inventory, pending orders, balancing and supplier lot rules still affect the final order quantities.
+
+Example: King volume of **20 mattresses/week**, with a store mix of **60% Cloud, 30% Aurora, 10% Cooper**, gives `20 × (0.6 × 2 + 0.3 × 1) = 30` King micro coils and 30 thin latex sheets/week, **plus** the half-sheet contribution from Singles.
+
+#### Accuracy limitations
+
+This makes components consistent with the selected recent-demand scenario; it does not prove that the scenario forecasts better than the 12-week baseline.
+
+- Two weeks reacts quickly to a genuine change, but promotions, bulk orders, stockouts and restock bursts can distort it. Small sizes have especially sparse samples; a single store mattress can dominate their mix.
+- Applying store model mix to all-channel volume assumes website customers will follow the store mix. That is a planning assumption, not an observed fact.
+- The existing store query excludes only `sale_source = website` (case/whitespace normalised). Unlike the volume query, it does **not** filter to paid sale orders, and blank sources count as store. Unpaid, non-sale or misclassified orders may bias the mix. This change preserves those existing filters.
+- Seasonal multipliers still apply separately to timeline projections. Recent volume already reflects current seasonal conditions, so using both can compound that effect.
+- Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
+
+Run the focused regression tests with `yarn test` (Node 24). They cover recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and downstream component orders/lot sizes using mocked sales, without accessing Directus.
+
 ### Low-selling spring SKU floor
 
 For spring ordering, the normal per-SKU demand starts as:
