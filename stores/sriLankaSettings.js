@@ -21,7 +21,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS) // Default 10 weeks
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
-  const useStoreSplitDemand = ref(false) // Use recent store split and spike demand for planning
+  const useStoreSplitDemand = ref(false) // Use fixed mattress latex percentages with two-week spike volume
 
   // Live sales data (populated by useLatexSales)
   const latexSalesRates = ref({

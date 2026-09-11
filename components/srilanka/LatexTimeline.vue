@@ -1,5 +1,11 @@
 <script setup>
-import { LATEX_FIRMNESSES, PILLOW_LATEX_TYPES, PILLOW_LATEX_LABELS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import {
+  LATEX_FIRMNESSES,
+  LATEX_PLANNING_SPLIT,
+  PILLOW_LATEX_TYPES,
+  PILLOW_LATEX_LABELS,
+  SEASONAL_DEMAND
+} from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
@@ -270,6 +276,31 @@ const getCellBg = (stock, weeklyRate) => {
 
 <template>
   <div class="mb-8">
+    <div class="mb-6 rounded border border-border p-4">
+      <h3 class="text-sm font-semibold text-primary">Fixed latex demand split</h3>
+      <p class="mt-1 text-xs text-muted">Applied to each size's two-week spike total when Store split demand is enabled. Pillow latex is unchanged.</p>
+      <div class="mt-3 overflow-x-auto">
+        <table class="text-xs text-muted">
+          <thead>
+            <tr>
+              <th class="pr-6 pb-1 text-left">Size</th>
+              <th class="pr-6 pb-1 text-right">Soft</th>
+              <th class="pr-6 pb-1 text-right">Medium</th>
+              <th class="pb-1 text-right">Firm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">King and Queen</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.soft }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.medium }}%</td>
+              <td class="py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.firm }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-3">
       Latex timeline
     </h3>

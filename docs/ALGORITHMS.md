@@ -64,9 +64,19 @@ These percentages apply even when there are no recent store orders for a size. A
 
 `SPRING_PLANNING_SPLITS` in `lib/constants/firmness.js` is shared by the calculation and the summary above the spring timeline. The summary displays Medium, Firm and Very firm only; Soft remains 0% in the algorithm. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
 
-### Sri Lanka store split demand
+### Fixed latex demand split
 
-Sri Lanka demand calculations are unchanged: sizes with a recent store split use the size's total two-week spike demand redistributed by the observed store latex firmness percentages. The store sample covers the last **2 complete Mon-Sun weeks**, excluding only orders where `sale_source` is `website`. For example, Queen latex spike demand of 15/w with a 3.2% firm split gives firm Queen latex demand of 0.48/w. Fixed **spring** percentages do not apply to Sri Lanka latex.
+The Sri Lanka **Store split demand** toggle uses the same fixed mattress latex percentages for both **King and Queen**:
+
+| Soft | Medium | Firm |
+|------|--------|------|
+| 52% | 45% | 3% |
+
+For each inventory size, sum the observed two-week **Spike** rates across all three latex firmnesses, then multiply that total by the fixed percentages. Existing smaller-mattress cutting rules are already included in the observed King/Queen latex demand; they are not applied again. For example, 20 King sheets/week gives 10.4 soft, 9 medium and 0.6 firm sheets/week.
+
+These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing spike volume gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week baseline.
+
+`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, China spring splits and China micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
 
 Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the Sri Lanka top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
@@ -101,7 +111,7 @@ This makes components consistent with the selected recent-demand scenario; it do
 - Seasonal multipliers still apply separately to timeline projections. Recent volume already reflects current seasonal conditions, so using both can compound that effect.
 - Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
 
-Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), zero soft demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
+Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), fixed King/Queen latex percentages with unchanged pillow demand, zero soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
 
 ### Low-selling spring SKU floor
 

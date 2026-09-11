@@ -152,6 +152,7 @@ onMounted(() => {
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 sriLankaSettingsStore.useStoreSplitDemand ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
               ]"
+              title="Use two-week sales volume with fixed mattress latex firmness percentages; pillow demand is unchanged"
               @click="sriLankaSettingsStore.toggleStoreSplitDemand()"
             >
               <span

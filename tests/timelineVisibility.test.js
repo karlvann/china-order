@@ -133,6 +133,11 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
       assert.ok(summary.includes('Queen, Double and Single 6% 40% 54%'))
       assert.doesNotMatch(summary, /\bSoft\b/)
       assert.ok(html.indexOf('Fixed spring demand splits') < html.indexOf('Spring timeline'))
+    } else {
+      const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
+      assert.ok(summary.includes('Size Soft Medium Firm'))
+      assert.ok(summary.includes('King and Queen 52% 45% 3%'))
+      assert.ok(html.indexOf('Fixed latex demand split') < html.indexOf('Latex timeline'))
     }
   })
 }

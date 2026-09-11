@@ -5,7 +5,7 @@ import { computed, readonly, ref } from 'vue'
 import { createPinia, defineStore, setActivePinia } from 'pinia'
 import { calculateComponentOrder } from '../lib/algorithms/componentCalc.js'
 import { optimizeComponentOrder } from '../lib/algorithms/exportOptimization.js'
-import { createEmptyComponentInventory, createEmptySpringInventory } from '../lib/utils/inventory.js'
+import { createEmptyComponentInventory, createEmptySpringInventory, createEmptyLatexInventory } from '../lib/utils/inventory.js'
 import { getCurrentMonday } from '../lib/utils/dates.js'
 
 // Run the real composable/store in Node with Nuxt auto-imports and Directus mocked.
@@ -35,6 +35,8 @@ const hooks = registerHooks({
 })
 const { useSettingsStore } = await import('../stores/settings.js')
 const { useWeeklySales } = await import('../composables/useWeeklySales.js')
+const { useSriLankaSettingsStore } = await import('../stores/sriLankaSettings.js')
+const { calculateLatexOrder } = await import('../lib/algorithms/latexOrder.js')
 globalThis.useSettingsStore = useSettingsStore
 
 after(() => {
@@ -153,4 +155,48 @@ test('recipe collection, store toggle and component ordering work together and r
   settings.toggleStoreSplitDemand()
   assert.equal(settings.planningSalesRates, settings.liveSalesRates)
   assert.deepEqual(JSON.parse(JSON.stringify(settings.planningSalesRates)), baseline)
+})
+
+test('Sri Lanka planning state feeds fixed latex rates into orders and restores the baseline', (t) => {
+  t.mock.method(console, 'log', () => {})
+  setActivePinia(createPinia())
+  const settings = useSriLankaSettingsStore()
+  settings.setLatexSalesRates(
+    { King: 10, Queen: 5 },
+    { firm: { King: 4, Queen: 2 }, medium: { King: 5, Queen: 2 }, soft: { King: 1, Queen: 1 } },
+    null,
+    { thin: 0.25, thick: 0.5 },
+    {
+      weekly: { firm: { King: 2, Queen: 3 }, medium: { King: 6, Queen: 4 }, soft: { King: 12, Queen: 3 } },
+      pillowLatex: { thin: 1, thick: 2 }
+    }
+  )
+  const baseline = JSON.parse(JSON.stringify(settings.latexSalesRates))
+  assert.equal(settings.planningLatexSalesRates, settings.latexSalesRates)
+
+  settings.useStoreSplitDemand = true
+  const planning = settings.planningLatexSalesRates
+  assert.deepEqual(planning.WEEKLY_TOTAL_BY_SIZE, { King: 20, Queen: 10 })
+  assert.deepEqual(planning.WEEKLY_SPIKES, baseline.WEEKLY_SPIKES)
+  assert.deepEqual(planning.PILLOW_LATEX_WEEKLY_RATES, baseline.PILLOW_LATEX_WEEKLY_RATES)
+
+  const order = calculateLatexOrder(410, createEmptyLatexInventory(), planning, [])
+  const demandBySku = Object.fromEntries(order.skuMetrics.map(sku => [sku.key, sku.weeklyDemand]))
+  assert.deepEqual(demandBySku, {
+    'firm|King': 0.6,
+    'medium|King': 9,
+    'soft|King': 10.4,
+    'firm|Queen': 0.3,
+    'medium|Queen': 4.5,
+    'soft|Queen': 5.2,
+    'pillowLatex|thin': 0.25,
+    'pillowLatex|thick': 0.5
+  })
+  const quantities = [...Object.values(order.latex).flatMap(sizes => Object.values(sizes)), ...Object.values(order.pillowLatex)]
+  assert.equal(quantities.reduce((sum, quantity) => sum + quantity, 0), 410)
+  assert.ok(quantities.every(quantity => quantity >= 0 && quantity % 5 === 0))
+
+  settings.useStoreSplitDemand = false
+  assert.equal(settings.planningLatexSalesRates, settings.latexSalesRates)
+  assert.deepEqual(JSON.parse(JSON.stringify(settings.planningLatexSalesRates)), baseline)
 })
