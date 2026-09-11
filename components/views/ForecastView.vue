@@ -14,6 +14,7 @@ const appModeStore = useAppModeStore()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
+const hideZeroDemandItems = ref(true)
 
 // Check if there's a draft order being created (only when panel is open)
 const hasDraftOrder = computed(() => uiStore.orderPanelOpen && uiStore.draftSpringOrder !== null)
@@ -67,7 +68,7 @@ onMounted(() => {
     <!-- Controls - Sticky -->
     <div class="sticky top-0 z-30 bg-background border-b border-border">
       <div class="max-w-[1600px] mx-auto px-6 py-3">
-        <div class="flex items-center gap-5">
+        <div class="flex flex-wrap items-center gap-5">
           <!-- Warn low stock Toggle -->
           <div class="flex items-center gap-3">
             <label class="text-sm text-muted">Warn low stock</label>
@@ -83,6 +84,30 @@ onMounted(() => {
                 :class="[
                   'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
                   showYellowWarnings ? 'translate-x-5' : 'translate-x-0.5'
+                ]"
+              />
+            </button>
+          </div>
+
+          <!-- Hide zero demand items toggle -->
+          <div class="flex items-center gap-3">
+            <label for="china-hide-zero-demand" class="text-sm text-muted">Hide zero demand items</label>
+            <button
+              id="china-hide-zero-demand"
+              type="button"
+              role="switch"
+              :aria-checked="hideZeroDemandItems"
+              title="Hide items with demand below 0.05 per week"
+              :class="[
+                'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
+                hideZeroDemandItems ? 'bg-brand' : 'bg-toggle-off'
+              ]"
+              @click="hideZeroDemandItems = !hideZeroDemandItems"
+            >
+              <span
+                :class="[
+                  'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
+                  hideZeroDemandItems ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
@@ -117,7 +142,7 @@ onMounted(() => {
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 settingsStore.useStoreSplitDemand ? 'bg-brand' : 'bg-toggle-off'
               ]"
-              title="Use two-week sales volume with store firmness and model mix for spring and component demand"
+              title="Use two-week sales volume with fixed spring firmness splits and store model mix for components"
               @click="settingsStore.toggleStoreSplitDemand()"
             >
               <span
@@ -197,6 +222,7 @@ onMounted(() => {
         ref="springTimelineRef"
         :inventory="inventoryStore.fullInventory"
         :spring-order="activeSpringOrder"
+        :hide-zero-demand-items="hideZeroDemandItems"
         :has-draft-order="hasDraftOrder"
         :draft-arrival-week="draftArrivalWeek"
         :current-week="settingsStore.currentWeekNumber"
@@ -213,6 +239,7 @@ onMounted(() => {
         :inventory="inventoryStore.fullInventory"
         :spring-order="activeSpringOrder"
         :component-order="activeComponentOrder"
+        :hide-zero-demand-items="hideZeroDemandItems"
         :has-draft-order="hasDraftOrder"
         :draft-arrival-week="draftArrivalWeek"
         :current-week="settingsStore.currentWeekNumber"

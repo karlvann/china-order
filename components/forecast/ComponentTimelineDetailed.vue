@@ -52,6 +52,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  hideZeroDemandItems: {
+    type: Boolean,
+    default: true
+  },
   storedOrders: {
     type: Array,
     default: () => []
@@ -297,7 +301,7 @@ const rows = computed(() => {
     })
   })
 
-  return result
+  return props.hideZeroDemandItems ? result.filter(row => row.weeklyRate >= 0.05) : result
 })
 
 // Get cell background based on weeks of stock
@@ -360,12 +364,7 @@ const getCellBg = (stock, weeklyRate) => {
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[172px] min-w-[172px] max-w-[172px] font-medium text-xs">{{ row.label }}</td>
             <td class="table-cell sticky left-[172px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
-            <td
-              :class="[
-                'table-cell sticky left-[242px] bg-background z-10 text-center font-mono w-[70px] min-w-[70px] max-w-[70px]',
-                row.demandSpike < row.weeklyRate ? 'text-danger' : row.demandSpike > row.weeklyRate ? 'text-success' : 'text-muted'
-              ]"
-            >
+            <td class="table-cell sticky left-[242px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">
               {{ row.demandSpike.toFixed(2) }}/w
             </td>
             <td class="table-cell sticky left-[312px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>

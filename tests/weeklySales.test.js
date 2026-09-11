@@ -123,6 +123,10 @@ test('recipe collection, store toggle and component ordering work together and r
   settings.toggleStoreSplitDemand()
   const planning = settings.planningSalesRates
   assert.equal(planning.WEEKLY_SALES_RATE.King, 12)
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { veryfirm: 0.58, firm: 0.38, medium: 0.04, soft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], planning.FIRMNESS_DISTRIBUTION.King)
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { veryfirm: 0.54, firm: 0.4, medium: 0.06, soft: 0 })
+  assert.deepEqual(planning.SKU_WEEKLY_DEMAND_SPIKE, baseline.SKU_WEEKLY_DEMAND_SPIKE)
   assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
   assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
   assert.equal(planning.MICRO_COIL_WEEKLY_SPIKE.King, 18)

@@ -1,5 +1,11 @@
 <script setup>
-import { MATTRESS_SIZES, FIRMNESS_TYPES, FIRMNESS_LABELS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
+import {
+  MATTRESS_SIZES,
+  FIRMNESS_TYPES,
+  FIRMNESS_LABELS,
+  SPRING_PLANNING_SPLITS,
+  SEASONAL_DEMAND
+} from '~/lib/constants/index.js'
 import { calculateSkuWeeklyDemand, getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
@@ -47,6 +53,10 @@ const props = defineProps({
   showYellowWarnings: {
     type: Boolean,
     default: false
+  },
+  hideZeroDemandItems: {
+    type: Boolean,
+    default: true
   },
   storedOrders: {
     type: Array,
@@ -175,7 +185,6 @@ const rows = computed(() => {
       const rawSkuWeeklyDemand = props.usageRates.RAW_SKU_WEEKLY_DEMAND?.[size.id]?.[firmness] || 0
       const weeklyRate = calculateSkuWeeklyDemand(sizeWeeklyRate, firmnessDistribution, rawSkuWeeklyDemand)
       const demandSpike = props.usageRates.SKU_WEEKLY_DEMAND_SPIKE?.[size.id]?.[firmness] ?? 0
-      const storeSplit = props.usageRates.STORE_SKU_SPLIT?.[size.id]?.[firmness] ?? 0
 
       const currentStock = props.inventory.springs[firmness][size.id] || 0
       const orderAmount = props.springOrder?.springs[firmness][size.id] || 0
@@ -234,13 +243,12 @@ const rows = computed(() => {
         orderAmount,
         weeklyRate,
         demandSpike,
-        storeSplit,
         projections
       })
     })
   })
 
-  return result
+  return props.hideZeroDemandItems ? result.filter(row => row.weeklyRate >= 0.05) : result
 })
 
 // Get cell background based on stock level (weeks of coverage)
@@ -256,6 +264,31 @@ const getCellBg = (stock, weeklyRate) => {
 
 <template>
   <div class="mb-8">
+    <div class="mb-6 rounded border border-border p-4">
+      <h3 class="text-sm font-semibold text-primary">Fixed spring demand splits</h3>
+      <p class="mt-1 text-xs text-muted">Applied to each size's two-week spike total when Store split demand is enabled.</p>
+      <div class="mt-3 overflow-x-auto">
+        <table class="text-xs text-muted">
+          <thead>
+            <tr>
+              <th class="pr-6 pb-1 text-left">Size</th>
+              <th class="pr-6 pb-1 text-right">Medium</th>
+              <th class="pr-6 pb-1 text-right">Firm</th>
+              <th class="pb-1 text-right">Very firm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(split, group) in SPRING_PLANNING_SPLITS" :key="group">
+              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ group === 'kingAndKingSingle' ? 'King and King Single' : 'Queen, Double and Single' }}</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.medium }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.firm }}%</td>
+              <td class="py-1 text-right font-mono">{{ split.veryfirm }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <h3 class="text-lg font-semibold text-primary mb-4 flex items-center gap-3">
       Spring timeline
     </h3>
@@ -267,8 +300,7 @@ const getCellBg = (stock, weeklyRate) => {
             <th class="table-header sticky left-0 bg-table-header z-10 min-w-[180px]">Size/Firmness</th>
             <th class="table-header sticky left-[180px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]">Demand</th>
             <th class="table-header sticky left-[250px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]" title="Average demand from the last 2 complete weeks">Spike</th>
-            <th class="table-header sticky left-[320px] bg-table-header z-10 text-center w-[80px] min-w-[80px] max-w-[80px]" title="Store order firmness split from the last 2 complete weeks, excluding website orders">Store split</th>
-            <th class="table-header sticky left-[400px] bg-table-current z-10 text-center w-[70px] text-primary">
+            <th class="table-header sticky left-[320px] bg-table-current z-10 text-center w-[70px] text-primary">
               <div>Now</div>
               <div class="text-[9px] text-muted font-normal">{{ currentWeekRange }}</div>
             </th>
@@ -304,16 +336,10 @@ const getCellBg = (stock, weeklyRate) => {
           >
             <td class="table-cell sticky left-0 bg-background z-10 w-[180px] font-medium">{{ row.label }}</td>
             <td class="table-cell sticky left-[180px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
-            <td
-              :class="[
-                'table-cell sticky left-[250px] bg-background z-10 text-center font-mono w-[70px] min-w-[70px] max-w-[70px]',
-                row.demandSpike < row.weeklyRate ? 'text-danger' : row.demandSpike > row.weeklyRate ? 'text-success' : 'text-muted'
-              ]"
-            >
+            <td class="table-cell sticky left-[250px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">
               {{ row.demandSpike.toFixed(2) }}/w
             </td>
-            <td class="table-cell sticky left-[320px] bg-background z-10 text-center font-mono text-muted w-[80px] min-w-[80px] max-w-[80px]">{{ row.storeSplit.toFixed(1) }}%</td>
-            <td class="table-cell sticky left-[400px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
+            <td class="table-cell sticky left-[320px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"
