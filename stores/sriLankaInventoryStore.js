@@ -1,4 +1,7 @@
-import { createEmptyLatexInventory } from '~/lib/utils/index.js'
+import {
+  LATEX_INVENTORY_SKU_MAP,
+  createEmptyLatexInventory
+} from '~/lib/utils/index.js'
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
@@ -23,6 +26,19 @@ export const useSriLankaInventoryStore = defineStore('sriLankaInventory', () => 
     inventory.value = createEmptyLatexInventory()
   }
 
+  const setSkuQuantity = (sku, quantity) => {
+    const mapping = LATEX_INVENTORY_SKU_MAP[sku]
+    if (!mapping) return false
+
+    if (mapping.pillowLatexType) {
+      inventory.value.pillowLatex[mapping.pillowLatexType] = quantity
+    } else {
+      inventory.value[mapping.firmness][mapping.size] = quantity
+    }
+
+    return true
+  }
+
   return {
     inventory,
     loading,
@@ -30,6 +46,7 @@ export const useSriLankaInventoryStore = defineStore('sriLankaInventory', () => 
     setInventory,
     setLoading,
     setError,
-    resetInventory
+    resetInventory,
+    setSkuQuantity
   }
 })

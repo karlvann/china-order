@@ -136,7 +136,8 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
     } else {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
       assert.ok(summary.includes('Size Soft Medium Firm'))
-      assert.ok(summary.includes('King and Queen 52% 45% 3%'))
+      assert.ok(summary.includes('King 68% 28% 4%'))
+      assert.ok(summary.includes('Queen 58% 38% 4%'))
       assert.ok(html.indexOf('Fixed latex demand split') < html.indexOf('Latex timeline'))
     }
   })

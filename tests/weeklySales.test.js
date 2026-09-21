@@ -183,12 +183,12 @@ test('Sri Lanka planning state feeds fixed latex rates into orders and restores 
   const order = calculateLatexOrder(410, createEmptyLatexInventory(), planning, [])
   const demandBySku = Object.fromEntries(order.skuMetrics.map(sku => [sku.key, sku.weeklyDemand]))
   assert.deepEqual(demandBySku, {
-    'firm|King': 0.6,
-    'medium|King': 9,
-    'soft|King': 10.4,
-    'firm|Queen': 0.3,
-    'medium|Queen': 4.5,
-    'soft|Queen': 5.2,
+    'firm|King': 0.8,
+    'medium|King': 5.6,
+    'soft|King': 13.6,
+    'firm|Queen': 0.4,
+    'medium|Queen': 3.8,
+    'soft|Queen': 5.8,
     'pillowLatex|thin': 0.25,
     'pillowLatex|thick': 0.5
   })

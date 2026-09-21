@@ -11,21 +11,10 @@ import {
   LATEX_SIZES,
   PILLOW_LATEX_TYPES
 } from '~/lib/constants/index.js'
-import { createEmptyLatexInventory } from '~/lib/utils/index.js'
-
-/**
- * SKU string to firmness/size mapping
- */
-const SKU_MAP = {
-  latexfirmking: { firmness: 'firm', size: 'King' },
-  latexfirmqueen: { firmness: 'firm', size: 'Queen' },
-  latexmediumking: { firmness: 'medium', size: 'King' },
-  latexmediumqueen: { firmness: 'medium', size: 'Queen' },
-  latexsoftking: { firmness: 'soft', size: 'King' },
-  latexsoftqueen: { firmness: 'soft', size: 'Queen' },
-  pillowlatexthin: { pillowLatexType: 'thin' },
-  pillowlatexthick: { pillowLatexType: 'thick' }
-}
+import {
+  LATEX_INVENTORY_SKU_MAP,
+  createEmptyLatexInventory
+} from '~/lib/utils/index.js'
 
 export const useLatexInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
@@ -79,7 +68,7 @@ export const useLatexInventory = (options = {}) => {
       let total = 0
 
       for (const sku of skus) {
-        const mapping = SKU_MAP[sku.sku]
+        const mapping = LATEX_INVENTORY_SKU_MAP[sku.sku]
         if (mapping) {
           const qty = sku.quantity || 0
           if (mapping.pillowLatexType) {

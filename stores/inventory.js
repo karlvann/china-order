@@ -1,4 +1,6 @@
 import {
+  SPRING_INVENTORY_SKU_MAP,
+  COMPONENT_INVENTORY_SKU_MAP,
   createEmptySpringInventory,
   createEmptyComponentInventory
 } from '~/lib/utils/inventory.js'
@@ -67,6 +69,22 @@ export const useInventoryStore = defineStore('inventory', () => {
     components.value = createEmptyComponentInventory()
   }
 
+  const setSkuQuantity = (sku, quantity) => {
+    const springMapping = SPRING_INVENTORY_SKU_MAP[sku]
+    if (springMapping) {
+      springs.value[springMapping.firmness][springMapping.size] = quantity
+      return true
+    }
+
+    const componentMapping = COMPONENT_INVENTORY_SKU_MAP[sku]
+    if (componentMapping) {
+      components.value[componentMapping.component][componentMapping.size] = quantity
+      return true
+    }
+
+    return false
+  }
+
   return {
     // State
     springs,
@@ -88,6 +106,7 @@ export const useInventoryStore = defineStore('inventory', () => {
     setComponents,
     setComponentsLoading,
     setComponentsError,
-    resetComponents
+    resetComponents,
+    setSkuQuantity
   }
 })

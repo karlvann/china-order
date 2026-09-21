@@ -66,13 +66,14 @@ These percentages apply even when there are no recent store orders for a size. A
 
 ### Fixed latex demand split
 
-The Sri Lanka **Store split demand** toggle uses the same fixed mattress latex percentages for both **King and Queen**:
+The Sri Lanka **Store split demand** toggle uses fixed mattress latex percentages for each inventory size:
 
-| Soft | Medium | Firm |
-|------|--------|------|
-| 52% | 45% | 3% |
+| Size | Soft | Medium | Firm |
+|------|------|--------|------|
+| King | 68% | 28% | 4% |
+| Queen | 58% | 38% | 4% |
 
-For each inventory size, sum the observed two-week **Spike** rates across all three latex firmnesses, then multiply that total by the fixed percentages. Existing smaller-mattress cutting rules are already included in the observed King/Queen latex demand; they are not applied again. For example, 20 King sheets/week gives 10.4 soft, 9 medium and 0.6 firm sheets/week.
+For each inventory size, sum the observed two-week **Spike** rates across all three latex firmnesses, then multiply that total by the size's fixed percentages. Existing smaller-mattress cutting rules are already included in the observed King/Queen latex demand; they are not applied again. For example, 20 King sheets/week gives 13.6 soft, 5.6 medium and 0.8 firm sheets/week.
 
 These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing spike volume gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week baseline.
 
@@ -111,7 +112,7 @@ This makes components consistent with the selected recent-demand scenario; it do
 - Seasonal multipliers still apply separately to timeline projections. Recent volume already reflects current seasonal conditions, so using both can compound that effect.
 - Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
 
-Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), fixed King/Queen latex percentages with unchanged pillow demand, zero soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
+Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), size-specific King/Queen latex percentages with unchanged pillow demand, zero soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
 
 ### Low-selling spring SKU floor
 

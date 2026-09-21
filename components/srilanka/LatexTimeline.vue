@@ -290,11 +290,11 @@ const getCellBg = (stock, weeklyRate) => {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">King and Queen</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.soft }}%</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.medium }}%</td>
-              <td class="py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT.firm }}%</td>
+            <tr v-for="size in ['King', 'Queen']" :key="size">
+              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ size }}</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].soft }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].medium }}%</td>
+              <td class="py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].firm }}%</td>
             </tr>
           </tbody>
         </table>

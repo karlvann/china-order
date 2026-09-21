@@ -2,30 +2,10 @@
  * Composable for fetching spring inventory from Directus (READ ONLY)
  */
 
-import { createEmptySpringInventory } from '~/lib/utils/index.js'
-
-const SKU_MAP = {
-  springsveryfirmking: { firmness: 'veryfirm', size: 'King' },
-  springsveryfirmqueen: { firmness: 'veryfirm', size: 'Queen' },
-  springsveryfirmdouble: { firmness: 'veryfirm', size: 'Double' },
-  springsveryfirmkingsingle: { firmness: 'veryfirm', size: 'King Single' },
-  springsveryfirmsingle: { firmness: 'veryfirm', size: 'Single' },
-  springsfirmking: { firmness: 'firm', size: 'King' },
-  springsfirmqueen: { firmness: 'firm', size: 'Queen' },
-  springsfirmdouble: { firmness: 'firm', size: 'Double' },
-  springsfirmkingsingle: { firmness: 'firm', size: 'King Single' },
-  springsfirmsingle: { firmness: 'firm', size: 'Single' },
-  springsmediumking: { firmness: 'medium', size: 'King' },
-  springsmediumqueen: { firmness: 'medium', size: 'Queen' },
-  springsmediumdouble: { firmness: 'medium', size: 'Double' },
-  springsmediumkingsingle: { firmness: 'medium', size: 'King Single' },
-  springsmediumsingle: { firmness: 'medium', size: 'Single' },
-  springssoftking: { firmness: 'soft', size: 'King' },
-  springssoftqueen: { firmness: 'soft', size: 'Queen' },
-  springssoftdouble: { firmness: 'soft', size: 'Double' },
-  springssoftkingsingle: { firmness: 'soft', size: 'King Single' },
-  springssoftsingle: { firmness: 'soft', size: 'Single' }
-}
+import {
+  SPRING_INVENTORY_SKU_MAP,
+  createEmptySpringInventory
+} from '~/lib/utils/index.js'
 
 export const useSpringInventory = (options = {}) => {
   const { getItems } = useDirectusItems()
@@ -52,7 +32,7 @@ export const useSpringInventory = (options = {}) => {
     error.value = null
 
     try {
-      const skuNames = Object.keys(SKU_MAP)
+      const skuNames = Object.keys(SPRING_INVENTORY_SKU_MAP)
       const response = await getItems({
         collection: 'skus',
         params: {
@@ -67,7 +47,7 @@ export const useSpringInventory = (options = {}) => {
       const nextSprings = createEmptySpringInventory()
 
       items.forEach(item => {
-        const mapping = SKU_MAP[item.sku]
+        const mapping = SPRING_INVENTORY_SKU_MAP[item.sku]
         if (mapping) {
           nextSprings[mapping.firmness][mapping.size] = Number(item.quantity) || 0
         }

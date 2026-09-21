@@ -5,6 +5,7 @@ import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
+const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
 const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
 const appModeStore = useAppModeStore()
@@ -40,6 +41,8 @@ const isInitializing = ref(false)
 
 // Is editing existing order
 const isEditing = computed(() => !!uiStore.editingOrderId)
+const savedOrder = computed(() => inventoryOrdersStore.getOrderById(uiStore.editingOrderId))
+const isApplying = computed(() => inventoryOrderReceivingStore.isApplyingOrder(uiStore.editingOrderId))
 
 // Computed arrival week index from expected arrival date (for timeline display)
 const arrivalWeekIndex = computed(() => {
@@ -596,9 +599,19 @@ const handleClose = () => {
   uiStore.closeOrderPanel()
 }
 
+const handlePanelKeydown = (event) => {
+  if (event.key !== 'Escape' || !uiStore.orderPanelOpen || isApplying.value) return
+  handleClose()
+}
+
 // Initialize on mount
 onMounted(() => {
   initForm()
+  window.addEventListener('keydown', handlePanelKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handlePanelKeydown)
 })
 
 // Re-initialize when panel opens or editingOrderId changes
@@ -627,8 +640,9 @@ watch(() => uiStore.editingOrderId, () => {
           {{ isEditing ? 'Edit order' : 'New order' }}
         </h2>
         <button
+          :disabled="isApplying"
+          class="text-muted hover:text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="handleClose"
-          class="text-muted hover:text-primary transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -793,18 +807,25 @@ watch(() => uiStore.editingOrderId, () => {
           Total: <span class="font-medium text-primary">{{ totalItems }}</span> items
         </div>
         <div class="flex gap-3">
+          <OrdersApplyInventoryOrderButton
+            v-if="isEditing && savedOrder"
+            :order-id="savedOrder.id"
+            :ordered="savedOrder.ordered === true"
+            panel-context="china"
+          />
           <button
-            @click="handleClose"
+            v-if="!isEditing"
             class="px-3 py-1.5 text-sm font-medium text-muted hover:text-primary transition-colors"
+            @click="handleClose"
           >
             Cancel
           </button>
           <button
             @click="handleSave"
-            :disabled="saving || totalItems === 0"
+            :disabled="saving || isApplying || totalItems === 0"
             :class="[
               'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors',
-              saving || totalItems === 0
+              saving || isApplying || totalItems === 0
                 ? 'bg-control-surface text-subtle cursor-not-allowed'
                 : 'bg-brand hover:bg-brand-hover text-inverse'
             ]"

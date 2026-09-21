@@ -5,6 +5,7 @@ import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const sriLankaUIStore = useSriLankaUIStore()
 const sriLankaOrdersStore = useSriLankaOrdersStore()
+const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
 const sriLankaSettingsStore = useSriLankaSettingsStore()
 const sriLankaInventoryStore = useSriLankaInventoryStore()
 const latexSkuLookup = useLatexSkuLookup()
@@ -29,6 +30,8 @@ const isInitializing = ref(false)
 
 // Is editing existing order
 const isEditing = computed(() => !!sriLankaUIStore.editingOrderId)
+const savedOrder = computed(() => sriLankaOrdersStore.getOrderById(sriLankaUIStore.editingOrderId))
+const isApplying = computed(() => inventoryOrderReceivingStore.isApplyingOrder(sriLankaUIStore.editingOrderId))
 
 // Order capacity
 const containerCapacity = computed(() => localCapacity.value)
@@ -442,9 +445,19 @@ const handleClose = () => {
   sriLankaUIStore.closeOrderPanel()
 }
 
+const handlePanelKeydown = (event) => {
+  if (event.key !== 'Escape' || !sriLankaUIStore.orderPanelOpen || isApplying.value) return
+  handleClose()
+}
+
 // Initialize on mount
 onMounted(() => {
   initForm()
+  window.addEventListener('keydown', handlePanelKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handlePanelKeydown)
 })
 
 // Re-initialize when panel opens or editingOrderId changes
@@ -477,8 +490,9 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
           {{ isEditing ? 'Edit latex order' : 'New latex order' }}
         </h2>
         <button
+          :disabled="isApplying"
+          class="text-muted hover:text-primary transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           @click="handleClose"
-          class="text-muted hover:text-primary transition-colors"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -618,18 +632,25 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
           Total: <span class="font-medium text-accent-sri-lanka-light">{{ totalItems }}</span> / {{ containerCapacity }} items
         </div>
         <div class="flex gap-3">
+          <OrdersApplyInventoryOrderButton
+            v-if="isEditing && savedOrder"
+            :order-id="savedOrder.id"
+            :ordered="savedOrder.ordered === true"
+            panel-context="sri_lanka"
+          />
           <button
-            @click="handleClose"
+            v-if="!isEditing"
             class="px-3 py-1.5 text-sm font-medium text-muted hover:text-primary transition-colors"
+            @click="handleClose"
           >
             Cancel
           </button>
           <button
             @click="handleSave"
-            :disabled="saving || totalItems === 0"
+            :disabled="saving || isApplying || totalItems === 0"
             :class="[
               'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors',
-              saving || totalItems === 0
+              saving || isApplying || totalItems === 0
                 ? 'bg-control-surface text-subtle cursor-not-allowed'
                 : 'bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse'
             ]"
