@@ -99,7 +99,7 @@ const applyOrder = async () => {
 
           <div class="px-5 py-4">
             <p id="apply-inventory-description" class="text-sm text-muted">
-              Do you wish to apply the items in this order to inventory and delete the order? Click yes ONLY if you have received and checked the order.
+              Do you wish to apply the items in this order to inventory and archive the order? Click yes ONLY if you have received and checked the order.
             </p>
             <p v-if="error" class="mt-4 p-3 bg-danger/10 border border-danger/20 rounded-lg text-danger text-sm">
               {{ error }}

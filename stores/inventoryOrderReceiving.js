@@ -1,5 +1,5 @@
 export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiving', () => {
-  const { getItems, updateItem, deleteItems } = useDirectusItems()
+  const { getItems, updateItem } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
   const applyingOrderId = ref(null)
@@ -45,6 +45,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
           fields: [
             'id',
             'ordered',
+            'applied_to_stock',
             'order_location',
             'skus.skus_id.id',
             'skus.skus_id.sku',
@@ -68,6 +69,10 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
 
       if (order.ordered !== true && order.ordered !== 1 && order.ordered !== 'true') {
         throw new Error('The order has not been placed with the supplier')
+      }
+
+      if (order.applied_to_stock === true || order.applied_to_stock === 1 || order.applied_to_stock === 'true') {
+        throw new Error('The order has already been applied to inventory')
       }
 
       if (!order.skus?.length) {
@@ -183,17 +188,20 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
       }
 
       try {
-        await deleteItems({
+        await updateItem({
           collection: 'inventory_orders',
-          items: [String(orderId)]
+          id: orderId,
+          item: {
+            applied_to_stock: true
+          }
         })
-      } catch (deleteError) {
-        await handleDirectusAuthError(deleteError)
-        error.value = getDirectusErrorMessage(deleteError, 'Inventory was updated but the order could not be deleted')
-        logFailureSummary(orderId, orderLocation, null, applied, [], deleteError)
+      } catch (archiveError) {
+        await handleDirectusAuthError(archiveError)
+        error.value = getDirectusErrorMessage(archiveError, 'Inventory was updated but the order could not be archived')
+        logFailureSummary(orderId, orderLocation, null, applied, [], archiveError)
         return {
           success: false,
-          error: deleteError,
+          error: archiveError,
           applied,
           failed: null,
           notAttempted: []
@@ -206,7 +214,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
         await useInventoryOrdersStore().fetchOrders()
       }
 
-      console.info(`[Inventory order ${orderId}] Applied and deleted`, {
+      console.info(`[Inventory order ${orderId}] Applied and archived`, {
         orderId,
         orderLocation,
         applied

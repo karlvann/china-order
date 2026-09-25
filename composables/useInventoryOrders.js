@@ -35,9 +35,13 @@ export function useInventoryOrders() {
         collection: 'inventory_orders',
         params: {
           filter: {
-            order_location: { _eq: 'china' }
+            order_location: { _eq: 'china' },
+            _or: [
+              { applied_to_stock: { _eq: false } },
+              { applied_to_stock: { _null: true } }
+            ]
           },
-          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
+          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'applied_to_stock', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
           sort: ['-expected_arrival']
         }
       })
@@ -70,6 +74,7 @@ export function useInventoryOrders() {
         expected_arrival: orderData.expected_arrival,
         order_location: 'china',
         notes: orderData.notes || '',
+        applied_to_stock: false,
         skus: skuItems.filter(item => item.quantity > 0).map(item => ({
           skus_id: item.skus_id,
           quantity: item.quantity

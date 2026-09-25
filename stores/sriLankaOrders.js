@@ -34,7 +34,11 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
         collection: 'inventory_orders',
         params: {
           filter: {
-            order_location: { _eq: 'sri_lanka' }
+            order_location: { _eq: 'sri_lanka' },
+            _or: [
+              { applied_to_stock: { _eq: false } },
+              { applied_to_stock: { _null: true } }
+            ]
           },
           fields: [
             'id',
@@ -43,6 +47,7 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
             'order_location',
             'notes',
             'ordered',
+            'applied_to_stock',
             'date_updated',
             'skus.id',
             'skus.skus_id.id',
@@ -82,6 +87,7 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
         order_location: 'sri_lanka',
         notes: orderData.notes || '',
         ordered: orderData.ordered || false,
+        applied_to_stock: false,
         skus: skuItems.filter(item => item.quantity > 0).map(item => ({
           skus_id: item.skus_id,
           quantity: item.quantity
