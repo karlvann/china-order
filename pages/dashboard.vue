@@ -6,86 +6,30 @@ definePageMeta({
 // Initialize stores
 const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
-const appModeStore = useAppModeStore()
-const testInventoryStore = useTestInventoryStore()
-
-const liveInventoryEnabled = computed(() => appModeStore.loaded && appModeStore.isLiveMode)
 
 // Initialize composables
-const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory({ enabled: liveInventoryEnabled })
-const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory({ enabled: liveInventoryEnabled })
+const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory()
+const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory()
 const { loading: salesLoading, error: salesError, refresh: refreshSales } = useWeeklySales()
 
-const activeChinaInventory = computed(() => {
-  if (appModeStore.isTestMode) {
-    return testInventoryStore.chinaInventory
-  }
-
-  return {
-    springs: springs.value,
-    components: components.value
-  }
-})
-
 // Combined loading/error state
-const loading = computed(() => {
-  if (!appModeStore.loaded) return true
-  if (appModeStore.isTestMode) return !testInventoryStore.loaded
-  return springsLoading.value || componentsLoading.value || salesLoading.value
-})
-
-const error = computed(() => {
-  if (!appModeStore.loaded || appModeStore.isTestMode) return null
-  return springsError.value || componentsError.value || salesError.value
-})
+const loading = computed(() => springsLoading.value || componentsLoading.value || salesLoading.value)
+const error = computed(() => springsError.value || componentsError.value || salesError.value)
 
 const refresh = () => {
-  if (!appModeStore.isLiveMode) return
   refreshSprings()
   refreshComponents()
   refreshSales()
 }
 
-// Sync active inventory into the China inventory store
-watch(activeChinaInventory, (inventory) => {
-  inventoryStore.setSprings(inventory.springs)
-  inventoryStore.setComponents(inventory.components)
-}, { immediate: true, deep: true })
+watch(springs, inventoryStore.setSprings, { immediate: true, deep: true })
+watch(springsLoading, inventoryStore.setSpringsLoading, { immediate: true })
+watch(springsError, inventoryStore.setSpringsError, { immediate: true })
+watch(components, inventoryStore.setComponents, { immediate: true, deep: true })
+watch(componentsLoading, inventoryStore.setComponentsLoading, { immediate: true })
+watch(componentsError, inventoryStore.setComponentsError, { immediate: true })
 
-watch([
-  () => appModeStore.loaded,
-  () => appModeStore.isLiveMode,
-  () => appModeStore.isTestMode,
-  () => testInventoryStore.loaded,
-  springsLoading
-], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
-  inventoryStore.setSpringsLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
-}, { immediate: true })
-
-watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, springsError], ([modeLoaded, isLiveMode, err]) => {
-  inventoryStore.setSpringsError(modeLoaded && isLiveMode ? err : null)
-}, { immediate: true })
-
-watch([
-  () => appModeStore.loaded,
-  () => appModeStore.isLiveMode,
-  () => appModeStore.isTestMode,
-  () => testInventoryStore.loaded,
-  componentsLoading
-], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
-  inventoryStore.setComponentsLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
-}, { immediate: true })
-
-watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, componentsError], ([modeLoaded, isLiveMode, err]) => {
-  inventoryStore.setComponentsError(modeLoaded && isLiveMode ? err : null)
-}, { immediate: true })
-
-// Load settings on mount
-onMounted(() => {
-  appModeStore.loadFromStorage()
-  testInventoryStore.loadFromStorage()
-  settingsStore.loadFromStorage()
-})
+onMounted(settingsStore.loadFromStorage)
 
 // Usage rates from live Directus data
 const usageRates = computed(() => {
@@ -110,7 +54,7 @@ const usageRates = computed(() => {
 
 // Page title
 useHead({
-  title: 'AusBeds China Order'
+  title: 'AusBeds springs and latex ordering'
 })
 </script>
 
@@ -150,6 +94,5 @@ useHead({
       </template>
     </main>
 
-    <TestInventoryModal />
   </div>
 </template>

@@ -1,3 +1,4 @@
+import { FIRMNESS_TYPES } from '~/lib/constants/index.js'
 import {
   SPRING_INVENTORY_SKU_MAP,
   COMPONENT_INVENTORY_SKU_MAP,
@@ -27,7 +28,7 @@ export const useInventoryStore = defineStore('inventory', () => {
 
   // Actions
   const getTotalSpringsForSize = (size) => {
-    return ['veryfirm', 'firm', 'medium', 'soft'].reduce(
+    return FIRMNESS_TYPES.reduce(
       (sum, firmness) => sum + (springs.value[firmness][size] || 0),
       0
     )

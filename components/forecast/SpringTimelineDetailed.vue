@@ -272,17 +272,19 @@ const getCellBg = (stock, weeklyRate) => {
           <thead>
             <tr>
               <th class="pr-6 pb-1 text-left">Size</th>
+              <th class="pr-6 pb-1 text-right">Very soft</th>
+              <th class="pr-6 pb-1 text-right">Soft</th>
               <th class="pr-6 pb-1 text-right">Medium</th>
-              <th class="pr-6 pb-1 text-right">Firm</th>
-              <th class="pb-1 text-right">Very firm</th>
+              <th class="pb-1 text-right">Firm</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(split, group) in SPRING_PLANNING_SPLITS" :key="group">
               <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ group === 'kingAndKingSingle' ? 'King and King Single' : 'Queen, Double and Single' }}</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.verysoft }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.soft }}%</td>
               <td class="pr-6 py-1 text-right font-mono">{{ split.medium }}%</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ split.firm }}%</td>
-              <td class="py-1 text-right font-mono">{{ split.veryfirm }}%</td>
+              <td class="py-1 text-right font-mono">{{ split.firm }}%</td>
             </tr>
           </tbody>
         </table>

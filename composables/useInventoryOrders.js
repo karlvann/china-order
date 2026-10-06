@@ -1,6 +1,6 @@
 /**
  * Composable for CRUD operations on inventory_orders collection
- * Only fetches/creates orders with order_location = 'china'
+ * Only fetches/creates spring orders; the persisted Directus location value remains 'china'
  */
 
 export function useInventoryOrders() {
@@ -24,7 +24,7 @@ export function useInventoryOrders() {
   }
 
   /**
-   * Fetch all china orders with M2M SKU data expanded
+   * Fetch all spring orders with M2M SKU data expanded
    */
   const fetchOrders = async () => {
     loading.value = true
@@ -216,7 +216,7 @@ export function useInventoryOrders() {
   /**
    * Get spring quantity from an order for a specific firmness/size
    * @param {Object} order - Order object with expanded skus
-   * @param {string} firmness - 'veryfirm', 'firm', 'medium', or 'soft'
+   * @param {string} firmness - 'firm', 'medium', 'soft', or 'verysoft'
    * @param {string} size - 'King', 'Queen', 'Double', 'King Single', 'Single'
    * @returns {number} Quantity or 0
    */

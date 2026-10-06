@@ -1,6 +1,6 @@
 /**
- * Pinia store for Sri Lanka ordering settings
- * Completely separate from China settings to avoid conflicts
+ * Pinia store for latex ordering settings.
+ * Completely separate from spring settings to avoid conflicts.
  */
 
 import {
@@ -14,7 +14,7 @@ import { withLatexStoreSplitDemand } from '~/lib/utils/index.js'
 
 const SETTINGS_KEY = 'sri_lanka_order_settings'
 
-export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
+export const useLatexSettingsStore = defineStore('latexSettings', () => {
 
   // State
   const capacity = ref(DEFAULT_LATEX_CAPACITY)
@@ -88,7 +88,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
         useStoreSplitDemand: useStoreSplitDemand.value
       }))
     } catch (e) {
-      console.error('[Sri Lanka Settings] Failed to save:', e)
+      console.error('[Latex Settings] Failed to save:', e)
     }
   }
 
@@ -103,7 +103,7 @@ export const useSriLankaSettingsStore = defineStore('sriLankaSettings', () => {
         if (data.useStoreSplitDemand !== undefined) useStoreSplitDemand.value = data.useStoreSplitDemand
       }
     } catch (e) {
-      console.error('[Sri Lanka Settings] Failed to load:', e)
+      console.error('[Latex Settings] Failed to load:', e)
     }
   }
 

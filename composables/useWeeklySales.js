@@ -18,6 +18,12 @@ import {
 } from '~/lib/utils/demandTrimming.js'
 import { getCurrentMonday } from '~/lib/utils/dates.js'
 import { parseMattressSku, getSpringFirmnessType } from '~/lib/utils/mattressSku.js'
+import { FIRMNESS_TYPES, MATTRESS_SIZES } from '~/lib/constants/index.js'
+
+const emptySpringDemand = (includeTotal = false) => Object.fromEntries(MATTRESS_SIZES.map(size => [size.id, {
+  ...Object.fromEntries(FIRMNESS_TYPES.map(tension => [tension, 0])),
+  ...(includeTotal ? { total: 0 } : {})
+}]))
 
 export function useWeeklySales() {
   const { getItems } = useDirectusItems()
@@ -31,31 +37,13 @@ export function useWeeklySales() {
   const salesData = ref([])
 
   // Aggregated demand by size and firmness
-  const demandBySize = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
-  })
+  const demandBySize = ref(emptySpringDemand(true))
 
   // Weekly averages
-  const weeklyRates = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
-  })
+  const weeklyRates = ref(emptySpringDemand(true))
 
   // Raw 12-week SKU averages used as a floor for low-selling spring SKUs
-  const rawSkuWeeklyDemand = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-  })
+  const rawSkuWeeklyDemand = ref(emptySpringDemand())
 
   // Average weekly demand from the last 2 complete weeks
   const weeklySalesSpike = ref({
@@ -66,34 +54,16 @@ export function useWeeklySales() {
     Single: 0
   })
 
-  const skuWeeklyDemandSpike = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-  })
+  const skuWeeklyDemandSpike = ref(emptySpringDemand())
 
   const microCoilDemandSpike = ref({ King: 0, Queen: 0 })
   const thinLatexDemandSpike = ref({ King: 0, Queen: 0 })
   const sidePanelDemandSpike = ref({ King: 0, Queen: 0, Double: 0 })
 
-  const storeSkuSplit = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-  })
+  const storeSkuSplit = ref(emptySpringDemand())
 
   // Firmness distribution percentages by size
-  const firmnessDistribution = ref({
-    King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-    Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-  })
+  const firmnessDistribution = ref(emptySpringDemand())
 
   // Model (range) distribution by size - needed for accurate component demand
   // Cloud uses 2 micros, Aurora uses 1, Cooper uses 0
@@ -213,13 +183,7 @@ export function useWeeklySales() {
       salesData.value = sales
       totalSales.value = sales.reduce((sum, sale) => sum + sale.quantity, 0)
 
-      const emptyDemand = () => ({
-        King: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-        Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-        Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-        'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 },
-        Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0, total: 0 }
-      })
+      const emptyDemand = () => emptySpringDemand(true)
 
       const emptyModelCounts = () => ({
         King: { cloud: 0, aurora: 0, cooper: 0 },
@@ -241,7 +205,7 @@ export function useWeeklySales() {
         modelLayerTotals[size] = { mattresses: 0, microLayers: 0, thinLatexLayers: 0 }
         storeModelLayerTotals[size] = { mattresses: 0, microLayers: 0, thinLatexLayers: 0 }
         chunked[size] = {
-          veryfirm: emptyChunks(),
+          verysoft: emptyChunks(),
           firm: emptyChunks(),
           medium: emptyChunks(),
           soft: emptyChunks(),
@@ -256,7 +220,7 @@ export function useWeeklySales() {
       const weeklyBuckets = {}
       for (const size of Object.keys(demandTotal)) {
         weeklyBuckets[size] = {
-          veryfirm: emptyWeeks(),
+          verysoft: emptyWeeks(),
           firm: emptyWeeks(),
           medium: emptyWeeks(),
           soft: emptyWeeks(),
@@ -363,7 +327,7 @@ export function useWeeklySales() {
       const weekly = {}
       for (const size of Object.keys(demandTotal)) {
         weekly[size] = {}
-        for (const key of ['veryfirm', 'firm', 'medium', 'soft', 'total']) {
+        for (const key of [...FIRMNESS_TYPES, 'total']) {
           weekly[size][key] = roundDemandRate(trimmedWeeklyRate(chunked[size][key]))
         }
       }
@@ -372,7 +336,7 @@ export function useWeeklySales() {
       const rawSkuWeekly = {}
       for (const size of Object.keys(demandTotal)) {
         rawSkuWeekly[size] = {}
-        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+        for (const firmness of FIRMNESS_TYPES) {
           rawSkuWeekly[size][firmness] = roundDemandRate(demandTotal[size][firmness] / (LOOKBACK_DAYS / 7))
         }
       }
@@ -383,7 +347,7 @@ export function useWeeklySales() {
       for (const size of Object.keys(demandTotal)) {
         sizeSpikes[size] = roundDemandRate(recentWeeklyDemandSpike(weeklyBuckets[size].total))
         skuSpikes[size] = {}
-        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+        for (const firmness of FIRMNESS_TYPES) {
           skuSpikes[size][firmness] = roundDemandRate(recentWeeklyDemandSpike(weeklyBuckets[size][firmness]))
         }
       }
@@ -411,7 +375,7 @@ export function useWeeklySales() {
       const split = {}
       for (const size of Object.keys(storeSplitCounts)) {
         split[size] = {}
-        for (const firmness of ['veryfirm', 'firm', 'medium', 'soft']) {
+        for (const firmness of FIRMNESS_TYPES) {
           split[size][firmness] = storeSplitCounts[size].total > 0
             ? Math.round((storeSplitCounts[size][firmness] / storeSplitCounts[size].total) * 1000) / 10
             : 0
@@ -447,13 +411,13 @@ export function useWeeklySales() {
         const total = demandTotal[size].total
         if (total > 0) {
           distribution[size] = {
-            veryfirm: Math.round((demandTotal[size].veryfirm / total) * 100),
+            verysoft: Math.round((demandTotal[size].verysoft / total) * 100),
             firm: Math.round((demandTotal[size].firm / total) * 100),
             medium: Math.round((demandTotal[size].medium / total) * 100),
             soft: Math.round((demandTotal[size].soft / total) * 100)
           }
         } else {
-          distribution[size] = { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
+          distribution[size] = { verysoft: 0, firm: 0, medium: 0, soft: 0 }
         }
       }
       firmnessDistribution.value = distribution

@@ -10,7 +10,7 @@ import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
 
-const sriLankaOrdersStore = useSriLankaOrdersStore()
+const latexOrdersStore = useLatexOrdersStore()
 
 const emit = defineEmits(['scroll'])
 
@@ -321,12 +321,12 @@ const getCellBg = (stock, weeklyRate) => {
               :key="week.index"
               :class="[
                 'table-header text-center',
-                week.hasStoredOrders ? 'min-w-[95px] bg-success/10' : week.isDraftArrival ? 'min-w-[95px] bg-accent-sri-lanka/10' : 'min-w-[62px]'
+                week.hasStoredOrders ? 'min-w-[95px] bg-success/10' : week.isDraftArrival ? 'min-w-[95px] bg-accent-latex/10' : 'min-w-[62px]'
               ]"
             >
               <div>W{{ week.number }}</div>
               <div class="text-[9px] text-subtle font-normal">{{ week.date }}</div>
-              <span v-if="week.isDraftArrival" class="block text-[10px] text-accent-sri-lanka-light">Draft</span>
+              <span v-if="week.isDraftArrival" class="block text-[10px] text-accent-latex-light">Draft</span>
               <div v-if="week.hasStoredOrders">
                 <span
                   v-for="order in week.storedOrders"
@@ -334,7 +334,7 @@ const getCellBg = (stock, weeklyRate) => {
                   class="block text-[10px] text-success"
                   :title="order.notes || 'No notes'"
                 >
-                  Order {{ sriLankaOrdersStore.getOrderLetter(order.id) }}
+                  Order {{ latexOrdersStore.getOrderLetter(order.id) }}
                 </span>
               </div>
             </th>
@@ -357,7 +357,7 @@ const getCellBg = (stock, weeklyRate) => {
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-accent-sri-lanka/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-accent-latex/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
               <span>{{ proj.stock }}</span>

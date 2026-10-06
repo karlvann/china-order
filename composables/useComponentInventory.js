@@ -7,27 +7,15 @@ import {
   createEmptyComponentInventory
 } from '~/lib/utils/index.js'
 
-export const useComponentInventory = (options = {}) => {
+export const useComponentInventory = () => {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
-  const enabled = computed(() => {
-    if (options.enabled === undefined) return true
-    if (typeof options.enabled === 'boolean') return options.enabled
-    return !!options.enabled.value
-  })
-
   const components = ref(createEmptyComponentInventory())
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref(null)
 
   const fetchComponents = async () => {
-    if (!enabled.value) {
-      loading.value = false
-      error.value = null
-      return
-    }
-
     loading.value = true
     error.value = null
 
@@ -64,21 +52,7 @@ export const useComponentInventory = (options = {}) => {
     }
   }
 
-  onMounted(() => {
-    if (enabled.value) {
-      fetchComponents()
-    }
-  })
-
-  watch(enabled, (isEnabled) => {
-    if (isEnabled) {
-      fetchComponents()
-      return
-    }
-
-    loading.value = false
-    error.value = null
-  })
+  onMounted(fetchComponents)
 
   return {
     components: readonly(components),

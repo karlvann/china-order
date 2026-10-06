@@ -33,7 +33,7 @@ const autoImports = {
   computed,
   ref,
   useInventoryOrdersStore: () => ({}),
-  useSriLankaOrdersStore: () => ({})
+  useLatexOrdersStore: () => ({})
 }
 const originalGlobals = Object.fromEntries(Object.keys(autoImports).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
 Object.assign(globalThis, autoImports)
@@ -52,7 +52,7 @@ const scenarios = [
     inventory: { springs: createEmptySpringInventory() },
     usageRates: {
       WEEKLY_SALES_RATE: { King: 1 },
-      FIRMNESS_DISTRIBUTION: { King: { soft: 0, veryfirm: 0.049, firm: 0.05, medium: 0.051 } }
+      FIRMNESS_DISTRIBUTION: { King: { verysoft: 0, firm: 0.049, medium: 0.05, soft: 0.051 } }
     },
     totalRows: 20,
     visibleRows: 2
@@ -69,7 +69,7 @@ const scenarios = [
     visibleRows: 2
   },
   {
-    path: 'components/srilanka/LatexTimeline.vue',
+    path: 'components/latex/LatexTimeline.vue',
     inventory: createEmptyLatexInventory(),
     usageRates: {
       WEEKLY_RATES: { firm: { King: 0, Queen: 0.049 }, medium: { King: 0.05, Queen: 0.051 } },
@@ -129,9 +129,10 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
 
     if (isSpringTimeline) {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
-      assert.ok(summary.includes('King and King Single 4% 38% 58%'))
-      assert.ok(summary.includes('Queen, Double and Single 6% 40% 54%'))
-      assert.doesNotMatch(summary, /\bSoft\b/)
+      assert.ok(summary.includes('King and King Single 0% 4% 38% 58%'))
+      assert.ok(summary.includes('Queen, Double and Single 0% 6% 40% 54%'))
+      assert.ok(summary.includes('Size Very soft Soft Medium Firm'))
+      assert.doesNotMatch(summary, /\bVery firm\b/)
       assert.ok(html.indexOf('Fixed spring demand splits') < html.indexOf('Spring timeline'))
     } else {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')

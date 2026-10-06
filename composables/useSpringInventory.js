@@ -7,27 +7,15 @@ import {
   createEmptySpringInventory
 } from '~/lib/utils/index.js'
 
-export const useSpringInventory = (options = {}) => {
+export const useSpringInventory = () => {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
-  const enabled = computed(() => {
-    if (options.enabled === undefined) return true
-    if (typeof options.enabled === 'boolean') return options.enabled
-    return !!options.enabled.value
-  })
-
   const springs = ref(createEmptySpringInventory())
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref(null)
 
   const fetchSprings = async () => {
-    if (!enabled.value) {
-      loading.value = false
-      error.value = null
-      return
-    }
-
     loading.value = true
     error.value = null
 
@@ -64,21 +52,7 @@ export const useSpringInventory = (options = {}) => {
     }
   }
 
-  onMounted(() => {
-    if (enabled.value) {
-      fetchSprings()
-    }
-  })
-
-  watch(enabled, (isEnabled) => {
-    if (isEnabled) {
-      fetchSprings()
-      return
-    }
-
-    loading.value = false
-    error.value = null
-  })
+  onMounted(fetchSprings)
 
   return {
     springs: readonly(springs),

@@ -29,7 +29,7 @@ This file documents the constraints the ordering logic must work within. These a
 ## Timing constraints
 
 ### Lead time
-- **Default**: 10 weeks for China springs/components
+- **Default**: 10 weeks for springs and components
 - **User-adjustable**: Yes, because real lead times vary by order, season, supplier timing, and shipping conditions
 - **Applies to**: Both spring and component coverage calculations
 - **Cannot**: Assume rush freight or a different logistics model unless the business explicitly requests it

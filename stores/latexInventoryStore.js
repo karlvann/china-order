@@ -5,7 +5,7 @@ import {
 
 const clone = (value) => JSON.parse(JSON.stringify(value))
 
-export const useSriLankaInventoryStore = defineStore('sriLankaInventory', () => {
+export const useLatexInventoryStore = defineStore('latexInventory', () => {
   const inventory = ref(createEmptyLatexInventory())
   const loading = ref(false)
   const error = ref(null)

@@ -183,7 +183,7 @@ const grandTotal = computed(() => {
     <div class="pt-3 border-t border-border">
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium text-muted">Total latex items</span>
-        <span class="text-lg font-bold text-accent-sri-lanka-light">{{ grandTotal }}</span>
+        <span class="text-lg font-bold text-accent-latex-light">{{ grandTotal }}</span>
       </div>
     </div>
   </div>

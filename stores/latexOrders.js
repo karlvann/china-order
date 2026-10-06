@@ -1,10 +1,10 @@
 /**
- * Pinia store for Sri Lanka inventory orders
- * Stores orders in Directus with order_location = 'sri_lanka'
- * Completely separate from China orders
+ * Pinia store for latex inventory orders.
+ * The persisted Directus location value remains 'sri_lanka'.
+ * Completely separate from spring orders.
  */
 
-export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
+export const useLatexOrdersStore = defineStore('latexOrders', () => {
   const { getItems, createItems, updateItem, deleteItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
@@ -23,7 +23,7 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
   }
 
   /**
-   * Fetch all Sri Lanka orders with M2M SKU data expanded
+   * Fetch all Latex orders with M2M SKU data expanded
    */
   const fetchOrders = async () => {
     loading.value = true
@@ -62,19 +62,19 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
 
       const items = Array.isArray(response) ? response : (response?.data || [])
       orders.value = items
-      console.log('[Sri Lanka Orders] Loaded', items.length, 'orders')
+      console.log('[Latex Orders] Loaded', items.length, 'orders')
     } catch (e) {
       if (await handleDirectusAuthError(e)) return
 
-      error.value = getDirectusErrorMessage(e, 'Failed to fetch Sri Lanka orders')
-      console.error('[Sri Lanka Orders] Failed to fetch:', e)
+      error.value = getDirectusErrorMessage(e, 'Failed to fetch Latex orders')
+      console.error('[Latex Orders] Failed to fetch:', e)
     } finally {
       loading.value = false
     }
   }
 
   /**
-   * Create a new Sri Lanka inventory order
+   * Create a new Latex inventory order
    */
   const createOrder = async (orderData, skuItems) => {
     loading.value = true
@@ -101,13 +101,13 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
 
       const created = Array.isArray(response) ? response[0] : response
       await fetchOrders()
-      console.log('[Sri Lanka Orders] Created order:', created?.id)
+      console.log('[Latex Orders] Created order:', created?.id)
       return created
     } catch (e) {
       if (await handleDirectusAuthError(e)) return null
 
-      error.value = getDirectusErrorMessage(e, 'Failed to create Sri Lanka order')
-      console.error('[Sri Lanka Orders] Failed to create:', e)
+      error.value = getDirectusErrorMessage(e, 'Failed to create Latex order')
+      console.error('[Latex Orders] Failed to create:', e)
       return null
     } finally {
       loading.value = false
@@ -115,7 +115,7 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
   }
 
   /**
-   * Update an existing Sri Lanka inventory order
+   * Update an existing Latex inventory order
    */
   const updateOrder = async (id, orderData, skuItems) => {
     loading.value = true
@@ -140,13 +140,13 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       })
 
       await fetchOrders()
-      console.log('[Sri Lanka Orders] Updated order:', id)
+      console.log('[Latex Orders] Updated order:', id)
       return response
     } catch (e) {
       if (await handleDirectusAuthError(e)) return null
 
-      error.value = getDirectusErrorMessage(e, 'Failed to update Sri Lanka order')
-      console.error('[Sri Lanka Orders] Failed to update:', e)
+      error.value = getDirectusErrorMessage(e, 'Failed to update Latex order')
+      console.error('[Latex Orders] Failed to update:', e)
       return null
     } finally {
       loading.value = false
@@ -154,7 +154,7 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
   }
 
   /**
-   * Delete a Sri Lanka inventory order
+   * Delete a Latex inventory order
    */
   const deleteOrder = async (id) => {
     loading.value = true
@@ -167,13 +167,13 @@ export const useSriLankaOrdersStore = defineStore('sriLankaOrders', () => {
       })
 
       await fetchOrders()
-      console.log('[Sri Lanka Orders] Deleted order:', id)
+      console.log('[Latex Orders] Deleted order:', id)
       return true
     } catch (e) {
       if (await handleDirectusAuthError(e)) return false
 
-      error.value = getDirectusErrorMessage(e, 'Failed to delete Sri Lanka order')
-      console.error('[Sri Lanka Orders] Failed to delete:', e)
+      error.value = getDirectusErrorMessage(e, 'Failed to delete Latex order')
+      console.error('[Latex Orders] Failed to delete:', e)
       return false
     } finally {
       loading.value = false

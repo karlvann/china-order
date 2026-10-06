@@ -10,7 +10,6 @@ const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
-const appModeStore = useAppModeStore()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -91,9 +90,9 @@ onMounted(() => {
 
           <!-- Hide zero demand items toggle -->
           <div class="flex items-center gap-3">
-            <label for="china-hide-zero-demand" class="text-sm text-muted">Hide zero demand items</label>
+            <label for="springs-hide-zero-demand" class="text-sm text-muted">Hide zero demand items</label>
             <button
-              id="china-hide-zero-demand"
+              id="springs-hide-zero-demand"
               type="button"
               role="switch"
               :aria-checked="hideZeroDemandItems"
@@ -154,22 +153,10 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Test inventory button -->
-          <button
-            v-if="appModeStore.isTestMode"
-            @click="appModeStore.openTestInventoryModal()"
-            class="ml-auto px-4 py-1.5 bg-surface hover:bg-surface-hover border border-border text-primary text-sm font-medium rounded transition-colors"
-          >
-            Test inventory
-          </button>
-
           <!-- New order button -->
           <button
             @click="uiStore.openOrderPanelWithNewOrder()"
-            :class="[
-              'px-4 py-1.5 bg-brand hover:bg-brand-hover text-inverse text-sm font-medium rounded transition-colors',
-              appModeStore.isLiveMode ? 'ml-auto' : ''
-            ]"
+            class="ml-auto px-4 py-1.5 bg-brand hover:bg-brand-hover text-inverse text-sm font-medium rounded transition-colors"
           >
             + New order
           </button>

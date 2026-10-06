@@ -35,7 +35,7 @@ const hooks = registerHooks({
 })
 const { useSettingsStore } = await import('../stores/settings.js')
 const { useWeeklySales } = await import('../composables/useWeeklySales.js')
-const { useSriLankaSettingsStore } = await import('../stores/sriLankaSettings.js')
+const { useLatexSettingsStore } = await import('../stores/latexSettings.js')
 const { calculateLatexOrder } = await import('../lib/algorithms/latexOrder.js')
 globalThis.useSettingsStore = useSettingsStore
 
@@ -45,6 +45,45 @@ after(() => {
     if (descriptor) Object.defineProperty(globalThis, key, descriptor)
     else delete globalThis[key]
   }
+})
+
+test('Spring sales state starts empty and a refresh cannot retain stale firmness percentages', () => {
+  setActivePinia(createPinia())
+  const settings = useSettingsStore()
+  const emptyDistribution = {
+    firm: 0,
+    medium: 0,
+    soft: 0,
+    verysoft: 0
+  }
+
+  for (const distribution of Object.values(settings.liveSalesRates.FIRMNESS_DISTRIBUTION)) {
+    assert.deepEqual(distribution, emptyDistribution)
+  }
+
+  settings.setLiveSalesRates(
+    { King: 1 },
+    { King: { verysoft: 3, soft: 84, medium: 13, firm: 0 } }
+  )
+  assert.deepEqual(settings.liveSalesRates.FIRMNESS_DISTRIBUTION.King, {
+    verysoft: 0.03,
+    soft: 0.84,
+    medium: 0.13,
+    firm: 0
+  })
+  assert.deepEqual(settings.liveSalesRates.FIRMNESS_DISTRIBUTION.Queen, emptyDistribution)
+
+  settings.setLiveSalesRates(
+    { Queen: 1 },
+    { Queen: { medium: 100 } }
+  )
+  assert.deepEqual(settings.liveSalesRates.FIRMNESS_DISTRIBUTION.King, emptyDistribution)
+  assert.deepEqual(settings.liveSalesRates.FIRMNESS_DISTRIBUTION.Queen, {
+    verysoft: 0,
+    soft: 0,
+    medium: 1,
+    firm: 0
+  })
 })
 
 test('recipe collection, store toggle and component ordering work together and restore the baseline', async (t) => {
@@ -125,9 +164,9 @@ test('recipe collection, store toggle and component ordering work together and r
   settings.toggleStoreSplitDemand()
   const planning = settings.planningSalesRates
   assert.equal(planning.WEEKLY_SALES_RATE.King, 12)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { veryfirm: 0.58, firm: 0.38, medium: 0.04, soft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.58, medium: 0.38, soft: 0.04, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], planning.FIRMNESS_DISTRIBUTION.King)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { veryfirm: 0.54, firm: 0.4, medium: 0.06, soft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.54, medium: 0.4, soft: 0.06, verysoft: 0 })
   assert.deepEqual(planning.SKU_WEEKLY_DEMAND_SPIKE, baseline.SKU_WEEKLY_DEMAND_SPIKE)
   assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
   assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
@@ -135,7 +174,7 @@ test('recipe collection, store toggle and component ordering work together and r
   assert.deepEqual(JSON.parse(JSON.stringify(settings.liveSalesRates)), baseline)
 
   const springs = createEmptySpringInventory()
-  Object.assign(springs.medium, { King: 120, Queen: 180, Single: 30, Double: 30 })
+  Object.assign(springs.soft, { King: 120, Queen: 180, Single: 30, Double: 30 })
   const inventory = createEmptyComponentInventory()
   const baselineOrder = calculateComponentOrder({ springs }, {}, inventory, baseline)
   const storeOrder = calculateComponentOrder({ springs }, {}, inventory, planning)
@@ -157,10 +196,10 @@ test('recipe collection, store toggle and component ordering work together and r
   assert.deepEqual(JSON.parse(JSON.stringify(settings.planningSalesRates)), baseline)
 })
 
-test('Sri Lanka planning state feeds fixed latex rates into orders and restores the baseline', (t) => {
+test('Latex planning state feeds fixed latex rates into orders and restores the baseline', (t) => {
   t.mock.method(console, 'log', () => {})
   setActivePinia(createPinia())
-  const settings = useSriLankaSettingsStore()
+  const settings = useLatexSettingsStore()
   settings.setLatexSalesRates(
     { King: 10, Queen: 5 },
     { firm: { King: 4, Queen: 2 }, medium: { King: 5, Queen: 2 }, soft: { King: 1, Queen: 1 } },

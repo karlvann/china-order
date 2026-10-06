@@ -33,57 +33,18 @@
     --color-brand-hover: 2 132 199;
     --color-brand-light: 56 189 248;
     --color-brand-dark: 2 132 199;
-    --color-accent-sri-lanka: 249 115 22;
-    --color-accent-sri-lanka-hover: 234 88 12;
-    --color-accent-sri-lanka-light: 251 146 60;
+    --color-accent-latex: 249 115 22;
+    --color-accent-latex-hover: 234 88 12;
+    --color-accent-latex-light: 251 146 60;
     --color-success: 74 222 128;
     --color-warning: 250 204 21;
     --color-danger: 248 113 113;
     --color-danger-hover: 252 165 165;
     --color-info: 96 165 250;
 
+    color-scheme: dark;
+
     @apply bg-background text-primary;
-  }
-
-  html.test-mode {
-    --color-background: 229 229 229;
-    --color-surface: 245 245 245;
-    --color-surface-hover: 235 235 235;
-    --color-surface-muted: 238 238 238;
-    --color-modal-surface: 250 250 250;
-    --color-modal-header: 238 238 238;
-    --color-input-surface: 255 255 255;
-    --color-control-surface: 255 255 255;
-    --color-control-hover: 240 240 240;
-    --color-overlay: 0 0 0;
-    --color-border: 190 190 190;
-    --color-border-strong: 150 150 150;
-    --color-text: 0 0 0;
-    --color-text-muted: 38 38 38;
-    --color-text-subtle: 82 82 82;
-    --color-text-disabled: 140 140 140;
-    --color-text-inverse: 255 255 255;
-    --color-table-header: 214 214 214;
-    --color-table-current: 255 255 255;
-    --color-toggle-off: 170 170 170;
-    --color-toggle-knob: 255 255 255;
-    --color-button-primary: 0 0 0;
-    --color-button-primary-hover: 38 38 38;
-    --color-button-primary-text: 255 255 255;
-    --color-brand: 2 132 199;
-    --color-brand-hover: 3 105 161;
-    --color-brand-light: 3 105 161;
-    --color-brand-dark: 7 89 133;
-    --color-accent-sri-lanka: 194 65 12;
-    --color-accent-sri-lanka-hover: 154 52 18;
-    --color-accent-sri-lanka-light: 194 65 12;
-    --color-success: 22 101 52;
-    --color-warning: 133 77 14;
-    --color-danger: 185 28 28;
-    --color-danger-hover: 153 27 27;
-    --color-info: 30 64 175;
-
-    color-scheme: light;
   }
 
   body {
@@ -130,10 +91,6 @@
   .toggle-btn {
     @apply px-4 py-2 bg-transparent border-none rounded-md text-muted text-sm font-semibold
            cursor-pointer transition-colors;
-  }
-
-  .toggle-btn-active {
-    @apply bg-surface-hover text-primary;
   }
 
   /* Badge styles */
@@ -218,12 +175,12 @@
     color: rgb(var(--color-brand-light) / 1);
   }
 
-  .text-accent-sri-lanka {
-    color: rgb(var(--color-accent-sri-lanka) / 1);
+  .text-accent-latex {
+    color: rgb(var(--color-accent-latex) / 1);
   }
 
-  .text-accent-sri-lanka-light {
-    color: rgb(var(--color-accent-sri-lanka-light) / 1);
+  .text-accent-latex-light {
+    color: rgb(var(--color-accent-latex-light) / 1);
   }
 
   .text-success {
@@ -329,20 +286,20 @@
     background-color: rgb(var(--color-brand-hover) / 1);
   }
 
-  .bg-accent-sri-lanka {
-    background-color: rgb(var(--color-accent-sri-lanka) / 1);
+  .bg-accent-latex {
+    background-color: rgb(var(--color-accent-latex) / 1);
   }
 
-  .bg-accent-sri-lanka\/10 {
-    background-color: rgb(var(--color-accent-sri-lanka) / 0.1);
+  .bg-accent-latex\/10 {
+    background-color: rgb(var(--color-accent-latex) / 0.1);
   }
 
-  .bg-accent-sri-lanka\/20 {
-    background-color: rgb(var(--color-accent-sri-lanka) / 0.2);
+  .bg-accent-latex\/20 {
+    background-color: rgb(var(--color-accent-latex) / 0.2);
   }
 
-  .hover\:bg-accent-sri-lanka-hover:hover {
-    background-color: rgb(var(--color-accent-sri-lanka-hover) / 1);
+  .hover\:bg-accent-latex-hover:hover {
+    background-color: rgb(var(--color-accent-latex-hover) / 1);
   }
 
   .bg-success\/10 {
@@ -390,8 +347,8 @@
     border-color: rgb(var(--color-brand) / 0.4);
   }
 
-  .border-accent-sri-lanka\/40 {
-    border-color: rgb(var(--color-accent-sri-lanka) / 0.4);
+  .border-accent-latex\/40 {
+    border-color: rgb(var(--color-accent-latex) / 0.4);
   }
 
   .border-danger\/20 {
@@ -414,8 +371,8 @@
     --tw-ring-color: rgb(var(--color-brand) / 1);
   }
 
-  .focus\:ring-accent-sri-lanka:focus {
-    --tw-ring-color: rgb(var(--color-accent-sri-lanka) / 1);
+  .focus\:ring-accent-latex:focus {
+    --tw-ring-color: rgb(var(--color-accent-latex) / 1);
   }
 
   .focus\:border-brand:focus {

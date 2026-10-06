@@ -1,6 +1,6 @@
 # Ordering Algorithms
 
-This document describes the spring and component ordering algorithms used in the AusBeds China Order system.
+This document describes the spring, component and latex ordering algorithms used in the AusBeds ordering system.
 
 ---
 
@@ -43,16 +43,16 @@ To produce a rate robust to both, we use a **chunked trimmed mean**.
 
 ### Firmness and model distribution
 
-The **firmness distribution** (% firm/medium/soft) and **model distribution** (% Cooper/Aurora/Cloud) per size are calculated separately from the **full 12-week totals** (untrimmed), because percentages are more stable with a larger sample and aren't affected by stockout-driven volume changes in the same way absolute rates are.
+The **spring tension distribution** (% firm/medium/soft/verysoft) and **model distribution** (% Cooper/Aurora/Cloud) per size are calculated separately from the **full 12-week totals** (untrimmed), because percentages are more stable with a larger sample and aren't affected by stockout-driven volume changes in the same way absolute rates are.
 
-The timeline **Spike** column is a short-window average: total demand from the last **2 complete Mon-Sun weeks** divided by 2. It remains unchanged when planning modes change. The former **Store split** percentage columns have been removed from the spring and Sri Lanka latex timelines.
+The timeline **Spike** column is a short-window average: total demand from the last **2 complete Mon-Sun weeks** divided by 2. It remains unchanged when planning modes change. The former **Store split** percentage columns have been removed from the spring and latex timelines.
 
 ### Fixed spring demand splits
 
-The China **Store split demand** toggle now uses **fixed spring firmness percentages**, rather than observed store firmness preferences. With the toggle on, the app sums the two-week spike demand across all firmnesses of each mattress size and redistributes that volume as follows:
+The Springs **Store split demand** toggle uses **fixed spring firmness percentages**, rather than observed store firmness preferences. With the toggle on, the app sums the two-week spike demand across all firmnesses of each mattress size and redistributes that volume as follows:
 
-| Mattress sizes | Soft | Medium | Firm | Very firm |
-|----------------|------|--------|------|-----------|
+| Mattress sizes | Very soft | Soft | Medium | Firm |
+|----------------|-----------|------|--------|------|
 | King and King Single | 0% | 4% | 38% | 58% |
 | Queen, Double and Single | 0% | 6% | 40% | 54% |
 
@@ -60,13 +60,13 @@ The China **Store split demand** toggle now uses **fixed spring firmness percent
 springSkuDemand = sizeWeeklySpikeTotal * fixedFirmnessPercentage / 100
 ```
 
-These percentages apply even when there are no recent store orders for a size. A size with zero spike volume has zero planning demand. The historical raw-SKU floor is replaced with the fixed-split rate in this mode, so historical soft sales cannot revive the 0% soft demand. With the toggle off, the original 12-week baseline and SKU floors remain unchanged.
+These percentages apply even when there are no recent store orders for a size. A size with zero spike volume has zero planning demand. The historical raw-SKU floor is replaced with the fixed-split rate in this mode, so historical very-soft sales cannot revive the 0% very-soft demand. With the toggle off, the original 12-week baseline and SKU floors remain unchanged.
 
-`SPRING_PLANNING_SPLITS` in `lib/constants/firmness.js` is shared by the calculation and the summary above the spring timeline. The summary displays Medium, Firm and Very firm only; Soft remains 0% in the algorithm. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
+`SPRING_PLANNING_SPLITS` in `lib/constants/firmness.js` is shared by the calculation and the summary above the spring timeline. The summary displays Soft, Medium and Firm only; Very soft remains 0% in the algorithm. Operation firm ass renames the same physical buckets; it does not change replenishment policy. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
 
 ### Fixed latex demand split
 
-The Sri Lanka **Store split demand** toggle uses fixed mattress latex percentages for each inventory size:
+The Latex **Store split demand** toggle uses fixed mattress latex percentages for each inventory size:
 
 | Size | Soft | Medium | Firm |
 |------|------|--------|------|
@@ -77,15 +77,15 @@ For each inventory size, sum the observed two-week **Spike** rates across all th
 
 These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing spike volume gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week baseline.
 
-`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, China spring splits and China micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
+`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, spring splits and micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
 
-Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the Sri Lanka top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
+Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
 ### Store split demand for micro coils and thin latex
 
 **Files:** `composables/useWeeklySales.js`, `stores/settings.js`, `lib/utils/storeSplitDemand.js`
 
-The China toggle also recalculates micro coil and thin latex demand from the **store model mix**, not the spring firmness percentages. For each mattress size:
+The Springs toggle also recalculates micro coil and thin latex demand from the **store model mix**, not the spring firmness percentages. For each mattress size:
 
 ```javascript
 storeLayersPerMattress = storeRecipeLayerTotal / storeMattressQuantity
@@ -144,7 +144,7 @@ The spring ordering algorithm allocates pallets to sizes based on coverage prior
 
 - **Container capacity:** 1-12 pallets (user selects)
 - **Pallet size:** Exactly 30 springs per pallet (supplier fixed)
-- **Lead time:** Defaults to 10 weeks for China orders, but is user-adjustable because real lead times vary by order, season, supplier timing, and shipping conditions
+- **Lead time:** Defaults to 10 weeks for spring orders, but is user-adjustable because real lead times vary by order, season, supplier timing, and shipping conditions
 - **Single size per pallet:** Cannot mix sizes on one pallet
 
 ### Size-Specific Coverage Targets
@@ -165,7 +165,7 @@ Queen and King get priority weighting because they represent approximately 78% o
 
 #### Step 1: Calculate Per-SKU Metrics
 
-For each of the 15 SKUs (5 sizes × 3 firmnesses):
+For each of the 20 spring SKUs (5 sizes × 4 tensions):
 
 ```javascript
 normalWeeklyDemand = sizeWeeklyRate × firmnessRatio
@@ -206,7 +206,8 @@ For each size that received pallets:
   springs: {
     firm: { King: 0, Queen: 30, Double: 0, 'King Single': 0, Single: 0 },
     medium: { King: 30, Queen: 60, Double: 0, 'King Single': 0, Single: 0 },
-    soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
+    soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
+    verysoft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
   },
   pallets: [...],
   metadata: { total_pallets: 4, total_springs: 120, ... }

@@ -1,11 +1,16 @@
 import {
   DEFAULT_PALLETS,
   MIN_PALLETS,
-  MAX_PALLETS
+  MAX_PALLETS,
+  MATTRESS_SIZES,
+  FIRMNESS_TYPES
 } from '~/lib/constants/index.js'
 import { withSpringStoreSplitDemand } from '~/lib/utils/index.js'
 
 const SETTINGS_KEY = 'china_order_settings'
+const emptySpringDemand = () => Object.fromEntries(MATTRESS_SIZES.map(size => [size.id,
+  Object.fromEntries(FIRMNESS_TYPES.map(tension => [tension, 0]))
+]))
 
 export const useSettingsStore = defineStore('settings', () => {
 
@@ -27,24 +32,12 @@ export const useSettingsStore = defineStore('settings', () => {
       'King Single': 0,
       Single: 0
     },
-    FIRMNESS_DISTRIBUTION: {
-      King: { veryfirm: 0, firm: 0.13, medium: 0.84, soft: 0.03 },
-      Queen: { veryfirm: 0, firm: 0.13, medium: 0.84, soft: 0.03 },
-      Double: { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 },
-      'King Single': { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 },
-      Single: { veryfirm: 0, firm: 0.2, medium: 0.6, soft: 0.2 }
-    },
+    FIRMNESS_DISTRIBUTION: emptySpringDemand(),
     MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     THIN_LATEX_WEEKLY_DEMAND: { King: 0, Queen: 0 },
     MODEL_LAYER_TOTALS: {}, // Quantity-weighted recipe totals from 12-week paid sales
     STORE_MODEL_LAYER_TOTALS: {}, // Same totals from the two-week store split sample
-    RAW_SKU_WEEKLY_DEMAND: {
-      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-    },
+    RAW_SKU_WEEKLY_DEMAND: emptySpringDemand(),
     WEEKLY_SALES_SPIKE: {
       King: 0,
       Queen: 0,
@@ -52,23 +45,11 @@ export const useSettingsStore = defineStore('settings', () => {
       'King Single': 0,
       Single: 0
     },
-    SKU_WEEKLY_DEMAND_SPIKE: {
-      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-    },
+    SKU_WEEKLY_DEMAND_SPIKE: emptySpringDemand(),
     MICRO_COIL_WEEKLY_SPIKE: { King: 0, Queen: 0 },
     THIN_LATEX_WEEKLY_SPIKE: { King: 0, Queen: 0 },
     SIDE_PANEL_WEEKLY_SPIKE: { King: 0, Queen: 0, Double: 0 },
-    STORE_SKU_SPLIT: {
-      King: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Queen: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Double: { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      'King Single': { veryfirm: 0, firm: 0, medium: 0, soft: 0 },
-      Single: { veryfirm: 0, firm: 0, medium: 0, soft: 0 }
-    }
+    STORE_SKU_SPLIT: emptySpringDemand()
   })
   const liveSalesLoaded = ref(false)
 
@@ -209,17 +190,19 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const setLiveSalesRates = (weeklyRates, firmnessDistribution, microCoilDemand, thinLatexDemand, rawSkuWeeklyDemand, demandSpikes, storeSplit, modelLayerTotals) => {
     liveSalesRates.value.WEEKLY_SALES_RATE = { ...weeklyRates }
-    if (firmnessDistribution) {
-      // Convert percentage (0-100) to decimal (0-1)
-      for (const size of Object.keys(firmnessDistribution)) {
-        liveSalesRates.value.FIRMNESS_DISTRIBUTION[size] = {
-          veryfirm: (firmnessDistribution[size]?.veryfirm || 0) / 100,
-          firm: (firmnessDistribution[size]?.firm || 0) / 100,
-          medium: (firmnessDistribution[size]?.medium || 0) / 100,
-          soft: (firmnessDistribution[size]?.soft || 0) / 100
-        }
+    // Rebuild every size from the latest response so missing data cannot retain
+    // stale startup or previous-refresh percentages.
+    const nextFirmnessDistribution = emptySpringDemand()
+    for (const size of MATTRESS_SIZES) {
+      const distribution = firmnessDistribution?.[size.id]
+      nextFirmnessDistribution[size.id] = {
+        verysoft: (distribution?.verysoft || 0) / 100,
+        soft: (distribution?.soft || 0) / 100,
+        medium: (distribution?.medium || 0) / 100,
+        firm: (distribution?.firm || 0) / 100
       }
     }
+    liveSalesRates.value.FIRMNESS_DISTRIBUTION = nextFirmnessDistribution
     if (microCoilDemand) {
       liveSalesRates.value.MICRO_COIL_WEEKLY_DEMAND = { ...microCoilDemand }
     }

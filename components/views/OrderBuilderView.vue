@@ -1,75 +1,44 @@
 <script setup>
-const sriLankaSettingsStore = useSriLankaSettingsStore()
-const sriLankaUIStore = useSriLankaUIStore()
-const sriLankaOrdersStore = useSriLankaOrdersStore()
-const appModeStore = useAppModeStore()
-const testInventoryStore = useTestInventoryStore()
-const sriLankaInventoryStore = useSriLankaInventoryStore()
-
-const latexInventoryEnabled = computed(() => appModeStore.loaded && appModeStore.isLiveMode)
+const latexSettingsStore = useLatexSettingsStore()
+const latexUIStore = useLatexUIStore()
+const latexOrdersStore = useLatexOrdersStore()
+const latexInventoryStore = useLatexInventoryStore()
 
 // Fetch latex sales data
 const latexSales = useLatexSales()
-const latexInventory = useLatexInventory({ enabled: latexInventoryEnabled })
+const latexInventory = useLatexInventory()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
 const hideZeroDemandItems = ref(true)
 
 // Check if there's a draft order being created (only when panel is open)
-const hasDraftOrder = computed(() => sriLankaUIStore.orderPanelOpen && sriLankaUIStore.draftLatexOrder !== null)
+const hasDraftOrder = computed(() => latexUIStore.orderPanelOpen && latexUIStore.draftLatexOrder !== null)
 
 // Use draft orders when available (panel open), otherwise null (no new order lane)
 const activeLatexOrder = computed(() => {
   if (hasDraftOrder.value) {
-    return sriLankaUIStore.draftLatexOrder
+    return latexUIStore.draftLatexOrder
   }
   return null
 })
 
 // Draft arrival week for timeline display
-const draftArrivalWeek = computed(() => sriLankaUIStore.draftArrivalWeek)
+const draftArrivalWeek = computed(() => latexUIStore.draftArrivalWeek)
 
 // Usage rates for timeline
-const usageRates = computed(() => sriLankaSettingsStore.planningLatexSalesRates)
+const usageRates = computed(() => latexSettingsStore.planningLatexSalesRates)
 
-const activeSriLankaInventory = computed(() => {
-  if (appModeStore.isTestMode) {
-    return testInventoryStore.sriLankaInventory
-  }
+const refreshLatexInventory = () => latexInventory.refresh()
 
-  return latexInventory.inventory.value
-})
-
-const refreshLatexInventory = () => {
-  if (!appModeStore.isLiveMode) return
-  latexInventory.refresh()
-}
-
-watch(activeSriLankaInventory, (inventory) => {
-  sriLankaInventoryStore.setInventory(inventory)
-}, { immediate: true, deep: true })
-
-watch([
-  () => appModeStore.loaded,
-  () => appModeStore.isLiveMode,
-  () => appModeStore.isTestMode,
-  () => testInventoryStore.loaded,
-  latexInventory.loading
-], ([modeLoaded, isLiveMode, isTestMode, testInventoryLoaded, isLoading]) => {
-  sriLankaInventoryStore.setLoading(!modeLoaded || (isTestMode && !testInventoryLoaded) || (isLiveMode && isLoading))
-}, { immediate: true })
-
-watch([() => appModeStore.loaded, () => appModeStore.isLiveMode, latexInventory.error], ([modeLoaded, isLiveMode, err]) => {
-  sriLankaInventoryStore.setError(modeLoaded && isLiveMode ? err : null)
-}, { immediate: true })
+watch(latexInventory.inventory, latexInventoryStore.setInventory, { immediate: true, deep: true })
+watch(latexInventory.loading, latexInventoryStore.setLoading, { immediate: true })
+watch(latexInventory.error, latexInventoryStore.setError, { immediate: true })
 
 // Fetch orders on mount
 onMounted(() => {
-  appModeStore.loadFromStorage()
-  testInventoryStore.loadFromStorage()
-  sriLankaSettingsStore.loadFromStorage()
-  sriLankaOrdersStore.fetchOrders()
+  latexSettingsStore.loadFromStorage()
+  latexOrdersStore.fetchOrders()
 })
 </script>
 
@@ -86,7 +55,7 @@ onMounted(() => {
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                showYellowWarnings ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
+                showYellowWarnings ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
               @click="showYellowWarnings = !showYellowWarnings"
             >
@@ -101,16 +70,16 @@ onMounted(() => {
 
           <!-- Hide zero demand items toggle -->
           <div class="flex items-center gap-3">
-            <label for="sri-lanka-hide-zero-demand" class="text-sm text-muted">Hide zero demand items</label>
+            <label for="latex-hide-zero-demand" class="text-sm text-muted">Hide zero demand items</label>
             <button
-              id="sri-lanka-hide-zero-demand"
+              id="latex-hide-zero-demand"
               type="button"
               role="switch"
               :aria-checked="hideZeroDemandItems"
               title="Hide items with demand below 0.05 per week"
               :class="[
                 'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
-                hideZeroDemandItems ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
+                hideZeroDemandItems ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
               @click="hideZeroDemandItems = !hideZeroDemandItems"
             >
@@ -130,14 +99,14 @@ onMounted(() => {
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                sriLankaSettingsStore.useSeasonalDemand ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
+                latexSettingsStore.useSeasonalDemand ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
-              @click="sriLankaSettingsStore.toggleSeasonalDemand()"
+              @click="latexSettingsStore.toggleSeasonalDemand()"
             >
               <span
                 :class="[
                   'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
-                  sriLankaSettingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
+                  latexSettingsStore.useSeasonalDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
@@ -150,36 +119,24 @@ onMounted(() => {
               type="button"
               :class="[
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
-                sriLankaSettingsStore.useStoreSplitDemand ? 'bg-accent-sri-lanka' : 'bg-toggle-off'
+                latexSettingsStore.useStoreSplitDemand ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
               title="Use two-week sales volume with fixed mattress latex firmness percentages; pillow demand is unchanged"
-              @click="sriLankaSettingsStore.toggleStoreSplitDemand()"
+              @click="latexSettingsStore.toggleStoreSplitDemand()"
             >
               <span
                 :class="[
                   'inline-block h-3.5 w-3.5 transform rounded-full bg-toggle-knob transition-transform',
-                  sriLankaSettingsStore.useStoreSplitDemand ? 'translate-x-5' : 'translate-x-0.5'
+                  latexSettingsStore.useStoreSplitDemand ? 'translate-x-5' : 'translate-x-0.5'
                 ]"
               />
             </button>
           </div>
 
-          <!-- Test inventory button -->
-          <button
-            v-if="appModeStore.isTestMode"
-            @click="appModeStore.openTestInventoryModal()"
-            class="ml-auto px-4 py-1.5 bg-surface hover:bg-surface-hover border border-border text-primary text-sm font-medium rounded transition-colors"
-          >
-            Test inventory
-          </button>
-
           <!-- New order button -->
           <button
-            @click="sriLankaUIStore.openOrderPanelWithNewOrder()"
-            :class="[
-              'px-4 py-1.5 bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse text-sm font-medium rounded transition-colors',
-              appModeStore.isLiveMode ? 'ml-auto' : ''
-            ]"
+            @click="latexUIStore.openOrderPanelWithNewOrder()"
+            class="ml-auto px-4 py-1.5 bg-accent-latex hover:bg-accent-latex-hover text-inverse text-sm font-medium rounded transition-colors"
           >
             + New order
           </button>
@@ -190,14 +147,14 @@ onMounted(() => {
     <!-- Main Content -->
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Loading State -->
-      <div v-if="latexSales.loading.value || sriLankaInventoryStore.loading" class="text-center py-10">
+      <div v-if="latexSales.loading.value || latexInventoryStore.loading" class="text-center py-10">
         <div class="text-muted">Loading latex data...</div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="latexSales.error.value || sriLankaInventoryStore.error" class="text-center py-10">
+      <div v-else-if="latexSales.error.value || latexInventoryStore.error" class="text-center py-10">
         <div class="text-danger">
-          {{ latexSales.error.value || sriLankaInventoryStore.error }}
+          {{ latexSales.error.value || latexInventoryStore.error }}
         </div>
         <button
           @click="latexSales.refresh(); refreshLatexInventory()"
@@ -210,25 +167,25 @@ onMounted(() => {
       <!-- Main Content -->
       <template v-else>
         <!-- Pending orders -->
-        <SrilankaSriLankaOrderList />
+        <LatexOrderList />
 
         <!-- Latex timeline -->
-        <SrilankaLatexTimeline
-          :inventory="sriLankaInventoryStore.inventory"
+        <LatexTimeline
+          :inventory="latexInventoryStore.inventory"
           :latex-order="activeLatexOrder"
           :has-draft-order="hasDraftOrder"
           :draft-arrival-week="draftArrivalWeek"
-          :current-week="sriLankaSettingsStore.currentWeekNumber"
+          :current-week="latexSettingsStore.currentWeekNumber"
           :usage-rates="usageRates"
           :show-yellow-warnings="showYellowWarnings"
           :hide-zero-demand-items="hideZeroDemandItems"
-          :stored-orders="sriLankaOrdersStore.orders"
-          :use-seasonal-demand="sriLankaSettingsStore.useSeasonalDemand"
+          :stored-orders="latexOrdersStore.orders"
+          :use-seasonal-demand="latexSettingsStore.useSeasonalDemand"
         />
       </template>
     </div>
 
     <!-- Order Panel -->
-    <SrilankaSriLankaOrderPanel />
+    <LatexOrderPanel />
   </div>
 </template>

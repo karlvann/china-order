@@ -16,17 +16,11 @@ import {
   createEmptyLatexInventory
 } from '~/lib/utils/index.js'
 
-export const useLatexInventory = (options = {}) => {
+export const useLatexInventory = () => {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 
-  const enabled = computed(() => {
-    if (options.enabled === undefined) return true
-    if (typeof options.enabled === 'boolean') return options.enabled
-    return !!options.enabled.value
-  })
-
-  const loading = ref(false)
+  const loading = ref(true)
   const error = ref(null)
 
   // Structured inventory by firmness and size
@@ -39,12 +33,6 @@ export const useLatexInventory = (options = {}) => {
   const totalInventory = ref(0)
 
   const fetchInventory = async () => {
-    if (!enabled.value) {
-      loading.value = false
-      error.value = null
-      return
-    }
-
     loading.value = true
     error.value = null
 
@@ -128,21 +116,7 @@ export const useLatexInventory = (options = {}) => {
     return map
   }
 
-  onMounted(() => {
-    if (enabled.value) {
-      fetchInventory()
-    }
-  })
-
-  watch(enabled, (isEnabled) => {
-    if (isEnabled) {
-      fetchInventory()
-      return
-    }
-
-    loading.value = false
-    error.value = null
-  })
+  onMounted(fetchInventory)
 
   return {
     loading: readonly(loading),

@@ -22,7 +22,7 @@ export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
   }
 
   /**
-   * Fetch all china orders with M2M SKU data expanded
+   * Fetch all spring orders with M2M SKU data expanded
    */
   const fetchOrders = async () => {
     loading.value = true

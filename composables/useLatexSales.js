@@ -109,7 +109,7 @@ const formatLocalDate = (date) => {
 export function useLatexSales() {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
-  const sriLankaSettingsStore = useSriLankaSettingsStore()
+  const latexSettingsStore = useLatexSettingsStore()
 
   const loading = ref(true)
   const error = ref(null)
@@ -506,7 +506,7 @@ export function useLatexSales() {
       }
 
       // Update settings store with live data
-      sriLankaSettingsStore.setLatexSalesRates(
+      latexSettingsStore.setLatexSalesRates(
         weeklyTotalBySize.value,
         weekly,
         distribution,

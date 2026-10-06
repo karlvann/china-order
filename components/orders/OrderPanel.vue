@@ -2,26 +2,18 @@
 import { calculateDemandBasedOrder } from '~/lib/algorithms/demandBasedOrder.js'
 import { calculateComponentOrder } from '~/lib/algorithms/componentCalc.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
+import { FIRMNESS_TYPES } from '~/lib/constants/index.js'
+import { createEmptySpringInventory, SPRING_INVENTORY_SKU_MAP } from '~/lib/utils/inventory.js'
 
 const uiStore = useUIStore()
 const inventoryOrdersStore = useInventoryOrdersStore()
 const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
 const inventoryStore = useInventoryStore()
 const settingsStore = useSettingsStore()
-const appModeStore = useAppModeStore()
-const testInventoryStore = useTestInventoryStore()
 const skuLookup = useSkuLookup()
 
 // Props for usage rates (passed from parent via provide/inject or we get from settings)
 const usageRates = computed(() => settingsStore.planningSalesRates)
-
-const activeChinaInventory = computed(() => {
-  if (appModeStore.isTestMode) {
-    return testInventoryStore.chinaInventory
-  }
-
-  return inventoryStore.fullInventory
-})
 
 // Local order settings (independent of global settingsStore)
 const localPalletCount = ref(8)
@@ -77,7 +69,7 @@ const convertSpringOrderToSkuQuantities = (springOrder) => {
   const quantities = {}
   if (!springOrder?.springs) return quantities
 
-  const firmnesses = ['veryfirm', 'firm', 'medium', 'soft']
+  const firmnesses = FIRMNESS_TYPES
   const sizes = ['King', 'Queen', 'Double', 'King Single', 'Single']
 
   for (const firmness of firmnesses) {
@@ -123,14 +115,9 @@ const convertComponentOrderToSkuQuantities = (componentOrder) => {
 
 // Convert SKU quantities back to spring order format (for draft preview)
 const convertSkuQuantitiesToSpringOrder = () => {
-  const springs = {
-    veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-    soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-  }
+  const springs = createEmptySpringInventory()
 
-  const firmnesses = ['veryfirm', 'firm', 'medium', 'soft']
+  const firmnesses = FIRMNESS_TYPES
   const sizes = ['King', 'Queen', 'Double', 'King Single', 'Single']
 
   for (const firmness of firmnesses) {
@@ -266,31 +253,14 @@ const convertPendingOrdersForAlgorithm = () => {
     const diffMs = arrivalDate - monday
     const arrivalWeekIndex = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
 
-    const springsByFirmness = {
-      veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-    }
+    const springsByFirmness = createEmptySpringInventory()
 
     if (order.skus) {
       for (const item of order.skus) {
         const sku = item.skus_id?.sku || ''
         const qty = item.quantity || 0
-        if (sku.startsWith('springs')) {
-          let firmness = null
-          if (sku.includes('veryfirm')) firmness = 'veryfirm'
-          else if (sku.includes('firm')) firmness = 'firm'
-          else if (sku.includes('medium')) firmness = 'medium'
-          else if (sku.includes('soft')) firmness = 'soft'
-          if (!firmness) continue
-
-          if (sku.includes('king') && !sku.includes('kingsingle')) springsByFirmness[firmness].King += qty
-          else if (sku.includes('queen')) springsByFirmness[firmness].Queen += qty
-          else if (sku.includes('double')) springsByFirmness[firmness].Double += qty
-          else if (sku.includes('kingsingle')) springsByFirmness[firmness]['King Single'] += qty
-          else if (sku.includes('single')) springsByFirmness[firmness].Single += qty
-        }
+        const spring = SPRING_INVENTORY_SKU_MAP[sku]
+        if (spring) springsByFirmness[spring.firmness][spring.size] += qty
       }
     }
     return { arrivalWeekIndex, springsByFirmness }
@@ -356,7 +326,7 @@ const computeOrderFromSettings = () => {
   if (!usageRates.value?.WEEKLY_SALES_RATE) return { springOrder: null, componentOrder: null }
 
   const pendingOrders = convertPendingOrdersForAlgorithm()
-  const inventory = activeChinaInventory.value
+  const inventory = inventoryStore.fullInventory
 
   const springOrder = calculateDemandBasedOrder(
     localPalletCount.value,
@@ -409,7 +379,7 @@ watch([localPalletCount, localComponentScale], () => {
   updateFromAlgorithm()
 })
 
-watch(activeChinaInventory, () => {
+watch(() => inventoryStore.fullInventory, () => {
   if (!uiStore.orderPanelOpen || isInitializing.value || isEditing.value) return
   updateFromAlgorithm()
 }, { deep: true })
@@ -811,7 +781,7 @@ watch(() => uiStore.editingOrderId, () => {
             v-if="isEditing && savedOrder"
             :order-id="savedOrder.id"
             :ordered="savedOrder.ordered === true"
-            panel-context="china"
+            panel-context="springs"
           />
           <button
             v-if="!isEditing"

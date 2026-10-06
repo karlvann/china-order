@@ -20,7 +20,7 @@ const { error } = storeToRefs(receivingStore)
 const confirmationOpen = ref(false)
 const modalRef = ref(null)
 const isApplying = computed(() => receivingStore.isApplyingOrder(props.orderId))
-const isSriLanka = computed(() => props.panelContext === 'sri_lanka')
+const isLatex = computed(() => props.panelContext === 'latex')
 
 const openConfirmation = () => {
   error.value = null
@@ -38,8 +38,8 @@ const applyOrder = async () => {
   if (!result.success) return
 
   confirmationOpen.value = false
-  if (isSriLanka.value) {
-    useSriLankaUIStore().closeOrderPanel()
+  if (isLatex.value) {
+    useLatexUIStore().closeOrderPanel()
   } else {
     useUIStore().closeOrderPanel()
   }
@@ -55,8 +55,8 @@ const applyOrder = async () => {
         'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors',
         isApplying
           ? 'bg-control-surface text-subtle cursor-not-allowed'
-          : isSriLanka
-            ? 'bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse'
+          : isLatex
+            ? 'bg-accent-latex hover:bg-accent-latex-hover text-inverse'
             : 'bg-success hover:opacity-90 text-inverse'
       ]"
       @click="openConfirmation"

@@ -88,7 +88,7 @@ const generateOrderTSV = (order) => {
 const exportOrderTSV = (order) => {
   if (order.ordered) return
   const tsv = generateOrderTSV(order)
-  const filename = `Ausbeds_ChinaOrder_${order.order_date}.tsv`
+  const filename = `Ausbeds_SpringsOrder_${order.order_date}.tsv`
 
   const blob = new Blob([tsv], { type: 'text/tab-separated-values' })
   const url = URL.createObjectURL(blob)

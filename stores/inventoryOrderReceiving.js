@@ -172,9 +172,9 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
         }
 
         const inventoryStore = useInventoryStore()
-        const sriLankaInventoryStore = useSriLankaInventoryStore()
+        const latexInventoryStore = useLatexInventoryStore()
         inventoryStore.setSkuQuantity(operation.sku, operation.finalInventoryQuantity)
-        sriLankaInventoryStore.setSkuQuantity(operation.sku, operation.finalInventoryQuantity)
+        latexInventoryStore.setSkuQuantity(operation.sku, operation.finalInventoryQuantity)
 
         applied.push(operation)
         console.info(`[Inventory order ${orderId}] Applied ${operation.sku}`, {
@@ -209,7 +209,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
       }
 
       if (orderLocation === 'sri_lanka') {
-        await useSriLankaOrdersStore().fetchOrders()
+        await useLatexOrdersStore().fetchOrders()
       } else {
         await useInventoryOrdersStore().fetchOrders()
       }

@@ -1,6 +1,6 @@
 <script setup>
-const sriLankaUIStore = useSriLankaUIStore()
-const sriLankaOrdersStore = useSriLankaOrdersStore()
+const latexUIStore = useLatexUIStore()
+const latexOrdersStore = useLatexOrdersStore()
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -29,16 +29,16 @@ const getTotalItems = (order) => {
 const confirmDelete = async (order) => {
   if (order.ordered) return
   if (confirm(`Delete order from ${formatDate(order.order_date)}?`)) {
-    await sriLankaOrdersStore.deleteOrder(order.id)
+    await latexOrdersStore.deleteOrder(order.id)
   }
 }
 
 // Generate TSV from order SKUs
 const generateOrderTSV = (order) => {
   const lines = []
-  const orderLetter = sriLankaOrdersStore.getOrderLetter(order.id)
+  const orderLetter = latexOrdersStore.getOrderLetter(order.id)
 
-  lines.push(`Sri Lanka Order ${orderLetter} - ${formatDate(order.expected_arrival)}`)
+  lines.push(`Latex Order ${orderLetter} - ${formatDate(order.expected_arrival)}`)
   if (order.notes) lines.push(`Notes: ${order.notes}`)
   lines.push('')
   lines.push('SKU\tName\tQuantity')
@@ -67,7 +67,7 @@ const generateOrderTSV = (order) => {
 const exportOrderTSV = (order) => {
   if (order.ordered) return
   const tsv = generateOrderTSV(order)
-  const filename = `Ausbeds_SriLankaOrder_${order.order_date}.tsv`
+  const filename = `Ausbeds_LatexOrder_${order.order_date}.tsv`
 
   const blob = new Blob([tsv], { type: 'text/tab-separated-values' })
   const url = URL.createObjectURL(blob)
@@ -87,19 +87,19 @@ const exportOrderTSV = (order) => {
     </div>
 
     <!-- Loading State -->
-    <div v-if="sriLankaOrdersStore.loading" class="text-muted text-sm py-4">
+    <div v-if="latexOrdersStore.loading" class="text-muted text-sm py-4">
       Loading orders...
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="sriLankaOrdersStore.pendingOrders.length === 0" class="bg-surface border border-border rounded-lg p-6 text-center">
+    <div v-else-if="latexOrdersStore.pendingOrders.length === 0" class="bg-surface border border-border rounded-lg p-6 text-center">
       <p class="text-muted text-sm">No pending orders. Create one to track incoming latex inventory.</p>
     </div>
 
     <!-- Order List -->
     <div v-else class="space-y-3">
       <div
-        v-for="order in sriLankaOrdersStore.pendingOrders"
+        v-for="order in latexOrdersStore.pendingOrders"
         :key="order.id"
         class="bg-surface border border-border rounded-lg p-4"
       >
@@ -109,7 +109,7 @@ const exportOrderTSV = (order) => {
             <div class="flex items-center gap-3 mb-2">
               <!-- Order Letter Badge -->
               <span class="w-6 h-6 flex items-center justify-center text-xs font-bold rounded bg-success/20 text-success">
-                {{ sriLankaOrdersStore.getOrderLetter(order.id) }}
+                {{ latexOrdersStore.getOrderLetter(order.id) }}
               </span>
 
               <!-- Arrival Info -->
@@ -154,7 +154,7 @@ const exportOrderTSV = (order) => {
               Export
             </button>
             <button
-              @click="sriLankaUIStore.openOrderPanel(order.id)"
+              @click="latexUIStore.openOrderPanel(order.id)"
               class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
             >
               Edit

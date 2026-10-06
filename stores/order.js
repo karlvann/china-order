@@ -4,6 +4,7 @@ import {
   optimizeComponentOrder
 } from '~/lib/algorithms/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
+import { SPRING_INVENTORY_SKU_MAP, createEmptySpringInventory } from '~/lib/utils/inventory.js'
 
 /**
  * Convert database orders to algorithm format
@@ -19,42 +20,15 @@ function convertOrdersForAlgorithm(dbOrders) {
     const arrivalWeekIndex = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
 
     // Sum springs by firmness AND size from the order's SKUs
-    const springsByFirmness = {
-      veryfirm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      firm: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      medium: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      soft: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 }
-    }
+    const springsByFirmness = createEmptySpringInventory()
 
     if (order.skus) {
       for (const item of order.skus) {
         const sku = item.skus_id?.sku || ''
         const qty = item.quantity || 0
 
-        // Parse spring SKUs: springs{firmness}{size}
-        if (sku.startsWith('springs')) {
-          // Extract firmness (check 'veryfirm' before 'firm' - it contains 'firm')
-          let firmness = null
-          if (sku.includes('veryfirm')) firmness = 'veryfirm'
-          else if (sku.includes('firm')) firmness = 'firm'
-          else if (sku.includes('medium')) firmness = 'medium'
-          else if (sku.includes('soft')) firmness = 'soft'
-
-          if (!firmness) continue
-
-          // Extract size from SKU
-          if (sku.includes('king') && !sku.includes('kingsingle')) {
-            springsByFirmness[firmness].King += qty
-          } else if (sku.includes('queen')) {
-            springsByFirmness[firmness].Queen += qty
-          } else if (sku.includes('double')) {
-            springsByFirmness[firmness].Double += qty
-          } else if (sku.includes('kingsingle')) {
-            springsByFirmness[firmness]['King Single'] += qty
-          } else if (sku.includes('single')) {
-            springsByFirmness[firmness].Single += qty
-          }
-        }
+        const spring = SPRING_INVENTORY_SKU_MAP[sku]
+        if (spring) springsByFirmness[spring.firmness][spring.size] += qty
       }
     }
 

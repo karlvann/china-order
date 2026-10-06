@@ -3,15 +3,15 @@ import { calculateLatexOrder, convertOrdersForLatexAlgorithm } from '~/lib/algor
 import { LATEX_FIRMNESSES, LATEX_SIZES, PILLOW_LATEX_TYPES, DEFAULT_LATEX_CAPACITY, LATEX_CAPACITY_STEP, MIN_LATEX_CAPACITY, LATEX_LEAD_TIME_WEEKS } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
-const sriLankaUIStore = useSriLankaUIStore()
-const sriLankaOrdersStore = useSriLankaOrdersStore()
+const latexUIStore = useLatexUIStore()
+const latexOrdersStore = useLatexOrdersStore()
 const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
-const sriLankaSettingsStore = useSriLankaSettingsStore()
-const sriLankaInventoryStore = useSriLankaInventoryStore()
+const latexSettingsStore = useLatexSettingsStore()
+const latexInventoryStore = useLatexInventoryStore()
 const latexSkuLookup = useLatexSkuLookup()
 
 // Usage rates from settings store
-const usageRates = computed(() => sriLankaSettingsStore.planningLatexSalesRates)
+const usageRates = computed(() => latexSettingsStore.planningLatexSalesRates)
 
 // Local order settings (independent of global settings)
 const localCapacity = ref(DEFAULT_LATEX_CAPACITY)
@@ -29,9 +29,9 @@ const error = ref(null)
 const isInitializing = ref(false)
 
 // Is editing existing order
-const isEditing = computed(() => !!sriLankaUIStore.editingOrderId)
-const savedOrder = computed(() => sriLankaOrdersStore.getOrderById(sriLankaUIStore.editingOrderId))
-const isApplying = computed(() => inventoryOrderReceivingStore.isApplyingOrder(sriLankaUIStore.editingOrderId))
+const isEditing = computed(() => !!latexUIStore.editingOrderId)
+const savedOrder = computed(() => latexOrdersStore.getOrderById(latexUIStore.editingOrderId))
+const isApplying = computed(() => inventoryOrderReceivingStore.isApplyingOrder(latexUIStore.editingOrderId))
 
 // Order capacity
 const containerCapacity = computed(() => localCapacity.value)
@@ -135,9 +135,9 @@ const getDeliveryWeeksBetweenDates = (orderDateStr, expectedArrivalStr) => {
 
 // Convert pending orders to algorithm format (exclude the one we're editing)
 const convertPendingOrdersForAlgorithm = () => {
-  const orders = sriLankaOrdersStore.pendingOrders || []
-  const filteredOrders = sriLankaUIStore.editingOrderId
-    ? orders.filter(o => o.id !== sriLankaUIStore.editingOrderId)
+  const orders = latexOrdersStore.pendingOrders || []
+  const filteredOrders = latexUIStore.editingOrderId
+    ? orders.filter(o => o.id !== latexUIStore.editingOrderId)
     : orders
 
   return convertOrdersForLatexAlgorithm(filteredOrders)
@@ -238,7 +238,7 @@ const computeOrderFromSettings = () => {
 
   return calculateLatexOrder(
     containerCapacity.value,
-    sriLankaInventoryStore.inventory,
+    latexInventoryStore.inventory,
     usageRates.value,
     pendingOrders,
     localOrderWeekOffset.value,
@@ -259,7 +259,7 @@ const updateFromAlgorithm = async () => {
   skuQuantities.value = convertLatexOrderToSkuQuantities(latexOrder)
 
   // Update draft order for forecast preview
-  sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
+  latexUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
 }
 
 // Watch local settings and update draft orders
@@ -268,7 +268,7 @@ watch(localCapacity, () => {
 })
 
 watch(usageRates, () => {
-  if (!sriLankaUIStore.orderPanelOpen || isInitializing.value || isEditing.value) return
+  if (!latexUIStore.orderPanelOpen || isInitializing.value || isEditing.value) return
   updateFromAlgorithm()
 }, { deep: true })
 
@@ -289,10 +289,10 @@ watch(localDeliveryWeeks, (weeks) => {
 
 // Update draft orders in store whenever SKU quantities change (manual edits)
 watch(skuQuantities, () => {
-  if (!sriLankaUIStore.orderPanelOpen || isInitializing.value) return
+  if (!latexUIStore.orderPanelOpen || isInitializing.value) return
 
   const latexOrder = convertSkuQuantitiesToLatexOrder()
-  sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
+  latexUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
 }, { deep: true })
 
 // Initialize with algorithm when creating new order
@@ -303,16 +303,16 @@ const initializeNewOrder = async () => {
   if (!latexOrder) return
 
   skuQuantities.value = convertLatexOrderToSkuQuantities(latexOrder)
-  sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
+  latexUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
 }
 
 // Initialize form with order data or defaults
 const initForm = () => {
   isInitializing.value = true
 
-  if (sriLankaUIStore.editingOrderId) {
+  if (latexUIStore.editingOrderId) {
     // Editing existing order
-    const order = sriLankaOrdersStore.getOrderById(sriLankaUIStore.editingOrderId)
+    const order = latexOrdersStore.getOrderById(latexUIStore.editingOrderId)
     if (order) {
       orderDate.value = order.order_date
       expectedArrival.value = order.expected_arrival
@@ -344,7 +344,7 @@ const initForm = () => {
       // Set draft order for real-time preview
       latexSkuLookup.fetchSkus().then(() => {
         const latexOrder = convertSkuQuantitiesToLatexOrder()
-        sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeek)
+        latexUIStore.setDraftOrder(latexOrder, arrivalWeek)
       })
 
       nextTick(() => {
@@ -380,9 +380,9 @@ watch(orderDate, (newDate) => {
 
 // Watch for expected arrival changes to update draft order (when user edits date directly)
 watch(expectedArrival, () => {
-  if (isInitializing.value || !sriLankaUIStore.orderPanelOpen) return
+  if (isInitializing.value || !latexUIStore.orderPanelOpen) return
   const latexOrder = convertSkuQuantitiesToLatexOrder()
-  sriLankaUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
+  latexUIStore.setDraftOrder(latexOrder, arrivalWeekIndex.value)
 })
 
 // Total items count
@@ -423,15 +423,15 @@ const handleSave = async () => {
 
     let result
     if (isEditing.value) {
-      result = await sriLankaOrdersStore.updateOrder(sriLankaUIStore.editingOrderId, orderData, skuItems)
+      result = await latexOrdersStore.updateOrder(latexUIStore.editingOrderId, orderData, skuItems)
     } else {
-      result = await sriLankaOrdersStore.createOrder(orderData, skuItems)
+      result = await latexOrdersStore.createOrder(orderData, skuItems)
     }
 
     if (result) {
-      sriLankaUIStore.closeOrderPanel()
+      latexUIStore.closeOrderPanel()
     } else {
-      error.value = sriLankaOrdersStore.error || 'Failed to save order'
+      error.value = latexOrdersStore.error || 'Failed to save order'
     }
   } catch (e) {
     error.value = e.message || 'Failed to save order'
@@ -442,11 +442,11 @@ const handleSave = async () => {
 
 // Close panel
 const handleClose = () => {
-  sriLankaUIStore.closeOrderPanel()
+  latexUIStore.closeOrderPanel()
 }
 
 const handlePanelKeydown = (event) => {
-  if (event.key !== 'Escape' || !sriLankaUIStore.orderPanelOpen || isApplying.value) return
+  if (event.key !== 'Escape' || !latexUIStore.orderPanelOpen || isApplying.value) return
   handleClose()
 }
 
@@ -461,32 +461,32 @@ onUnmounted(() => {
 })
 
 // Re-initialize when panel opens or editingOrderId changes
-watch(() => sriLankaUIStore.orderPanelOpen, (isOpen) => {
+watch(() => latexUIStore.orderPanelOpen, (isOpen) => {
   if (isOpen) {
     initForm()
   }
 })
 
-watch(() => sriLankaUIStore.editingOrderId, () => {
-  if (sriLankaUIStore.orderPanelOpen) {
+watch(() => latexUIStore.editingOrderId, () => {
+  if (latexUIStore.orderPanelOpen) {
     initForm()
   }
 })
 
 // Get SKU ID map from latex SKU lookup
 const skuIdMap = computed(() => latexSkuLookup.getSkuIdMap())
-const currentInventory = computed(() => sriLankaInventoryStore.inventory)
+const currentInventory = computed(() => latexInventoryStore.inventory)
 </script>
 
 <template>
   <Transition name="slide">
     <aside
-      v-if="sriLankaUIStore.orderPanelOpen"
+      v-if="latexUIStore.orderPanelOpen"
       class="fixed right-0 top-0 h-screen w-[30rem] bg-modal-surface border-l border-border shadow-panel z-40 flex flex-col"
     >
       <!-- Header -->
       <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-modal-header/50 shrink-0">
-        <h2 class="text-lg font-semibold text-accent-sri-lanka-light">
+        <h2 class="text-lg font-semibold text-accent-latex-light">
           {{ isEditing ? 'Edit latex order' : 'New latex order' }}
         </h2>
         <button
@@ -603,7 +603,7 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
               <input
                 v-model="ordered"
                 type="checkbox"
-                class="w-4 h-4 rounded border-border bg-input-surface text-accent-sri-lanka focus:ring-accent-sri-lanka focus:ring-offset-0"
+                class="w-4 h-4 rounded border-border bg-input-surface text-accent-latex focus:ring-accent-latex focus:ring-offset-0"
               />
               <span class="text-sm text-muted">Order placed with supplier</span>
             </label>
@@ -613,7 +613,7 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
         <!-- SKU Picker -->
         <div class="border-t border-border pt-4">
           <h3 class="text-sm font-medium text-muted mb-4">Latex items</h3>
-          <SrilankaLatexSkuPicker
+          <LatexSkuPicker
             v-model="skuQuantities"
             :sku-id-map="skuIdMap"
             :current-inventory="currentInventory"
@@ -629,14 +629,14 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
             isOverCapacity ? 'text-warning' : 'text-muted'
           ]"
         >
-          Total: <span class="font-medium text-accent-sri-lanka-light">{{ totalItems }}</span> / {{ containerCapacity }} items
+          Total: <span class="font-medium text-accent-latex-light">{{ totalItems }}</span> / {{ containerCapacity }} items
         </div>
         <div class="flex gap-3">
           <OrdersApplyInventoryOrderButton
             v-if="isEditing && savedOrder"
             :order-id="savedOrder.id"
             :ordered="savedOrder.ordered === true"
-            panel-context="sri_lanka"
+            panel-context="latex"
           />
           <button
             v-if="!isEditing"
@@ -652,7 +652,7 @@ const currentInventory = computed(() => sriLankaInventoryStore.inventory)
               'px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors',
               saving || isApplying || totalItems === 0
                 ? 'bg-control-surface text-subtle cursor-not-allowed'
-                : 'bg-accent-sri-lanka hover:bg-accent-sri-lanka-hover text-inverse'
+                : 'bg-accent-latex hover:bg-accent-latex-hover text-inverse'
             ]"
           >
             {{ saving ? 'Saving...' : (isEditing ? 'Update' : 'Create') }}

@@ -1,6 +1,6 @@
 {
-  "name": "china-order",
-  "description": "China Order System - Spring and Component Inventory Management (Nuxt 4)",
+  "name": "ausbeds-order",
+  "description": "Ausbeds springs and latex inventory ordering system (Nuxt 4)",
   "version": "2.0.0",
   "type": "module",
   "private": true,

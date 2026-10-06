@@ -18,7 +18,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 1. **Container capacity**: 1-12 pallets (user chooses within range)
 2. **Pallet size**: EXACTLY 30 springs per pallet (supplier fixed)
-3. **Lead time**: Variable by order/season; 10 weeks is the default China planning assumption
+3. **Lead time**: Variable by order/season; 10 weeks is the default spring-planning assumption
 4. **Pallet allocation**: Whole pallets by size, allocated by demand/coverage urgency
 5. **Component lot sizes**: Fixed by supplier (20 or 10 units)
 6. **No size mixing**: Each spring pallet must be a single mattress size; firmness can be mixed within that size
@@ -61,7 +61,9 @@ Components and springs MUST ship together. The component algorithm ensures balan
 **See `docs/ALGORITHMS.md` for detailed algorithm documentation.**
 
 Each mattress requires **1 spring + multiple components**:
-- 1 spring (firm/medium/soft)
+
+Spring recipe tokens are semantic: the first letter is tension (`v` very soft, `s` soft, `m` medium, `f` firm), the middle `s` means spring, and the final letter is the side facing up (`s` soft, `f` firm).
+- 1 spring (very soft/soft/medium/firm)
 - 1 top panel, 1 bottom panel, 1 side panel (1:1 with springs)
 - Felt top-up: order approximately 1 felt per 3 springs; springs arrive packaged in usable felt, so felt runout rules do not apply
 - Micro coils & thin latex (King/Queen only):
@@ -73,7 +75,7 @@ Each mattress requires **1 spring + multiple components**:
 
 ## Project Overview
 
-**Mattress Order System** - Nuxt 4 inventory management and order planning for mattress manufacturing. Plans container orders for springs and components (China) and latex comfort layers (Sri Lanka) using sales data and demand forecasting.
+**Mattress Order System** - Nuxt 4 inventory management and order planning for mattress manufacturing. Plans container orders for springs, components and latex comfort layers using sales data and demand forecasting.
 
 ## Tech Stack
 
@@ -104,7 +106,7 @@ Set in `.env` for local development:
 
 1. **Vue Composition API** - `ref`, `computed`, `watch`, `onMounted`, `readonly`, etc.
 2. **Pinia** - `defineStore` (in stores)
-3. **Store composables** - `useInventoryStore()`, `useOrderStore()`, `useSettingsStore()`, `useUIStore()`, `useInventoryOrdersStore()`, `useSriLankaOrdersStore()`, `useSriLankaSettingsStore()`, `useSriLankaUIStore()`
+3. **Store composables** - `useInventoryStore()`, `useOrderStore()`, `useSettingsStore()`, `useUIStore()`, `useInventoryOrdersStore()`, `useLatexOrdersStore()`, `useLatexSettingsStore()`, `useLatexUIStore()`
 4. **Custom composables** - All functions from `composables/` folder
 5. **Directus composables** - `useDirectusItems()`, etc.
 
@@ -164,27 +166,27 @@ lib/                         # Business logic (MUST manually import)
 │   ├── demandBasedOrder.js   # Spring ordering (coverage-priority allocation)
 │   ├── componentCalc.js     # Component ordering (balanced coverage)
 │   ├── exportOptimization.js # Round to supplier lot sizes
-│   ├── latexOrder.js        # Sri Lanka latex order allocation
+│   ├── latexOrder.js        # Latex order allocation
 │   └── index.js             # Central exports
 ├── constants/               # Business constants
 │   ├── business.js          # Lead time, pallet size, thresholds
 │   ├── sales.js             # Mattress sizes and historical demand ratios
-│   ├── firmness.js          # Firm/Medium/Soft distribution
+│   ├── firmness.js          # Very-soft/soft/medium/firm spring distribution
 │   ├── seasonality.js       # Busy/slow season multipliers
 │   ├── components.js        # Component types, lot sizes
-│   └── latex.js             # Sri Lanka latex SKUs, container sizes, lead time
+│   └── latex.js             # Latex SKUs, container sizes, lead time
 └── utils/
     ├── inventory.js         # Empty inventory structure builders
     └── dates.js             # Date utilities (getCurrentMonday)
 
 stores/                      # Pinia stores (auto-imported)
-├── inventory.js             # Springs (Directus) + Components (localStorage)
-├── inventoryOrders.js       # China orders from Directus
+├── inventory.js             # Spring inventory (Directus) + components (localStorage)
+├── inventoryOrders.js       # Spring orders from Directus
 ├── order.js                 # Computed order data (getters only)
 ├── settings.js              # App settings (palletCount, startingMonth, etc.)
-├── sriLankaOrders.js        # Sri Lanka latex orders
-├── sriLankaSettings.js      # Sri Lanka ordering settings
-├── sriLankaUI.js            # Sri Lanka UI state
+├── latexOrders.js           # Latex orders
+├── latexSettings.js         # Latex ordering settings
+├── latexUI.js            # Latex UI state
 └── ui.js                    # UI state (accordion, modals)
 
 pages/                       # Nuxt pages (file-based routing)
@@ -205,9 +207,9 @@ composables/                 # Auto-imported composables
 
 components/
 ├── app/                     # App-level (AppHeader)
-├── orders/                  # China order management (OrderList, OrderPanel, OrderSkuPicker)
+├── orders/                  # Springs order management (OrderList, OrderPanel, OrderSkuPicker)
 ├── forecast/                # Forecast views (SpringTimelineDetailed, ComponentTimelineDetailed, MonthSelector)
-├── srilanka/                # Sri Lanka latex ordering (LatexSkuPicker, LatexTimeline, SriLankaOrderList, SriLankaOrderPanel)
+├── latex/                   # Latex ordering (LatexSkuPicker, LatexTimeline, LatexOrderList, LatexOrderPanel)
 ├── views/                   # Main views (OrderBuilderView, ForecastView)
 └── ui/                      # Reusable UI (AccordionSection)
 ```
@@ -224,13 +226,13 @@ components/
 
 ### State Management (8 Pinia Stores)
 
-**China ordering:**
+**Springs ordering:**
 
 **`useInventoryStore()`** - Inventory data
 - `springs`: From Directus (read-only)
 - `components`: From localStorage (editable)
 
-**`useInventoryOrdersStore()`** - China orders from Directus
+**`useInventoryOrdersStore()`** - Springs orders from Directus
 
 **`useOrderStore()`** - Computed order data (getters only)
 - `springOrder`, `componentOrder`, `coverageData`, `validation`, `tsvContent`
@@ -241,13 +243,13 @@ components/
 **`useUIStore()`** - UI state
 - `openSection`, `showSaveModal`, `copyFeedback`
 
-**Sri Lanka ordering:**
+**Latex ordering:**
 
-**`useSriLankaOrdersStore()`** - Sri Lanka latex orders
+**`useLatexOrdersStore()`** - Latex orders
 
-**`useSriLankaSettingsStore()`** - Sri Lanka ordering settings
+**`useLatexSettingsStore()`** - Latex ordering settings
 
-**`useSriLankaUIStore()`** - Sri Lanka UI state
+**`useLatexUIStore()`** - Latex UI state
 
 ---
 
@@ -255,13 +257,13 @@ components/
 
 The app manages two independent supply chains:
 
-### China (Springs + Components)
+### Springs and components
 - Pallet-based ordering (30 springs per pallet, 1-12 pallets per container)
-- 5 mattress sizes × 3 firmness levels
+- 5 mattress sizes × 4 spring tensions
 - Components must match springs while maintaining balanced coverage
 - Constants in `lib/constants/business.js`, `sales.js`, `firmness.js`, `components.js`
 
-### Sri Lanka (Latex Comfort Layers)
+### Latex comfort layers
 - Unit-based ordering with editable item capacity (default: 410 units, adjusted in steps of 5)
 - Mattress latex: King and Queen sheets only (smaller sizes cut from these)
 - Pillow latex: thin and thick pillow latex SKUs tracked alongside mattress latex
@@ -275,10 +277,10 @@ The app manages two independent supply chains:
 
 ## Business Rules
 
-### Firmness Distribution
-- King/Queen: ~83% Medium, ~13% Firm, ~3% Soft
-- Smaller sizes: More balanced distribution
-- Low-selling spring SKUs use a demand floor: if normal SKU demand (`size weekly rate × firmness ratio`) is below 1.75/wk, use the higher of normal demand and the raw 12-week SKU average
+### Spring tension distribution
+- Live tension ratios are calculated from the full 12-week paid-sales sample.
+- Store split demand uses fixed physical splits: King/King Single 0% very soft, 4% soft, 38% medium and 58% firm; other sizes 0%, 6%, 40% and 54% respectively.
+- Low-selling spring SKUs use a demand floor: if normal SKU demand (`size weekly rate × tension ratio`) is below 1.75/wk, use the higher of normal demand and the raw 12-week SKU average.
 
 ### Component Consolidation
 - Micro Coils & Thin Latex: King/Queen only

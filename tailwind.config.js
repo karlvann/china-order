@@ -49,10 +49,10 @@ export default {
           light: withOpacity('--color-brand-light'),
           dark: withOpacity('--color-brand-dark')
         },
-        'accent-sri-lanka': {
-          DEFAULT: withOpacity('--color-accent-sri-lanka'),
-          hover: withOpacity('--color-accent-sri-lanka-hover'),
-          light: withOpacity('--color-accent-sri-lanka-light')
+        'accent-latex': {
+          DEFAULT: withOpacity('--color-accent-latex'),
+          hover: withOpacity('--color-accent-latex-hover'),
+          light: withOpacity('--color-accent-latex-light')
         },
         success: withOpacity('--color-success'),
         warning: withOpacity('--color-warning'),

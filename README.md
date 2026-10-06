@@ -16,9 +16,9 @@ Set `DIRECTUS_URL` in `.env` for local development.
 
 Plans container orders across two supply chains:
 
-**China (springs + components)** - Allocates 1-12 pallets (30 springs each) using demand-based coverage priority. Calculates matching component orders with balanced coverage.
+**Springs** - Allocates 1-12 pallets (30 springs each) using demand-based coverage priority. Calculates matching component orders with balanced coverage.
 
-**Sri Lanka (latex comfort layers)** - Allocates latex units across King/Queen mattress sheets and pillow latex thin/thick using an editable item capacity.
+**Latex** - Allocates latex units across King/Queen mattress sheets and pillow latex thin/thick using an editable item capacity.
 
 Both systems pull live sales data from Directus to calculate weekly demand rates.
 

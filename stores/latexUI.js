@@ -1,10 +1,10 @@
 /**
- * Pinia store for Sri Lanka UI state
+ * Pinia store for Latex UI state
  * Manages order panel state and draft orders
- * Completely separate from China UI state
+ * Completely separate from Spring UI state
  */
 
-export const useSriLankaUIStore = defineStore('sriLankaUI', () => {
+export const useLatexUIStore = defineStore('latexUI', () => {
 
   // Order panel state
   const orderPanelOpen = ref(false)

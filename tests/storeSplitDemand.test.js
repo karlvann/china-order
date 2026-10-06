@@ -50,18 +50,18 @@ test('uses recent size volume and store recipe mix, then consolidates component 
   assert.deepEqual(rates.MICRO_COIL_WEEKLY_DEMAND, { King: 34, Queen: 22.4 })
   assert.deepEqual(rates.THIN_LATEX_WEEKLY_DEMAND, { King: 34, Queen: 22.4 })
   assert.equal(rates.WEEKLY_SALES_RATE.King, 20)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 0.8)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 7.6)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.veryfirm, 11.6)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0.8)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 7.6)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 11.6)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.verysoft, 0)
 })
 
 test('does not confuse spring firmness with model-layer mix or use the observed component spike', () => {
   const input = structuredClone(baseRates)
-  input.STORE_SKU_SPLIT.King = { soft: 100 }
+  input.STORE_SKU_SPLIT.King = { verysoft: 100 }
   const rates = withSpringStoreSplitDemand(input)
 
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.verysoft, 0)
   assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 34)
   assert.equal(rates.MICRO_COIL_WEEKLY_SPIKE.King, 40)
 })
@@ -161,8 +161,8 @@ test('leaves raw rates, spikes and input layer totals unchanged', () => {
 
 test('shares the specified percentages between planning and the timeline display', () => {
   assert.deepEqual(SPRING_PLANNING_SPLITS, {
-    kingAndKingSingle: { soft: 0, medium: 4, firm: 38, veryfirm: 58 },
-    otherSizes: { soft: 0, medium: 6, firm: 40, veryfirm: 54 }
+    kingAndKingSingle: { verysoft: 0, soft: 4, medium: 38, firm: 58 },
+    otherSizes: { verysoft: 0, soft: 6, medium: 40, firm: 54 }
   })
   for (const split of Object.values(SPRING_PLANNING_SPLITS)) {
     assert.equal(Object.values(split).reduce((sum, value) => sum + value, 0), 100)
@@ -178,8 +178,8 @@ test('applies fixed spring splits to every size without requiring observed store
 
   for (const { id: size } of MATTRESS_SIZES) {
     const expected = size === 'King' || size === 'King Single'
-      ? { soft: 0, medium: 4, firm: 38, veryfirm: 58 }
-      : { soft: 0, medium: 6, firm: 40, veryfirm: 54 }
+      ? { verysoft: 0, soft: 4, medium: 38, firm: 58 }
+      : { verysoft: 0, soft: 6, medium: 40, firm: 54 }
 
     assert.equal(rates.WEEKLY_SALES_RATE[size], 100)
     assert.deepEqual(rates.RAW_SKU_WEEKLY_DEMAND[size], expected)
@@ -191,11 +191,27 @@ test('applies fixed spring splits to every size without requiring observed store
   assert.deepEqual(rates.WEEKLY_SALES_SPIKE, input.WEEKLY_SALES_SPIKE)
 })
 
-test('historical SKU floors cannot revive soft demand or override the fixed percentages', () => {
+test('rejects missing or incomplete spring tension distributions instead of inventing demand', () => {
+  const missingSize = withSpringStoreSplitDemand(baseRates)
+  delete missingSize.FIRMNESS_DISTRIBUTION.Queen
+  assert.throws(
+    () => calculateSkuMetrics({ springs: createEmptySpringInventory() }, missingSize, []),
+    /Missing spring tension distribution for Queen/
+  )
+
+  const missingTension = withSpringStoreSplitDemand(baseRates)
+  delete missingTension.FIRMNESS_DISTRIBUTION.King.firm
+  assert.throws(
+    () => calculateSkuMetrics({ springs: createEmptySpringInventory() }, missingTension, []),
+    /Missing or invalid firm spring tension distribution for King/
+  )
+})
+
+test('historical SKU floors cannot revive very-soft demand or override the fixed percentages', () => {
   const input = structuredClone(baseRates)
   for (const { id: size } of MATTRESS_SIZES) {
-    input.RAW_SKU_WEEKLY_DEMAND[size] = { soft: 50, medium: 50, firm: 50, veryfirm: 50 }
-    input.FIRMNESS_DISTRIBUTION[size] = { soft: 1, medium: 0, firm: 0, veryfirm: 0 }
+    input.RAW_SKU_WEEKLY_DEMAND[size] = { verysoft: 50, soft: 50, medium: 50, firm: 50 }
+    input.FIRMNESS_DISTRIBUTION[size] = { verysoft: 1, soft: 0, medium: 0, firm: 0 }
   }
   const rates = withSpringStoreSplitDemand(input)
   const metrics = calculateSkuMetrics({ springs: createEmptySpringInventory() }, rates, [])
@@ -203,11 +219,11 @@ test('historical SKU floors cannot revive soft demand or override the fixed perc
   for (const sku of metrics) {
     const expected = getSpringStoreSplitDemandRate(input, sku.size, sku.firmness)
     assert.ok(Math.abs(sku.weeklyDemand - expected) < 0.000001)
-    if (sku.firmness === 'soft') assert.equal(sku.weeklyDemand, 0)
+    if (sku.firmness === 'verysoft') assert.equal(sku.weeklyDemand, 0)
   }
 })
 
-test('allocates valid whole pallets with no soft springs under the fixed demand assumptions', (t) => {
+test('allocates valid whole pallets with no very-soft springs under the fixed demand assumptions', (t) => {
   t.mock.method(console, 'log', () => {})
   const rates = withSpringStoreSplitDemand(baseRates)
   const order = calculateDemandBasedOrder(12, { springs: createEmptySpringInventory() }, rates, [])
@@ -218,7 +234,7 @@ test('allocates valid whole pallets with no soft springs under the fixed demand 
     assert.equal(pallet.total, 30)
     assert.ok(MATTRESS_SIZES.some(size => size.id === pallet.size))
     assert.equal(Object.values(pallet.firmness_breakdown).reduce((sum, quantity) => sum + quantity, 0), 30)
-    assert.equal(pallet.firmness_breakdown.soft || 0, 0)
+    assert.equal(pallet.firmness_breakdown.verysoft || 0, 0)
   }
 })
 
