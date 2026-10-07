@@ -20,6 +20,13 @@ export default defineNuxtConfig({
     configPath: 'tailwind.config.js'
   },
 
+  postcss: {
+    plugins: {
+      'tailwindcss/nesting': false,
+      'postcss-nesting': {}
+    }
+  },
+
   // App configuration
   app: {
     head: {

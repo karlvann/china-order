@@ -4,7 +4,7 @@ import test, { after } from 'node:test'
 import { computed, readonly, ref } from 'vue'
 import { createPinia, defineStore, setActivePinia } from 'pinia'
 import { calculateComponentOrder } from '../lib/algorithms/componentCalc.js'
-import { optimizeComponentOrder } from '../lib/algorithms/exportOptimization.js'
+import { optimizeComponentOrder } from '../lib/algorithms/componentOrderOptimization.js'
 import { createEmptyComponentInventory, createEmptySpringInventory, createEmptyLatexInventory } from '../lib/utils/inventory.js'
 import { getCurrentMonday } from '../lib/utils/dates.js'
 
@@ -21,7 +21,7 @@ const autoImports = {
     handleDirectusAuthError: async () => false,
     getDirectusErrorMessage: error => error.message
   }),
-  useSettingsStore: undefined
+  useSpringSettingsStore: undefined
 }
 const originalGlobals = Object.fromEntries(Object.keys(autoImports).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
 Object.assign(globalThis, autoImports)
@@ -33,11 +33,11 @@ const hooks = registerHooks({
     context
   )
 })
-const { useSettingsStore } = await import('../stores/settings.js')
-const { useWeeklySales } = await import('../composables/useWeeklySales.js')
+const { useSpringSettingsStore } = await import('../stores/springSettings.js')
+const { useSpringSales } = await import('../composables/useSpringSales.js')
 const { useLatexSettingsStore } = await import('../stores/latexSettings.js')
 const { calculateLatexOrder } = await import('../lib/algorithms/latexOrder.js')
-globalThis.useSettingsStore = useSettingsStore
+globalThis.useSpringSettingsStore = useSpringSettingsStore
 
 after(() => {
   hooks.deregister()
@@ -49,7 +49,7 @@ after(() => {
 
 test('Spring sales state starts empty and a refresh cannot retain stale firmness percentages', () => {
   setActivePinia(createPinia())
-  const settings = useSettingsStore()
+  const settings = useSpringSettingsStore()
   const emptyDistribution = {
     firm: 0,
     medium: 0,
@@ -137,14 +137,14 @@ test('recipe collection, store toggle and component ordering work together and r
     }
   }))
 
-  const sales = useWeeklySales()
+  const sales = useSpringSales()
   await sales.refresh()
   assert.equal(sales.error.value, null)
   assert.equal(requests.length, 2)
   assert.deepEqual(requests[0].params.filter.payment_status, { _eq: 'paid' })
   assert.equal(requests[1].params.filter.payment_status, undefined)
 
-  const settings = useSettingsStore()
+  const settings = useSpringSettingsStore()
   assert.equal(settings.liveSalesLoaded, true)
   assert.deepEqual(settings.liveSalesRates.STORE_MODEL_LAYER_TOTALS.King, {
     mattresses: 10, microLayers: 14, thinLatexLayers: 14

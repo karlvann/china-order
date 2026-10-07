@@ -106,14 +106,14 @@ Set in `.env` for local development:
 
 1. **Vue Composition API** - `ref`, `computed`, `watch`, `onMounted`, `readonly`, etc.
 2. **Pinia** - `defineStore` (in stores)
-3. **Store composables** - `useInventoryStore()`, `useOrderStore()`, `useSettingsStore()`, `useUIStore()`, `useInventoryOrdersStore()`, `useLatexOrdersStore()`, `useLatexSettingsStore()`, `useLatexUIStore()`
+3. **Store composables** - `useAppStore()`, `useSpringInventoryStore()`, `useSpringOrdersStore()`, `useSpringSettingsStore()`, `useSpringUIStore()`, `useLatexInventoryStore()`, `useLatexOrdersStore()`, `useLatexSettingsStore()`, `useLatexUIStore()`, `useInventoryOrderReceivingStore()`
 4. **Custom composables** - All functions from `composables/` folder
 5. **Directus composables** - `useDirectusItems()`, etc.
 
 **MUST manually import** (from `lib/`):
 ```javascript
 import { MATTRESS_SIZES, FIRMNESS_TYPES } from '~/lib/constants/index.js'
-import { calculateDemandBasedOrder, calculateComponentOrder } from '~/lib/algorithms/index.js'
+import { calculateSpringOrder, calculateComponentOrder } from '~/lib/algorithms/index.js'
 import { createEmptySpringInventory } from '~/lib/utils/index.js'
 ```
 
@@ -163,55 +163,54 @@ docs/                        # Documentation
 
 lib/                         # Business logic (MUST manually import)
 ├── algorithms/              # Core ordering algorithms
-│   ├── demandBasedOrder.js   # Spring ordering (coverage-priority allocation)
+│   ├── springOrder.js       # Spring ordering (coverage-priority allocation)
 │   ├── componentCalc.js     # Component ordering (balanced coverage)
-│   ├── exportOptimization.js # Round to supplier lot sizes
+│   ├── componentOrderOptimization.js # Round to supplier lot sizes
 │   ├── latexOrder.js        # Latex order allocation
 │   └── index.js             # Central exports
 ├── constants/               # Business constants
-│   ├── business.js          # Lead time, pallet size, thresholds
-│   ├── sales.js             # Mattress sizes and historical demand ratios
-│   ├── firmness.js          # Very-soft/soft/medium/firm spring distribution
-│   ├── seasonality.js       # Busy/slow season multipliers
-│   ├── components.js        # Component types, lot sizes
-│   └── latex.js             # Latex SKUs, container sizes, lead time
+│   ├── auth.js              # Authentication and access constants
+│   ├── springs.js           # Spring, component and pallet planning constants
+│   ├── latex.js             # Latex SKUs, container sizes and lead time
+│   ├── shared.js            # Seasonality and month constants
+│   └── index.js             # Central exports
 └── utils/
     ├── inventory.js         # Empty inventory structure builders
     └── dates.js             # Date utilities (getCurrentMonday)
 
 stores/                      # Pinia stores (auto-imported)
-├── inventory.js             # Spring inventory (Directus) + components (localStorage)
-├── inventoryOrders.js       # Spring orders from Directus
-├── order.js                 # Computed order data (getters only)
-├── settings.js              # App settings (palletCount, startingMonth, etc.)
-├── latexOrders.js           # Latex orders
-├── latexSettings.js         # Latex ordering settings
-├── latexUI.js            # Latex UI state
-└── ui.js                    # UI state (accordion, modals)
+├── app.js                   # Shared springs/latex navigation state
+├── springInventory.js       # Spring and component inventory
+├── springOrders.js          # Spring/component orders from Directus
+├── springSettings.js        # Spring planning settings
+├── springUI.js              # Spring order UI state
+├── latexInventory.js        # Latex inventory
+├── latexOrders.js           # Latex orders from Directus
+├── latexSettings.js         # Latex planning settings
+├── latexUI.js               # Latex order UI state
+└── inventoryOrderReceiving.js # Shared order receiving
 
 pages/                       # Nuxt pages (file-based routing)
 ├── index.vue                # Home/login page
 └── dashboard.vue            # Main dashboard
 
 composables/                 # Auto-imported composables
-├── useComponentInventory.js # Fetch component data from Directus
-├── useComponentStorage.js   # localStorage for components
-├── useErrorHandler.js       # Error handling
-├── useInventoryOrders.js    # Fetch/manage inventory orders from Directus
+├── useComponentInventory.js # Fetch component inventory from Directus
 ├── useLatexInventory.js     # Fetch latex inventory from Directus
 ├── useLatexSales.js         # Fetch latex sales data from Directus
-├── useMonthNames.js         # Month name generation utility
-├── useSkuLookup.js          # SKU lookup functionality
-├── useSpringInventory.js    # Fetch springs from Directus
-└── useWeeklySales.js        # Fetch sales data from Directus
+├── useLatexSkuLookup.js     # Resolve latex SKU IDs
+├── useMonthNames.js         # Month name utilities
+├── useSpringInventory.js    # Fetch spring inventory from Directus
+├── useSpringSales.js        # Fetch spring/component sales data
+└── useSpringSkuLookup.js    # Resolve spring/component SKU IDs
 
 components/
-├── app/                     # App-level (AppHeader)
-├── orders/                  # Springs order management (OrderList, OrderPanel, OrderSkuPicker)
-├── forecast/                # Forecast views (SpringTimelineDetailed, ComponentTimelineDetailed, MonthSelector)
-├── latex/                   # Latex ordering (LatexSkuPicker, LatexTimeline, LatexOrderList, LatexOrderPanel)
-├── views/                   # Main views (OrderBuilderView, ForecastView)
-└── ui/                      # Reusable UI (AccordionSection)
+├── app/                     # App-level components
+├── spring/                  # Spring order management
+├── latex/                   # Latex order management
+├── forecast/                # Spring, component and latex timelines
+├── shared/                  # Components shared by both order types
+└── views/                   # SpringView and LatexView
 ```
 
 ### Data Flow
@@ -224,32 +223,26 @@ components/
 6. Export optimization rounds to supplier lot sizes
 7. TSV generated for supplier
 
-### State Management (8 Pinia Stores)
+### State management
 
-**Springs ordering:**
+**Shared:**
 
-**`useInventoryStore()`** - Inventory data
-- `springs`: From Directus (read-only)
-- `components`: From localStorage (editable)
+- `useAppStore()` — active order type (`springs` or `latex`)
+- `useInventoryOrderReceivingStore()` — receives either order type into inventory
 
-**`useInventoryOrdersStore()`** - Springs orders from Directus
+**Springs and components:**
 
-**`useOrderStore()`** - Computed order data (getters only)
-- `springOrder`, `componentOrder`, `coverageData`, `validation`, `tsvContent`
+- `useSpringInventoryStore()` — spring and component inventory
+- `useSpringOrdersStore()` — spring/component orders from Directus
+- `useSpringSettingsStore()` — pallet, forecast and demand settings
+- `useSpringUIStore()` — spring order panel and draft state
 
-**`useSettingsStore()`** - App settings
-- `palletCount`, `exportFormat`, `currentView`, `startingMonth`, `componentScale`, `orderWeekOffset`, `deliveryWeeks`, `useSeasonalDemand`
+**Latex:**
 
-**`useUIStore()`** - UI state
-- `openSection`, `showSaveModal`, `copyFeedback`
-
-**Latex ordering:**
-
-**`useLatexOrdersStore()`** - Latex orders
-
-**`useLatexSettingsStore()`** - Latex ordering settings
-
-**`useLatexUIStore()`** - Latex UI state
+- `useLatexInventoryStore()` — mattress and pillow latex inventory
+- `useLatexOrdersStore()` — latex orders from Directus
+- `useLatexSettingsStore()` — latex capacity, forecast and demand settings
+- `useLatexUIStore()` — latex order panel and draft state
 
 ---
 
@@ -261,7 +254,7 @@ The app manages two independent supply chains:
 - Pallet-based ordering (30 springs per pallet, 1-12 pallets per container)
 - 5 mattress sizes × 4 spring tensions
 - Components must match springs while maintaining balanced coverage
-- Constants in `lib/constants/business.js`, `sales.js`, `firmness.js`, `components.js`
+- Constants in `lib/constants/springs.js`
 
 ### Latex comfort layers
 - Unit-based ordering with editable item capacity (default: 410 units, adjusted in steps of 5)

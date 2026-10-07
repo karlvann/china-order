@@ -25,10 +25,10 @@ const emptySpringDemand = (includeTotal = false) => Object.fromEntries(MATTRESS_
   ...(includeTotal ? { total: 0 } : {})
 }]))
 
-export function useWeeklySales() {
+export const useSpringSales = () => {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
-  const settingsStore = useSettingsStore()
+  const springSettingsStore = useSpringSettingsStore()
 
   const loading = ref(true)
   const error = ref(null)
@@ -429,7 +429,7 @@ export function useWeeklySales() {
       }
 
       // Update settings store with live data
-      settingsStore.setLiveSalesRates(
+      springSettingsStore.setLiveSalesRates(
         weeklyTotals,
         distribution,
         microCoilDemand.value,

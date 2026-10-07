@@ -1,5 +1,5 @@
 <script setup>
-const settingsStore = useSettingsStore()
+const settingsStore = useSpringSettingsStore()
 
 const { getMonthOptions } = useMonthNames()
 const monthOptions = getMonthOptions()

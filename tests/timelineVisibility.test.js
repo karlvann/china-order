@@ -32,7 +32,7 @@ const hooks = registerHooks({
 const autoImports = {
   computed,
   ref,
-  useInventoryOrdersStore: () => ({}),
+  useSpringOrdersStore: () => ({}),
   useLatexOrdersStore: () => ({})
 }
 const originalGlobals = Object.fromEntries(Object.keys(autoImports).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
@@ -144,7 +144,7 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
   })
 }
 
-for (const path of ['components/views/ForecastView.vue', 'components/views/OrderBuilderView.vue']) {
+for (const path of ['components/views/SpringView.vue', 'components/views/LatexView.vue']) {
   test(`${path}: control and timeline bindings compile`, async () => {
     await import(new URL(path, root).href)
   })

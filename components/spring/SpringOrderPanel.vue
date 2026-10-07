@@ -1,16 +1,16 @@
 <script setup>
-import { calculateDemandBasedOrder } from '~/lib/algorithms/demandBasedOrder.js'
+import { calculateSpringOrder } from '~/lib/algorithms/springOrder.js'
 import { calculateComponentOrder } from '~/lib/algorithms/componentCalc.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 import { FIRMNESS_TYPES } from '~/lib/constants/index.js'
 import { createEmptySpringInventory, SPRING_INVENTORY_SKU_MAP } from '~/lib/utils/inventory.js'
 
-const uiStore = useUIStore()
-const inventoryOrdersStore = useInventoryOrdersStore()
+const uiStore = useSpringUIStore()
+const inventoryOrdersStore = useSpringOrdersStore()
 const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
-const inventoryStore = useInventoryStore()
-const settingsStore = useSettingsStore()
-const skuLookup = useSkuLookup()
+const inventoryStore = useSpringInventoryStore()
+const settingsStore = useSpringSettingsStore()
+const skuLookup = useSpringSkuLookup()
 
 // Props for usage rates (passed from parent via provide/inject or we get from settings)
 const usageRates = computed(() => settingsStore.planningSalesRates)
@@ -328,7 +328,7 @@ const computeOrderFromSettings = () => {
   const pendingOrders = convertPendingOrdersForAlgorithm()
   const inventory = inventoryStore.fullInventory
 
-  const springOrder = calculateDemandBasedOrder(
+  const springOrder = calculateSpringOrder(
     localPalletCount.value,
     inventory,
     usageRates.value,
@@ -764,7 +764,7 @@ watch(() => uiStore.editingOrderId, () => {
         <!-- SKU Picker -->
         <div class="border-t border-border pt-4">
           <h3 class="text-sm font-medium text-muted mb-4">Order items</h3>
-          <OrdersOrderSkuPicker
+          <SpringOrderSkuPicker
             v-model="skuQuantities"
             :sku-lookup="skuLookup"
           />
@@ -777,7 +777,7 @@ watch(() => uiStore.editingOrderId, () => {
           Total: <span class="font-medium text-primary">{{ totalItems }}</span> items
         </div>
         <div class="flex gap-3">
-          <OrdersApplyInventoryOrderButton
+          <SharedApplyInventoryOrderButton
             v-if="isEditing && savedOrder"
             :order-id="savedOrder.id"
             :ordered="savedOrder.ordered === true"

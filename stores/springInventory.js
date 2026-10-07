@@ -6,7 +6,7 @@ import {
   createEmptyComponentInventory
 } from '~/lib/utils/inventory.js'
 
-export const useInventoryStore = defineStore('inventory', () => {
+export const useSpringInventoryStore = defineStore('springInventory', () => {
 
   // State
   const springs = ref(createEmptySpringInventory())

@@ -171,7 +171,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
           }
         }
 
-        const inventoryStore = useInventoryStore()
+        const inventoryStore = useSpringInventoryStore()
         const latexInventoryStore = useLatexInventoryStore()
         inventoryStore.setSkuQuantity(operation.sku, operation.finalInventoryQuantity)
         latexInventoryStore.setSkuQuantity(operation.sku, operation.finalInventoryQuantity)
@@ -211,7 +211,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
       if (orderLocation === 'sri_lanka') {
         await useLatexOrdersStore().fetchOrders()
       } else {
-        await useInventoryOrdersStore().fetchOrders()
+        await useSpringOrdersStore().fetchOrders()
       }
 
       console.info(`[Inventory order ${orderId}] Applied and archived`, {

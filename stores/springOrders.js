@@ -3,7 +3,7 @@
  * Stores orders in shared state so all components can access them
  */
 
-export const useInventoryOrdersStore = defineStore('inventoryOrders', () => {
+export const useSpringOrdersStore = defineStore('springOrders', () => {
   const { getItems, createItems, updateItem, deleteItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 

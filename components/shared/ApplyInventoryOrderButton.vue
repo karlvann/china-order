@@ -41,7 +41,7 @@ const applyOrder = async () => {
   if (isLatex.value) {
     useLatexUIStore().closeOrderPanel()
   } else {
-    useUIStore().closeOrderPanel()
+    useSpringUIStore().closeOrderPanel()
   }
 }
 </script>

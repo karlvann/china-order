@@ -4,13 +4,14 @@ definePageMeta({
 })
 
 // Initialize stores
-const inventoryStore = useInventoryStore()
-const settingsStore = useSettingsStore()
+const appStore = useAppStore()
+const inventoryStore = useSpringInventoryStore()
+const settingsStore = useSpringSettingsStore()
 
 // Initialize composables
 const { springs, loading: springsLoading, error: springsError, refresh: refreshSprings } = useSpringInventory()
 const { components, loading: componentsLoading, error: componentsError, refresh: refreshComponents } = useComponentInventory()
-const { loading: salesLoading, error: salesError, refresh: refreshSales } = useWeeklySales()
+const { loading: salesLoading, error: salesError, refresh: refreshSales } = useSpringSales()
 
 // Combined loading/error state
 const loading = computed(() => springsLoading.value || componentsLoading.value || salesLoading.value)
@@ -29,7 +30,10 @@ watch(components, inventoryStore.setComponents, { immediate: true, deep: true })
 watch(componentsLoading, inventoryStore.setComponentsLoading, { immediate: true })
 watch(componentsError, inventoryStore.setComponentsError, { immediate: true })
 
-onMounted(settingsStore.loadFromStorage)
+onMounted(() => {
+  appStore.loadFromStorage()
+  settingsStore.loadFromStorage()
+})
 
 // Usage rates from live Directus data
 const usageRates = computed(() => {
@@ -89,8 +93,8 @@ useHead({
 
       <!-- Main Views -->
       <template v-else>
-        <ViewsOrderBuilderView v-if="settingsStore.isBuilderView" :usage-rates="usageRates" />
-        <ViewsForecastView v-else :usage-rates="usageRates" />
+        <ViewsLatexView v-if="appStore.isLatexOrderType" />
+        <ViewsSpringView v-else :usage-rates="usageRates" />
       </template>
     </main>
 

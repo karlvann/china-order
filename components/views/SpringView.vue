@@ -6,10 +6,10 @@ const props = defineProps({
   }
 })
 
-const inventoryStore = useInventoryStore()
-const settingsStore = useSettingsStore()
-const uiStore = useUIStore()
-const inventoryOrdersStore = useInventoryOrdersStore()
+const inventoryStore = useSpringInventoryStore()
+const settingsStore = useSpringSettingsStore()
+const uiStore = useSpringUIStore()
+const inventoryOrdersStore = useSpringOrdersStore()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -180,7 +180,7 @@ onMounted(() => {
       </div> -->
 
       <!-- Pending orders -->
-      <OrdersOrderList />
+      <SpringOrderList />
 
       <!-- Pallet Allocation Summary -->
       <!-- <div v-if="orderStore.springOrder" class="mb-6 p-4 bg-surface border border-border rounded-lg">
@@ -239,6 +239,6 @@ onMounted(() => {
     </div>
 
     <!-- Order Panel -->
-    <OrdersOrderPanel />
+    <SpringOrderPanel />
   </div>
 </template>

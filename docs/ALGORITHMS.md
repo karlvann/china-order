@@ -6,7 +6,7 @@ This document describes the spring, component and latex ordering algorithms used
 
 ## Weekly Demand Rate Calculation
 
-**Files:** `composables/useWeeklySales.js`, `composables/useLatexSales.js`, `lib/utils/demandTrimming.js`
+**Files:** `composables/useSpringSales.js`, `composables/useLatexSales.js`, `lib/utils/demandTrimming.js`
 
 ### Overview
 
@@ -62,7 +62,7 @@ springSkuDemand = sizeWeeklySpikeTotal * fixedFirmnessPercentage / 100
 
 These percentages apply even when there are no recent store orders for a size. A size with zero spike volume has zero planning demand. The historical raw-SKU floor is replaced with the fixed-split rate in this mode, so historical very-soft sales cannot revive the 0% very-soft demand. With the toggle off, the original 12-week baseline and SKU floors remain unchanged.
 
-`SPRING_PLANNING_SPLITS` in `lib/constants/firmness.js` is shared by the calculation and the summary above the spring timeline. The summary displays Soft, Medium and Firm only; Very soft remains 0% in the algorithm. Operation firm ass renames the same physical buckets; it does not change replenishment policy. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
+`SPRING_PLANNING_SPLITS` in `lib/constants/springs.js` is shared by the calculation and the summary above the spring timeline. The summary displays Soft, Medium and Firm only; Very soft remains 0% in the algorithm. Operation firm ass renames the same physical buckets; it does not change replenishment policy. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
 
 ### Fixed latex demand split
 
@@ -83,7 +83,7 @@ Mattress SKUs can include a soft-latex suffix (`s`) after the model number for m
 
 ### Store split demand for micro coils and thin latex
 
-**Files:** `composables/useWeeklySales.js`, `stores/settings.js`, `lib/utils/storeSplitDemand.js`
+**Files:** `composables/useSpringSales.js`, `stores/springSettings.js`, `lib/utils/storeSplitDemand.js`
 
 The Springs toggle also recalculates micro coil and thin latex demand from the **store model mix**, not the spring firmness percentages. For each mattress size:
 
@@ -134,7 +134,7 @@ This lets lumpy low-selling SKUs, such as Soft Double, count their real sales bu
 
 ## Spring Ordering Algorithm
 
-**File:** `lib/algorithms/demandBasedOrder.js`
+**File:** `lib/algorithms/springOrder.js`
 
 ### Overview
 

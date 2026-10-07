@@ -4,7 +4,7 @@ import { getCurrentMonday } from '~/lib/utils/index.js'
 
 const WEEKS_TO_SHOW = 40
 
-const inventoryOrdersStore = useInventoryOrdersStore()
+const inventoryOrdersStore = useSpringOrdersStore()
 
 const emit = defineEmits(['scroll'])
 

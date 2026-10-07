@@ -1,15 +1,15 @@
 <script setup>
-const settingsStore = useSettingsStore()
+const appStore = useAppStore()
 const router = useRouter()
 const { logout } = useDirectusAuth()
 const { clearDirectusSession } = useDirectusSession()
 
-const views = [
-  { id: 'forecast', label: 'Springs' },
-  { id: 'builder', label: 'Latex' }
+const orderTypes = [
+  { id: 'springs', label: 'Springs' },
+  { id: 'latex', label: 'Latex' }
 ]
 
-const isLatex = computed(() => settingsStore.currentView === 'builder')
+const isLatex = computed(() => appStore.isLatexOrderType)
 
 const handleSignOut = async () => {
   try {
@@ -47,19 +47,19 @@ const handleSignOut = async () => {
       <!-- View Toggle -->
       <div class="flex gap-1 bg-surface border border-border rounded-lg p-1">
         <button
-          v-for="view in views"
-          :key="view.id"
-          @click="settingsStore.setCurrentView(view.id)"
+          v-for="orderType in orderTypes"
+          :key="orderType.id"
+          @click="appStore.setActiveOrderType(orderType.id)"
           :class="[
             'toggle-btn',
-            settingsStore.currentView === view.id
-              ? view.id === 'forecast'
+            appStore.activeOrderType === orderType.id
+              ? orderType.id === 'springs'
                 ? 'bg-brand text-inverse'
                 : 'bg-accent-latex text-inverse'
               : 'hover:bg-surface-hover'
           ]"
         >
-          {{ view.label }}
+          {{ orderType.label }}
         </button>
       </div>
 

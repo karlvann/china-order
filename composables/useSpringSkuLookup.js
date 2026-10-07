@@ -24,7 +24,7 @@ const COMPONENT_SKUS = [
 let skuCache = null
 let fetchPromise = null
 
-export function useSkuLookup() {
+export const useSpringSkuLookup = () => {
   const { getItems } = useDirectusItems()
   const { handleDirectusAuthError, getDirectusErrorMessage } = useDirectusSession()
 

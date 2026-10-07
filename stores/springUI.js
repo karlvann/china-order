@@ -1,4 +1,4 @@
-export const useUIStore = defineStore('ui', () => {
+export const useSpringUIStore = defineStore('springUI', () => {
 
   // Order panel state
   const orderPanelOpen = ref(false)

@@ -12,7 +12,7 @@ const emptySpringDemand = () => Object.fromEntries(MATTRESS_SIZES.map(size => [s
   Object.fromEntries(FIRMNESS_TYPES.map(tension => [tension, 0]))
 ]))
 
-export const useSettingsStore = defineStore('settings', () => {
+export const useSpringSettingsStore = defineStore('springSettings', () => {
 
   // State
   const palletCount = ref(DEFAULT_PALLETS)
@@ -20,7 +20,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
-  const currentView = ref('forecast') // 'forecast', 'builder'
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
   const useStoreSplitDemand = ref(false) // Use fixed spring splits and recent component model mix with spike volume
   const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders
@@ -66,10 +65,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const isExactFormat = computed(() => exportFormat.value === 'exact')
 
-  const isBuilderView = computed(() => currentView.value === 'builder')
-
-  const isForecastView = computed(() => currentView.value === 'forecast')
-
   const planningSalesRates = computed(() => {
     if (!useStoreSplitDemand.value) return liveSalesRates.value
     return withSpringStoreSplitDemand(liveSalesRates.value)
@@ -94,8 +89,7 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         palletCount: palletCount.value,
-        exportFormat: exportFormat.value,
-        currentView: currentView.value
+        exportFormat: exportFormat.value
       }))
     } catch (e) {
       console.error('Failed to save settings:', e)
@@ -163,11 +157,6 @@ export const useSettingsStore = defineStore('settings', () => {
     componentScale.value = Math.max(0.3, Math.min(2.0, Math.round(scale * 10) / 10))
   }
 
-  const setCurrentView = (view) => {
-    currentView.value = view
-    saveToStorage()
-  }
-
   const loadFromStorage = () => {
     try {
       const saved = localStorage.getItem(SETTINGS_KEY)
@@ -178,9 +167,6 @@ export const useSettingsStore = defineStore('settings', () => {
         }
         if (data.exportFormat !== undefined) {
           exportFormat.value = data.exportFormat
-        }
-        if (data.currentView !== undefined) {
-          currentView.value = data.currentView
         }
       }
     } catch (e) {
@@ -239,7 +225,6 @@ export const useSettingsStore = defineStore('settings', () => {
     palletCount.value = DEFAULT_PALLETS
     exportFormat.value = 'optimized'
     startingMonth.value = new Date().getMonth()
-    currentView.value = 'forecast'
     useStoreSplitDemand.value = false
     saveToStorage()
   }
@@ -251,7 +236,6 @@ export const useSettingsStore = defineStore('settings', () => {
     startingMonth,
     orderWeekOffset,
     deliveryWeeks,
-    currentView,
     liveSalesRates,
     liveSalesLoaded,
     useSeasonalDemand,
@@ -262,8 +246,6 @@ export const useSettingsStore = defineStore('settings', () => {
     isMaxPallets,
     palletConstraints,
     isExactFormat,
-    isBuilderView,
-    isForecastView,
     planningSalesRates,
     currentWeekNumber,
     orderWeekNumber,
@@ -276,7 +258,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setStartingMonth,
     setOrderWeekOffset,
     setDeliveryWeeks,
-    setCurrentView,
     setUseSeasonalDemand,
     toggleSeasonalDemand,
     setUseStoreSplitDemand,

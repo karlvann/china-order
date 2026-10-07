@@ -1,6 +1,6 @@
 <script setup>
-const uiStore = useUIStore()
-const inventoryOrdersStore = useInventoryOrdersStore()
+const uiStore = useSpringUIStore()
+const inventoryOrdersStore = useSpringOrdersStore()
 
 // Format date for display
 const formatDate = (dateString) => {

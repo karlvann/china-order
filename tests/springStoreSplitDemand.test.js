@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { getSpringStoreSplitDemandRate, withSpringStoreSplitDemand } from '../lib/utils/storeSplitDemand.js'
 import { FIRMNESS_TYPES, MATTRESS_SIZES, SPRING_PLANNING_SPLITS } from '../lib/constants/index.js'
-import { calculateDemandBasedOrder, calculateSkuMetrics } from '../lib/algorithms/demandBasedOrder.js'
+import { calculateSpringOrder, calculateSpringSkuMetrics } from '../lib/algorithms/springOrder.js'
 import { createEmptySpringInventory } from '../lib/utils/inventory.js'
 
 const baseRates = {
@@ -195,14 +195,14 @@ test('rejects missing or incomplete spring tension distributions instead of inve
   const missingSize = withSpringStoreSplitDemand(baseRates)
   delete missingSize.FIRMNESS_DISTRIBUTION.Queen
   assert.throws(
-    () => calculateSkuMetrics({ springs: createEmptySpringInventory() }, missingSize, []),
+    () => calculateSpringSkuMetrics({ springs: createEmptySpringInventory() }, missingSize, []),
     /Missing spring tension distribution for Queen/
   )
 
   const missingTension = withSpringStoreSplitDemand(baseRates)
   delete missingTension.FIRMNESS_DISTRIBUTION.King.firm
   assert.throws(
-    () => calculateSkuMetrics({ springs: createEmptySpringInventory() }, missingTension, []),
+    () => calculateSpringSkuMetrics({ springs: createEmptySpringInventory() }, missingTension, []),
     /Missing or invalid firm spring tension distribution for King/
   )
 })
@@ -214,7 +214,7 @@ test('historical SKU floors cannot revive very-soft demand or override the fixed
     input.FIRMNESS_DISTRIBUTION[size] = { verysoft: 1, soft: 0, medium: 0, firm: 0 }
   }
   const rates = withSpringStoreSplitDemand(input)
-  const metrics = calculateSkuMetrics({ springs: createEmptySpringInventory() }, rates, [])
+  const metrics = calculateSpringSkuMetrics({ springs: createEmptySpringInventory() }, rates, [])
 
   for (const sku of metrics) {
     const expected = getSpringStoreSplitDemandRate(input, sku.size, sku.firmness)
@@ -226,7 +226,7 @@ test('historical SKU floors cannot revive very-soft demand or override the fixed
 test('allocates valid whole pallets with no very-soft springs under the fixed demand assumptions', (t) => {
   t.mock.method(console, 'log', () => {})
   const rates = withSpringStoreSplitDemand(baseRates)
-  const order = calculateDemandBasedOrder(12, { springs: createEmptySpringInventory() }, rates, [])
+  const order = calculateSpringOrder(12, { springs: createEmptySpringInventory() }, rates, [])
 
   assert.equal(order.pallets.length, 12)
   assert.equal(order.metadata.total_springs, 360)

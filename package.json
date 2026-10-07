@@ -14,14 +14,16 @@
   "dependencies": {
     "@nuxt/icon": "^2.5.1",
     "@pinia/nuxt": "^1.0.2",
-    "nuxt": "^4.5.2",
+    "nuxt": "^4.6.0",
     "nuxt-directus": "^5.7.0",
     "pinia": "^4.0.3",
     "pinia-plugin-persistedstate": "4.7.1",
     "vue": "^3.5.42"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.13.2"
+    "@nuxtjs/tailwindcss": "^6.13.2",
+    "postcss": "^8.5.29",
+    "postcss-nesting": "^14.0.3"
   },
   "packageManager": "yarn@1.22.19+sha1.4ba7fc5c6e704fce2066ecbfb0b0d8976fe62447"
 }

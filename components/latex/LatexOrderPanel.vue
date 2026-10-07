@@ -632,7 +632,7 @@ const currentInventory = computed(() => latexInventoryStore.inventory)
           Total: <span class="font-medium text-accent-latex-light">{{ totalItems }}</span> / {{ containerCapacity }} items
         </div>
         <div class="flex gap-3">
-          <OrdersApplyInventoryOrderButton
+          <SharedApplyInventoryOrderButton
             v-if="isEditing && savedOrder"
             :order-id="savedOrder.id"
             :ordered="savedOrder.ordered === true"
