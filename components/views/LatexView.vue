@@ -121,7 +121,7 @@ onMounted(() => {
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 latexSettingsStore.useStoreSplitDemand ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
-              title="Use two-week sales volume with fixed mattress latex firmness percentages; pillow demand is unchanged"
+              title="Keep 12-week sheet demand while applying fixed mattress latex firmness percentages; pillow demand is unchanged"
               @click="latexSettingsStore.toggleStoreSplitDemand()"
             >
               <span

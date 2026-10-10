@@ -278,23 +278,23 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <div class="mb-6 rounded border border-border p-4">
       <h3 class="text-sm font-semibold text-primary">Fixed latex demand split</h3>
-      <p class="mt-1 text-xs text-muted">Applied to each size's two-week spike total when Store split demand is enabled. Pillow latex is unchanged.</p>
+      <p class="mt-1 text-xs text-muted">Applied within the 12-week King and Queen sheet demand rates when Store split demand is enabled. Sheet demand totals and pillow latex are unchanged.</p>
       <div class="mt-3 overflow-x-auto">
         <table class="text-xs text-muted">
           <thead>
             <tr>
-              <th class="pr-6 pb-1 text-left">Size</th>
+              <th class="pr-6 pb-1 text-left">Mattress size</th>
               <th class="pr-6 pb-1 text-right">Soft</th>
               <th class="pr-6 pb-1 text-right">Medium</th>
               <th class="pb-1 text-right">Firm</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="size in ['King', 'Queen']" :key="size">
+            <tr v-for="(split, size) in LATEX_PLANNING_SPLIT" :key="size">
               <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ size }}</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].soft }}%</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].medium }}%</td>
-              <td class="py-1 text-right font-mono">{{ LATEX_PLANNING_SPLIT[size].firm }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.soft }}%</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ split.medium }}%</td>
+              <td class="py-1 text-right font-mono">{{ split.firm }}%</td>
             </tr>
           </tbody>
         </table>

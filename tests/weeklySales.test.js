@@ -163,13 +163,15 @@ test('recipe collection, store toggle and component ordering work together and r
 
   settings.toggleStoreSplitDemand()
   const planning = settings.planningSalesRates
-  assert.equal(planning.WEEKLY_SALES_RATE.King, 12)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.58, medium: 0.38, soft: 0.04, verysoft: 0 })
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], planning.FIRMNESS_DISTRIBUTION.King)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.54, medium: 0.4, soft: 0.06, verysoft: 0 })
+  assert.equal(planning.WEEKLY_SALES_RATE.King, 6)
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.55, medium: 0.35, soft: 0.1, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Double, planning.FIRMNESS_DISTRIBUTION.King)
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.4, medium: 0.5, soft: 0.1, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], { firm: 0.45, medium: 0.3, soft: 0.25, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Single, { firm: 0.25, medium: 0.3, soft: 0.45, verysoft: 0 })
   assert.deepEqual(planning.SKU_WEEKLY_DEMAND_SPIKE, baseline.SKU_WEEKLY_DEMAND_SPIKE)
-  assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
-  assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 16.8, Queen: 11 })
+  assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 8.4, Queen: 11 })
+  assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 8.4, Queen: 11 })
   assert.equal(planning.MICRO_COIL_WEEKLY_SPIKE.King, 18)
   assert.deepEqual(JSON.parse(JSON.stringify(settings.liveSalesRates)), baseline)
 
@@ -215,19 +217,19 @@ test('Latex planning state feeds fixed latex rates into orders and restores the 
 
   settings.useStoreSplitDemand = true
   const planning = settings.planningLatexSalesRates
-  assert.deepEqual(planning.WEEKLY_TOTAL_BY_SIZE, { King: 20, Queen: 10 })
+  assert.deepEqual(planning.WEEKLY_TOTAL_BY_SIZE, { King: 10, Queen: 5 })
   assert.deepEqual(planning.WEEKLY_SPIKES, baseline.WEEKLY_SPIKES)
   assert.deepEqual(planning.PILLOW_LATEX_WEEKLY_RATES, baseline.PILLOW_LATEX_WEEKLY_RATES)
 
   const order = calculateLatexOrder(410, createEmptyLatexInventory(), planning, [])
   const demandBySku = Object.fromEntries(order.skuMetrics.map(sku => [sku.key, sku.weeklyDemand]))
   assert.deepEqual(demandBySku, {
-    'firm|King': 0.8,
-    'medium|King': 5.6,
-    'soft|King': 13.6,
-    'firm|Queen': 0.4,
-    'medium|Queen': 3.8,
-    'soft|Queen': 5.8,
+    'firm|King': 0.3,
+    'medium|King': 3.6,
+    'soft|King': 6.1,
+    'firm|Queen': 0.15,
+    'medium|Queen': 2.15,
+    'soft|Queen': 2.7,
     'pillowLatex|thin': 0.25,
     'pillowLatex|thick': 0.5
   })

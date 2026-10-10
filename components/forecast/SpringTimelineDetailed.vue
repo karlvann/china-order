@@ -266,22 +266,20 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <div class="mb-6 rounded border border-border p-4">
       <h3 class="text-sm font-semibold text-primary">Fixed spring demand splits</h3>
-      <p class="mt-1 text-xs text-muted">Applied to each size's two-week spike total when Store split demand is enabled.</p>
+      <p class="mt-1 text-xs text-muted">Applied within each size's 12-week demand rate when Store split demand is enabled. The size demand totals are unchanged.</p>
       <div class="mt-3 overflow-x-auto">
         <table class="text-xs text-muted">
           <thead>
             <tr>
               <th class="pr-6 pb-1 text-left">Size</th>
-              <th class="pr-6 pb-1 text-right">Very soft</th>
               <th class="pr-6 pb-1 text-right">Soft</th>
               <th class="pr-6 pb-1 text-right">Medium</th>
               <th class="pb-1 text-right">Firm</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(split, group) in SPRING_PLANNING_SPLITS" :key="group">
-              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ group === 'kingAndKingSingle' ? 'King and King Single' : 'Queen, Double and Single' }}</td>
-              <td class="pr-6 py-1 text-right font-mono">{{ split.verysoft }}%</td>
+            <tr v-for="(split, size) in SPRING_PLANNING_SPLITS" :key="size">
+              <td class="pr-6 py-1 font-medium text-primary whitespace-nowrap">{{ size }}</td>
               <td class="pr-6 py-1 text-right font-mono">{{ split.soft }}%</td>
               <td class="pr-6 py-1 text-right font-mono">{{ split.medium }}%</td>
               <td class="py-1 text-right font-mono">{{ split.firm }}%</td>

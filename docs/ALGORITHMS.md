@@ -49,35 +49,41 @@ The timeline **Spike** column is a short-window average: total demand from the l
 
 ### Fixed spring demand splits
 
-The Springs **Store split demand** toggle uses **fixed spring firmness percentages**, rather than observed store firmness preferences. With the toggle on, the app sums the two-week spike demand across all firmnesses of each mattress size and redistributes that volume as follows:
+The Springs **Store split demand** toggle uses **fixed spring firmness percentages**, rather than observed store firmness preferences. With the toggle on, the app preserves each mattress size's existing 12-week weekly demand rate and redistributes only the firmness mix as follows:
 
-| Mattress sizes | Very soft | Soft | Medium | Firm |
-|----------------|-----------|------|--------|------|
-| King and King Single | 0% | 4% | 38% | 58% |
-| Queen, Double and Single | 0% | 6% | 40% | 54% |
+| Mattress sizes | Soft | Medium | Firm |
+|----------------|------|--------|------|
+| King | 10% | 35% | 55% |
+| Queen | 10% | 50% | 40% |
+| Double | 10% | 35% | 55% |
+| King Single | 25% | 30% | 45% |
+| Single | 45% | 30% | 25% |
 
 ```javascript
-springSkuDemand = sizeWeeklySpikeTotal * fixedFirmnessPercentage / 100
+springSkuDemand = sizeWeeklyDemand12Weeks * fixedFirmnessPercentage / 100
 ```
 
-These percentages apply even when there are no recent store orders for a size. A size with zero spike volume has zero planning demand. The historical raw-SKU floor is replaced with the fixed-split rate in this mode, so historical very-soft sales cannot revive the 0% very-soft demand. With the toggle off, the original 12-week baseline and SKU floors remain unchanged.
+These percentages apply even when there are no recent store orders for a size. A size with zero 12-week demand has zero planning demand. The historical raw-SKU floor is replaced with the fixed-split rate in this mode, so historical very-soft sales cannot revive the 0% very-soft demand. With the toggle off, the original 12-week firmness mix and SKU floors remain unchanged.
 
-`SPRING_PLANNING_SPLITS` in `lib/constants/springs.js` is shared by the calculation and the summary above the spring timeline. The summary displays Soft, Medium and Firm only; Very soft remains 0% in the algorithm. Operation firm ass renames the same physical buckets; it does not change replenishment policy. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
+`SPRING_PLANNING_SPLITS` in `lib/constants/springs.js` is shared by the calculation and the summary above the spring timeline. Very soft remains 0% in the algorithm and is omitted from the summary. Operation firm ass renames the same physical buckets; it does not change replenishment policy. These are demand assumptions for upcoming recommendation changes, not required percentages in each order: inventory coverage and whole-pallet allocation still determine actual order quantities.
 
 ### Fixed latex demand split
 
-The Latex **Store split demand** toggle uses fixed mattress latex percentages for each inventory size:
+The Latex **Store split demand** toggle uses fixed mattress latex percentages for each mattress size. Only King and Queen latex sheets are stocked and ordered:
 
-| Size | Soft | Medium | Firm |
-|------|------|--------|------|
-| King | 68% | 28% | 4% |
-| Queen | 58% | 38% | 4% |
+| Mattress size | Soft | Medium | Firm |
+|---------------|------|--------|------|
+| King | 61% | 36% | 3% |
+| Queen | 54% | 43% | 3% |
+| Double | 54% | 43% | 3% |
+| King Single | 54% | 43% | 3% |
+| Single | 61% | 36% | 3% |
 
-For each inventory size, sum the observed two-week **Spike** rates across all three latex firmnesses, then multiply that total by the size's fixed percentages. Existing smaller-mattress cutting rules are already included in the observed King/Queen latex demand; they are not applied again. For example, 20 King sheets/week gives 13.6 soft, 5.6 medium and 0.8 firm sheets/week.
+For each inventory size, preserve the existing 12-week weekly sheet demand and redistribute only its firmness mix using the fixed percentages. Existing smaller-mattress cutting rules are already included in the King/Queen latex demand; they are not applied again. King inventory includes King and Single demand, which share the same split. Queen inventory includes Queen, Double and King Single demand, which also share the same split. For example, 20 King sheets/week gives 12.2 soft, 7.2 medium and 0.6 firm sheets/week.
 
-These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing spike volume gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week baseline.
+These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing 12-week sheet demand gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week firmness mix.
 
-`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, spring splits and micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
+`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the five-size summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, spring splits and micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
 
 Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
@@ -92,10 +98,10 @@ storeLayersPerMattress = storeRecipeLayerTotal / storeMattressQuantity
 componentDemand = planningMattressesPerWeek * storeLayersPerMattress
 ```
 
-- The volume is the same active size demand used by springs: the last **2 complete weeks** of paid sales across all channels.
-- The mix still comes from the existing **2-week non-website order sample**, separately from the fixed spring firmness assumptions. Quantities weight each recipe; Cloud contributes 2 micro/thin layers, Aurora 1, Cooper 0. Layer totals are read from parsed recipes rather than inferred from firmness.
+- The volume is the same **12-week weekly size demand** used by springs, so enabling the toggle does not change demand between mattress sizes.
+- The mix comes from the existing **2-week non-website order sample**, separately from the fixed spring firmness assumptions. Quantities weight each recipe; Cloud contributes 2 micro/thin layers, Aurora 1, Cooper 0. Layer totals are read from parsed recipes rather than inferred from firmness.
 - Calculate each mattress size separately, then consolidate: **King + 0.5 × Single** into King stock; **Queen + Double + King Single** into Queen stock. Round the combined demand to 3 decimal places.
-- If a size has no recent store sample, use its **12-week paid-sales recipe mix** at its active two-week spike mattress volume. A nonempty all-Cooper sample is genuinely zero layer demand, not missing data.
+- If a size has no recent store sample, use its **12-week paid-sales recipe mix** at its 12-week weekly mattress volume. A nonempty all-Cooper sample is genuinely zero layer demand, not missing data.
 - If none of an inventory group's sizes has a store sample, retain that group's original trimmed component demand. Also retain it if a positive-demand size lacks both recent and historical layer data.
 - With the toggle **off**, the original trimmed component rates remain unchanged. The **Spike** columns always show observed two-week layer demand, not the store-model estimate.
 - Both forecast depletion and order coverage/spring-matching calculations receive these planning rates. Existing inventory, pending orders, balancing and supplier lot rules still affect the final order quantities.
@@ -104,15 +110,15 @@ Example: King volume of **20 mattresses/week**, with a store mix of **60% Cloud,
 
 #### Accuracy limitations
 
-This makes components consistent with the selected recent-demand scenario; it does not prove that the scenario forecasts better than the 12-week baseline.
+This makes components consistent with the selected store model mix while preserving the 12-week size demand baseline; it does not prove that the model mix forecasts better.
 
-- Two weeks reacts quickly to a genuine change, but promotions, bulk orders, stockouts and restock bursts can distort it. Small sizes have especially sparse samples; a single store mattress can dominate their mix.
+- The two-week store model sample reacts quickly to a genuine change, but promotions, bulk orders and normal variance can distort it. Small sizes have especially sparse samples; a single store mattress can dominate their mix.
 - Applying store model mix to all-channel volume assumes website customers will follow the store mix. That is a planning assumption, not an observed fact.
 - The existing store query excludes only `sale_source = website` (case/whitespace normalised). Unlike the volume query, it does **not** filter to paid sale orders, and blank sources count as store. Unpaid, non-sale or misclassified orders may bias the mix. This change preserves those existing filters.
-- Seasonal multipliers still apply separately to timeline projections. Recent volume already reflects current seasonal conditions, so using both can compound that effect.
+- Seasonal multipliers still apply separately to timeline projections.
 - Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
 
-Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), size-specific King/Queen latex percentages with unchanged pillow demand, zero soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
+Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), size-specific King/Queen latex percentages with unchanged pillow demand, zero very-soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
 
 ### Low-selling spring SKU floor
 

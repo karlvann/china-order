@@ -272,7 +272,7 @@ The app manages two independent supply chains:
 
 ### Spring tension distribution
 - Live tension ratios are calculated from the full 12-week paid-sales sample.
-- Store split demand uses fixed physical splits: King/King Single 0% very soft, 4% soft, 38% medium and 58% firm; other sizes 0%, 6%, 40% and 54% respectively.
+- Store split demand uses fixed physical splits: King/Double 10% soft, 35% medium and 55% firm; Queen 10% soft, 50% medium and 40% firm; King Single 25% soft, 30% medium and 45% firm; Single 45% soft, 30% medium and 25% firm. Very soft is 0% for every size.
 - Low-selling spring SKUs use a demand floor: if normal SKU demand (`size weekly rate × tension ratio`) is below 1.75/wk, use the higher of normal demand and the raw 12-week SKU average.
 
 ### Component Consolidation

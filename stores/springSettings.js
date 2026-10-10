@@ -21,7 +21,7 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
-  const useStoreSplitDemand = ref(false) // Use fixed spring splits and recent component model mix with spike volume
+  const useStoreSplitDemand = ref(false) // Keep 12-week size demand and apply fixed spring splits plus recent component model mix
   const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {

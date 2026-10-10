@@ -30,25 +30,28 @@ const baseRates = {
 
 test('shares the specified latex percentages with the timeline summary', () => {
   assert.deepEqual(LATEX_PLANNING_SPLIT, {
-    King: { soft: 68, medium: 28, firm: 4 },
-    Queen: { soft: 58, medium: 38, firm: 4 }
+    King: { soft: 61, medium: 36, firm: 3 },
+    Queen: { soft: 54, medium: 43, firm: 3 },
+    Double: { soft: 54, medium: 43, firm: 3 },
+    'King Single': { soft: 54, medium: 43, firm: 3 },
+    Single: { soft: 61, medium: 36, firm: 3 }
   })
-  for (const size of LATEX_SIZES) {
+  for (const size of Object.keys(LATEX_PLANNING_SPLIT)) {
     assert.equal(Object.values(LATEX_PLANNING_SPLIT[size]).reduce((sum, value) => sum + value, 0), 100)
   }
 })
 
-test('uses each size spike total with the fixed mix instead of observed store percentages', () => {
+test('preserves each 12-week sheet total while applying the fixed mix', () => {
   const rates = withLatexStoreSplitDemand(baseRates)
 
-  assert.deepEqual(rates.WEEKLY_TOTAL_BY_SIZE, { King: 20, Queen: 10 })
+  assert.deepEqual(rates.WEEKLY_TOTAL_BY_SIZE, { King: 10, Queen: 5 })
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.8, Queen: 0.4 },
-    medium: { King: 5.6, Queen: 3.8 },
-    soft: { King: 13.6, Queen: 5.8 }
+    firm: { King: 0.3, Queen: 0.15 },
+    medium: { King: 3.6, Queen: 2.15 },
+    soft: { King: 6.1, Queen: 2.7 }
   })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.04, medium: 0.28, soft: 0.68 })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.04, medium: 0.38, soft: 0.58 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.03, medium: 0.36, soft: 0.61 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.03, medium: 0.43, soft: 0.54 })
   for (const size of LATEX_SIZES) {
     for (const firmness of LATEX_FIRMNESSES) {
       assert.equal(getLatexStoreSplitDemandRate(baseRates, size, firmness), rates.WEEKLY_RATES[firmness][size])
@@ -63,40 +66,32 @@ test('fixed latex demand does not require any recent store orders', () => {
     const rates = withLatexStoreSplitDemand(input)
 
     assert.deepEqual(rates.WEEKLY_RATES, withLatexStoreSplitDemand(baseRates).WEEKLY_RATES)
-    assert.equal(getLatexStoreSplitDemandRate(input, 'King', 'soft'), 13.6)
-    assert.equal(getLatexStoreSplitDemandRate(input, 'Queen', 'firm'), 0.4)
+    assert.equal(getLatexStoreSplitDemandRate(input, 'King', 'soft'), 6.1)
+    assert.equal(getLatexStoreSplitDemandRate(input, 'Queen', 'firm'), 0.15)
   }
 })
 
-test('zero or missing spike demand stays zero despite positive historical demand', () => {
+test('recent spikes do not change the 12-week sheet totals', () => {
   const input = structuredClone(baseRates)
   input.WEEKLY_SPIKES = { soft: { Queen: 10 } }
   const rates = withLatexStoreSplitDemand(input)
 
-  assert.equal(rates.WEEKLY_TOTAL_BY_SIZE.King, 0)
-  assert.equal(rates.WEEKLY_TOTAL_BY_SIZE.Queen, 10)
-  for (const firmness of LATEX_FIRMNESSES) {
-    assert.equal(rates.WEEKLY_RATES[firmness].King, 0)
-  }
+  assert.deepEqual(rates.WEEKLY_TOTAL_BY_SIZE, input.WEEKLY_TOTAL_BY_SIZE)
 
   delete input.WEEKLY_SPIKES
-  const emptyRates = withLatexStoreSplitDemand(input)
-  for (const size of LATEX_SIZES) {
-    for (const firmness of LATEX_FIRMNESSES) {
-      assert.equal(emptyRates.WEEKLY_RATES[firmness][size], 0)
-    }
-  }
+  const ratesWithoutSpikes = withLatexStoreSplitDemand(input)
+  assert.deepEqual(ratesWithoutSpikes.WEEKLY_RATES, rates.WEEKLY_RATES)
 })
 
 test('rounds the fixed latex planning rates to three decimal places', () => {
   const input = structuredClone(baseRates)
-  input.WEEKLY_SPIKES = { soft: { King: 0.125, Queen: 0.125 } }
+  input.WEEKLY_TOTAL_BY_SIZE = { King: 0.125, Queen: 0.125 }
   const rates = withLatexStoreSplitDemand(input)
 
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.005, Queen: 0.005 },
-    medium: { King: 0.035, Queen: 0.048 },
-    soft: { King: 0.085, Queen: 0.073 }
+    firm: { King: 0.004, Queen: 0.004 },
+    medium: { King: 0.045, Queen: 0.054 },
+    soft: { King: 0.076, Queen: 0.068 }
   })
 })
 

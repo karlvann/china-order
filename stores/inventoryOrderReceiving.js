@@ -6,6 +6,7 @@ export const useInventoryOrderReceivingStore = defineStore('inventoryOrderReceiv
   const error = ref(null)
 
   const isApplyingOrder = (orderId) => {
+    if (orderId === null || orderId === undefined || applyingOrderId.value === null) return false
     return String(applyingOrderId.value) === String(orderId)
   }
 

@@ -21,7 +21,7 @@ export const useLatexSettingsStore = defineStore('latexSettings', () => {
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS) // Default 10 weeks
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
-  const useStoreSplitDemand = ref(false) // Use fixed mattress latex percentages with two-week spike volume
+  const useStoreSplitDemand = ref(false) // Keep 12-week sheet demand and apply fixed mattress latex percentages
 
   // Live sales data (populated by useLatexSales)
   const latexSalesRates = ref({
