@@ -86,7 +86,7 @@ test('Spring sales state starts empty and a refresh cannot retain stale firmness
   })
 })
 
-test('recipe collection, store toggle and component ordering work together and restore the baseline', async (t) => {
+test('recipe collection, planning toggle and component ordering work together and restore the baseline', async (t) => {
   t.mock.method(console, 'log', () => {})
   setActivePinia(createPinia())
   const monday = getCurrentMonday()
@@ -170,8 +170,8 @@ test('recipe collection, store toggle and component ordering work together and r
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], { firm: 0.45, medium: 0.3, soft: 0.25, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Single, { firm: 0.25, medium: 0.3, soft: 0.45, verysoft: 0 })
   assert.deepEqual(planning.SKU_WEEKLY_DEMAND_SPIKE, baseline.SKU_WEEKLY_DEMAND_SPIKE)
-  assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 8.4, Queen: 11 })
-  assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 8.4, Queen: 11 })
+  assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 6.857, Queen: 7 })
+  assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 6.857, Queen: 7 })
   assert.equal(planning.MICRO_COIL_WEEKLY_SPIKE.King, 18)
   assert.deepEqual(JSON.parse(JSON.stringify(settings.liveSalesRates)), baseline)
 
@@ -182,8 +182,9 @@ test('recipe collection, store toggle and component ordering work together and r
   const storeOrder = calculateComponentOrder({ springs }, {}, inventory, planning)
   const optimized = optimizeComponentOrder(storeOrder, 'optimized')
 
+  assert.ok(storeOrder.micro_coils.King > baselineOrder.micro_coils.King)
+  assert.equal(storeOrder.micro_coils.Queen, baselineOrder.micro_coils.Queen)
   for (const size of ['King', 'Queen']) {
-    assert.ok(storeOrder.micro_coils[size] > baselineOrder.micro_coils[size])
     assert.equal(storeOrder.thin_latex[size], storeOrder.micro_coils[size])
     assert.equal(optimized.micro_coils[size] % 20, 0)
     assert.equal(optimized.thin_latex[size] % 10, 0)

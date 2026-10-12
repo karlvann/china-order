@@ -91,30 +91,26 @@ Mattress SKUs can include a soft-latex suffix (`s`) after the model number for m
 
 **Files:** `composables/useSpringSales.js`, `stores/springSettings.js`, `lib/utils/storeSplitDemand.js`
 
-The Springs toggle also recalculates micro coil and thin latex demand from the **store model mix**, not the spring firmness percentages. For each mattress size:
+The Springs toggle also recalculates micro coil and thin latex demand from the **full 12-week model mix**, not the spring firmness percentages. For each mattress size:
 
 ```javascript
-storeLayersPerMattress = storeRecipeLayerTotal / storeMattressQuantity
-componentDemand = planningMattressesPerWeek * storeLayersPerMattress
+layersPerMattress = recipeLayerTotal12Weeks / mattressQuantity12Weeks
+componentDemand = planningMattressesPerWeek * layersPerMattress
 ```
 
-- The volume is the same **12-week weekly size demand** used by springs, so enabling the toggle does not change demand between mattress sizes.
-- The mix comes from the existing **2-week non-website order sample**, separately from the fixed spring firmness assumptions. Quantities weight each recipe; Cloud contributes 2 micro/thin layers, Aurora 1, Cooper 0. Layer totals are read from parsed recipes rather than inferred from firmness.
+- Both the mattress volume and model mix use the same **12-week paid-sales period**. Quantities weight each recipe; Cloud contributes 2 micro/thin layers, Aurora 1, Cooper 0. Layer totals are read from parsed recipes rather than inferred from firmness.
 - Calculate each mattress size separately, then consolidate: **King + 0.5 × Single** into King stock; **Queen + Double + King Single** into Queen stock. Round the combined demand to 3 decimal places.
-- If a size has no recent store sample, use its **12-week paid-sales recipe mix** at its 12-week weekly mattress volume. A nonempty all-Cooper sample is genuinely zero layer demand, not missing data.
-- If none of an inventory group's sizes has a store sample, retain that group's original trimmed component demand. Also retain it if a positive-demand size lacks both recent and historical layer data.
-- With the toggle **off**, the original trimmed component rates remain unchanged. The **Spike** columns always show observed two-week layer demand, not the store-model estimate.
+- If a positive-demand size lacks 12-week recipe history, retain that inventory group's original trimmed component demand.
+- With the toggle **off**, the original trimmed component rates remain unchanged. The **Spike** columns always show observed two-week layer demand.
 - Both forecast depletion and order coverage/spring-matching calculations receive these planning rates. Existing inventory, pending orders, balancing and supplier lot rules still affect the final order quantities.
 
-Example: King volume of **20 mattresses/week**, with a store mix of **60% Cloud, 30% Aurora, 10% Cooper**, gives `20 × (0.6 × 2 + 0.3 × 1) = 30` King micro coils and 30 thin latex sheets/week, **plus** the half-sheet contribution from Singles.
+Example: King volume of **20 mattresses/week**, with a 12-week mix of **60% Cloud, 30% Aurora, 10% Cooper**, gives `20 × (0.6 × 2 + 0.3 × 1) = 30` King micro coils and 30 thin latex sheets/week, **plus** the half-sheet contribution from Singles.
 
 #### Accuracy limitations
 
-This makes components consistent with the selected store model mix while preserving the 12-week size demand baseline; it does not prove that the model mix forecasts better.
+This keeps component demand on the same 12-week paid-sales sample as mattress volume while preserving the size-demand baseline.
 
-- The two-week store model sample reacts quickly to a genuine change, but promotions, bulk orders and normal variance can distort it. Small sizes have especially sparse samples; a single store mattress can dominate their mix.
-- Applying store model mix to all-channel volume assumes website customers will follow the store mix. That is a planning assumption, not an observed fact.
-- The existing store query excludes only `sale_source = website` (case/whitespace normalised). Unlike the volume query, it does **not** filter to paid sale orders, and blank sources count as store. Unpaid, non-sale or misclassified orders may bias the mix. This change preserves those existing filters.
+- The 12-week mix is more stable than a short store-only sample, but promotions, bulk orders and normal variance can still affect it.
 - Seasonal multipliers still apply separately to timeline projections.
 - Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
 

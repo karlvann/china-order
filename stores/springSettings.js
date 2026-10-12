@@ -21,7 +21,7 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
   const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
-  const useStoreSplitDemand = ref(false) // Keep 12-week size demand and apply fixed spring splits plus recent component model mix
+  const useStoreSplitDemand = ref(false) // Keep 12-week size demand and apply fixed spring splits plus the 12-week component model mix
   const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders
   const liveSalesRates = ref({
     WEEKLY_SALES_RATE: {
@@ -86,10 +86,13 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
 
   // Actions
   const saveToStorage = () => {
+    if (typeof localStorage === 'undefined') return
+
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         palletCount: palletCount.value,
-        exportFormat: exportFormat.value
+        exportFormat: exportFormat.value,
+        useStoreSplitDemand: useStoreSplitDemand.value
       }))
     } catch (e) {
       console.error('Failed to save settings:', e)
@@ -147,10 +150,12 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
 
   const setUseStoreSplitDemand = (value) => {
     useStoreSplitDemand.value = value
+    saveToStorage()
   }
 
   const toggleStoreSplitDemand = () => {
     useStoreSplitDemand.value = !useStoreSplitDemand.value
+    saveToStorage()
   }
 
   const setComponentScale = (scale) => {
@@ -158,6 +163,8 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
   }
 
   const loadFromStorage = () => {
+    if (typeof localStorage === 'undefined') return
+
     try {
       const saved = localStorage.getItem(SETTINGS_KEY)
       if (saved) {
@@ -167,6 +174,9 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
         }
         if (data.exportFormat !== undefined) {
           exportFormat.value = data.exportFormat
+        }
+        if (data.useStoreSplitDemand !== undefined) {
+          useStoreSplitDemand.value = data.useStoreSplitDemand
         }
       }
     } catch (e) {

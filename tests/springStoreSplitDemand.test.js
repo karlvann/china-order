@@ -43,12 +43,12 @@ const baseRates = {
   }
 }
 
-test('preserves 12-week size demand, applies store recipe mix, then consolidates component sizes', () => {
+test('preserves 12-week size demand, applies the 12-week recipe mix, then consolidates component sizes', () => {
   const rates = withSpringStoreSplitDemand(baseRates)
 
-  // King: 8 × 1.5 + 2 × 2 × 0.5. Queen: 10 × 1.2 + 2 × 2 + 1 × 1.
-  assert.deepEqual(rates.MICRO_COIL_WEEKLY_DEMAND, { King: 14, Queen: 17 })
-  assert.deepEqual(rates.THIN_LATEX_WEEKLY_DEMAND, { King: 14, Queen: 17 })
+  // King: 8 × 1 + 2 × 1 × 0.5. Queen: 10 × 1 + 2 × 1.5 + 1 × 1.
+  assert.deepEqual(rates.MICRO_COIL_WEEKLY_DEMAND, { King: 9, Queen: 14 })
+  assert.deepEqual(rates.THIN_LATEX_WEEKLY_DEMAND, { King: 9, Queen: 14 })
   assert.equal(rates.WEEKLY_SALES_RATE.King, 8)
   assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0.8)
   assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 2.8)
@@ -62,11 +62,11 @@ test('does not confuse spring firmness with model-layer mix or use the observed 
   const rates = withSpringStoreSplitDemand(input)
 
   assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.verysoft, 0)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 14)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 9)
   assert.equal(rates.MICRO_COIL_WEEKLY_SPIKE.King, 40)
 })
 
-test('uses historical component mix at the 12-week size volume when no store sample exists', () => {
+test('uses the 12-week component mix regardless of the recent store sample', () => {
   const input = structuredClone(baseRates)
   delete input.STORE_SKU_SPLIT.Double
   input.STORE_MODEL_LAYER_TOTALS.Double = { mattresses: 0, microLayers: 0, thinLatexLayers: 0 }
@@ -74,10 +74,10 @@ test('uses historical component mix at the 12-week size volume when no store sam
 
   // Double keeps its 2/w baseline, with the historical 1.5 layers per mattress.
   assert.equal(rates.WEEKLY_SALES_RATE.Double, 2)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 16)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 14)
 })
 
-test('treats a real all-Cooper sample as zero layer demand, not missing data', () => {
+test('ignores a recent all-Cooper sample when calculating layer demand', () => {
   const input = structuredClone(baseRates)
   for (const size of ['King', 'Single']) {
     input.STORE_MODEL_LAYER_TOTALS[size] = { mattresses: 10, microLayers: 0, thinLatexLayers: 0 }
@@ -85,8 +85,8 @@ test('treats a real all-Cooper sample as zero layer demand, not missing data', (
   const rates = withSpringStoreSplitDemand(input)
 
   assert.equal(rates.WEEKLY_SALES_RATE.King, 8)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 0)
-  assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 0)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 9)
+  assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 9)
 })
 
 test('recent size spikes do not change the 12-week size volume', () => {
@@ -97,11 +97,11 @@ test('recent size spikes do not change the 12-week size volume', () => {
 
   assert.equal(rates.WEEKLY_SALES_RATE.King, 8)
   assert.equal(rates.WEEKLY_SALES_RATE.Single, 2)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 14)
-  assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 14)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 9)
+  assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 9)
 })
 
-test('preserves baseline component demand when an entire inventory group lacks a store sample', () => {
+test('uses 12-week component data when an entire inventory group lacks a store sample', () => {
   const input = structuredClone(baseRates)
   for (const size of ['King', 'Single']) {
     delete input.STORE_SKU_SPLIT[size]
@@ -111,7 +111,7 @@ test('preserves baseline component demand when an entire inventory group lacks a
 
   assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 9)
   assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 9)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 17)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 14)
 })
 
 test('retains group baseline if a positive-demand size has neither recent nor historical layer data', () => {
@@ -123,7 +123,7 @@ test('retains group baseline if a positive-demand size has neither recent nor hi
 
   assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 9)
   assert.equal(rates.THIN_LATEX_WEEKLY_DEMAND.King, 9)
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 17)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.Queen, 14)
 })
 
 test('does not require historical data for a size with no planning demand', () => {
@@ -134,14 +134,14 @@ test('does not require historical data for a size with no planning demand', () =
   input.WEEKLY_SALES_RATE.Single = 0
   const rates = withSpringStoreSplitDemand(input)
 
-  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 12)
+  assert.equal(rates.MICRO_COIL_WEEKLY_DEMAND.King, 8)
 })
 
 test('rounds component rates only after summing size contributions', () => {
   const input = structuredClone(baseRates)
   for (const size of ['Queen', 'Double', 'King Single']) {
     input.WEEKLY_SALES_RATE[size] = 1
-    input.STORE_MODEL_LAYER_TOTALS[size] = { mattresses: 3, microLayers: 1, thinLatexLayers: 1 }
+    input.MODEL_LAYER_TOTALS[size] = { mattresses: 3, microLayers: 1, thinLatexLayers: 1 }
   }
   const rates = withSpringStoreSplitDemand(input)
 
