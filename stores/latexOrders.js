@@ -222,20 +222,25 @@ export const useLatexOrdersStore = defineStore('latexOrders', () => {
     return getOrderSkuQuantity(order, skuString)
   }
 
-  // Computed: pending orders (expected arrival in future), sorted by expected_arrival
+  // Fetching already excludes archived orders
+  const unarchivedOrders = computed(() => {
+    return [...orders.value]
+      .sort((a, b) => new Date(a.expected_arrival) - new Date(b.expected_arrival))
+  })
+
+  // Orders arriving today or later, used by forecasts and order calculations
   const pendingOrders = computed(() => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    return orders.value
+    return unarchivedOrders.value
       .filter(order => new Date(order.expected_arrival) >= today)
-      .sort((a, b) => new Date(a.expected_arrival) - new Date(b.expected_arrival))
   })
 
   /**
    * Get the letter label for an order (A, B, C, etc.) based on expected_arrival (earliest = A)
    */
   const getOrderLetter = (orderId) => {
-    const index = pendingOrders.value.findIndex(o => String(o.id) === String(orderId))
+    const index = unarchivedOrders.value.findIndex(o => String(o.id) === String(orderId))
     if (index === -1) return '?'
     return String.fromCharCode(65 + index) // 65 = 'A'
   }
@@ -253,6 +258,7 @@ export const useLatexOrdersStore = defineStore('latexOrders', () => {
     loading,
     error,
     // Computed
+    unarchivedOrders,
     pendingOrders,
     pastOrders,
     // Actions

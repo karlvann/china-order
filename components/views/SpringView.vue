@@ -215,7 +215,7 @@ onMounted(() => {
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
-        :stored-orders="inventoryOrdersStore.orders"
+        :stored-orders="inventoryOrdersStore.pendingOrders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
         @scroll="onSpringScroll"
       />
@@ -232,7 +232,7 @@ onMounted(() => {
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
-        :stored-orders="inventoryOrdersStore.orders"
+        :stored-orders="inventoryOrdersStore.pendingOrders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
         @scroll="onComponentScroll"
       />

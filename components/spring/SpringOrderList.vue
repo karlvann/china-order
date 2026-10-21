@@ -113,14 +113,14 @@ const exportOrderTSV = (order) => {
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="inventoryOrdersStore.pendingOrders.length === 0" class="bg-surface border border-border rounded-lg p-6 text-center">
+    <div v-else-if="inventoryOrdersStore.unarchivedOrders.length === 0" class="bg-surface border border-border rounded-lg p-6 text-center">
       <p class="text-muted text-sm">No pending orders. Create one to track incoming inventory.</p>
     </div>
 
     <!-- Order List -->
     <div v-else class="space-y-3">
       <div
-        v-for="order in inventoryOrdersStore.pendingOrders"
+        v-for="order in inventoryOrdersStore.unarchivedOrders"
         :key="order.id"
         class="bg-surface border border-border rounded-lg p-4"
       >

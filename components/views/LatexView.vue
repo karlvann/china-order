@@ -179,7 +179,7 @@ onMounted(() => {
           :usage-rates="usageRates"
           :show-yellow-warnings="showYellowWarnings"
           :hide-zero-demand-items="hideZeroDemandItems"
-          :stored-orders="latexOrdersStore.orders"
+          :stored-orders="latexOrdersStore.pendingOrders"
           :use-seasonal-demand="latexSettingsStore.useSeasonalDemand"
         />
       </template>
