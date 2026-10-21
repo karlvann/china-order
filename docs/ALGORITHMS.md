@@ -53,11 +53,11 @@ The Springs **Store split demand** toggle uses **fixed spring firmness percentag
 
 | Mattress sizes | Soft | Medium | Firm |
 |----------------|------|--------|------|
-| King | 10% | 35% | 55% |
-| Queen | 10% | 50% | 40% |
+| King | 5% | 39% | 56% |
+| Queen | 5% | 55% | 40% |
 | Double | 10% | 35% | 55% |
 | King Single | 25% | 30% | 45% |
-| Single | 45% | 30% | 25% |
+| Single | 40% | 30% | 30% |
 
 ```javascript
 springSkuDemand = sizeWeeklyDemand12Weeks * fixedFirmnessPercentage / 100
@@ -73,11 +73,11 @@ The Latex **Store split demand** toggle uses fixed mattress latex percentages fo
 
 | Mattress size | Soft | Medium | Firm |
 |---------------|------|--------|------|
-| King | 61% | 36% | 3% |
-| Queen | 54% | 43% | 3% |
-| Double | 54% | 43% | 3% |
-| King Single | 54% | 43% | 3% |
-| Single | 61% | 36% | 3% |
+| King | 61% | 37% | 2% |
+| Queen | 54% | 44% | 2% |
+| Double | 54% | 44% | 2% |
+| King Single | 54% | 44% | 2% |
+| Single | 61% | 37% | 2% |
 
 For each inventory size, preserve the existing 12-week weekly sheet demand and redistribute only its firmness mix using the fixed percentages. Existing smaller-mattress cutting rules are already included in the King/Queen latex demand; they are not applied again. King inventory includes King and Single demand, which share the same split. Queen inventory includes Queen, Double and King Single demand, which also share the same split. For example, 20 King sheets/week gives 12.2 soft, 7.2 medium and 0.6 firm sheets/week.
 
@@ -146,7 +146,7 @@ The spring ordering algorithm allocates pallets to sizes based on coverage prior
 
 - **Container capacity:** 1-12 pallets (user selects)
 - **Pallet size:** Exactly 30 springs per pallet (supplier fixed)
-- **Lead time:** Defaults to 10 weeks for spring orders, but is user-adjustable because real lead times vary by order, season, supplier timing, and shipping conditions
+- **Lead time:** Defaults to 11 weeks for China spring orders and 13 weeks for Sri Lanka latex orders, but is user-adjustable because real lead times vary by order, season, supplier timing, and shipping conditions
 - **Single size per pallet:** Cannot mix sizes on one pallet
 
 ### Size-Specific Coverage Targets
@@ -357,6 +357,7 @@ Both the Spring Timeline and Component Timeline display 40-week projections show
 - **Weekly demand** per row
 - **Projected stock** at start of each week
 - **Order arrivals** highlighted with (+X) notation
+- **Pending order placement weeks** highlighted in yellow, calculated as 11 weeks before a China arrival or 13 weeks before a Sri Lanka arrival; overdue placements are highlighted in the Now column
 - **Color coding:**
   - Red: Depleted (stock ≤ 0)
   - Yellow: Low stock (≤4 weeks) - optional toggle

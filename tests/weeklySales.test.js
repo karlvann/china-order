@@ -164,11 +164,11 @@ test('recipe collection, planning toggle and component ordering work together an
   settings.toggleStoreSplitDemand()
   const planning = settings.planningSalesRates
   assert.equal(planning.WEEKLY_SALES_RATE.King, 6)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.55, medium: 0.35, soft: 0.1, verysoft: 0 })
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Double, planning.FIRMNESS_DISTRIBUTION.King)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.4, medium: 0.5, soft: 0.1, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.56, medium: 0.39, soft: 0.05, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.4, medium: 0.55, soft: 0.05, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Double, { firm: 0.55, medium: 0.35, soft: 0.1, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], { firm: 0.45, medium: 0.3, soft: 0.25, verysoft: 0 })
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Single, { firm: 0.25, medium: 0.3, soft: 0.45, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Single, { firm: 0.3, medium: 0.3, soft: 0.4, verysoft: 0 })
   assert.deepEqual(planning.SKU_WEEKLY_DEMAND_SPIKE, baseline.SKU_WEEKLY_DEMAND_SPIKE)
   assert.deepEqual(planning.MICRO_COIL_WEEKLY_DEMAND, { King: 6.857, Queen: 7 })
   assert.deepEqual(planning.THIN_LATEX_WEEKLY_DEMAND, { King: 6.857, Queen: 7 })
@@ -225,11 +225,11 @@ test('Latex planning state feeds fixed latex rates into orders and restores the 
   const order = calculateLatexOrder(410, createEmptyLatexInventory(), planning, [])
   const demandBySku = Object.fromEntries(order.skuMetrics.map(sku => [sku.key, sku.weeklyDemand]))
   assert.deepEqual(demandBySku, {
-    'firm|King': 0.3,
-    'medium|King': 3.6,
+    'firm|King': 0.2,
+    'medium|King': 3.7,
     'soft|King': 6.1,
-    'firm|Queen': 0.15,
-    'medium|Queen': 2.15,
+    'firm|Queen': 0.1,
+    'medium|Queen': 2.2,
     'soft|Queen': 2.7,
     'pillowLatex|thin': 0.25,
     'pillowLatex|thick': 0.5

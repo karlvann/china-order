@@ -4,7 +4,8 @@ import {
   FIRMNESS_TYPES,
   FIRMNESS_LABELS,
   SPRING_PLANNING_SPLITS,
-  SEASONAL_DEMAND
+  SEASONAL_DEMAND,
+  LEAD_TIME_WEEKS
 } from '~/lib/constants/index.js'
 import { calculateSkuWeeklyDemand, getCurrentMonday } from '~/lib/utils/index.js'
 
@@ -115,6 +116,19 @@ const getOrdersArrivingInWeek = (weekIndex) => {
   return props.storedOrders.filter(order => getOrderWeekIndex(order) === weekIndex)
 }
 
+const isOrderPlaced = (order) => {
+  return order.ordered === true || order.ordered === 1 || order.ordered === 'true'
+}
+
+const getOrdersToPlaceInWeek = (weekIndex) => {
+  return props.storedOrders.filter(order => {
+    if (isOrderPlaced(order)) return false
+    return Math.max(0, getOrderWeekIndex(order) - LEAD_TIME_WEEKS) === weekIndex
+  })
+}
+
+const ordersToPlaceNow = computed(() => getOrdersToPlaceInWeek(0))
+
 // Get seasonal multiplier for a given week index
 const getSeasonalMultiplierForWeek = (weekIndex) => {
   if (!props.useSeasonalDemand) return 1.0
@@ -145,6 +159,7 @@ const weeks = computed(() => {
 
     // Check for stored orders arriving this week
     const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
+    const ordersToPlaceThisWeek = getOrdersToPlaceInWeek(i)
     const hasStoredOrders = storedOrdersThisWeek.length > 0
 
     result.push({
@@ -153,7 +168,9 @@ const weeks = computed(() => {
       date: formatShortDate(weekMonday),
       isDraftArrival: draftArrivalIndex !== null && i === draftArrivalIndex,
       storedOrders: storedOrdersThisWeek,
-      hasStoredOrders
+      hasStoredOrders,
+      ordersToPlace: ordersToPlaceThisWeek,
+      hasOrdersToPlace: ordersToPlaceThisWeek.length > 0
     })
   }
   return result
@@ -300,21 +317,42 @@ const getCellBg = (stock, weeklyRate) => {
             <th class="table-header sticky left-0 bg-table-header z-10 min-w-[180px]">Size/Firmness</th>
             <th class="table-header sticky left-[180px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]">Demand</th>
             <th class="table-header sticky left-[250px] bg-table-header z-10 text-center w-[70px] min-w-[70px] max-w-[70px]" title="Average demand from the last 2 complete weeks">Spike</th>
-            <th class="table-header sticky left-[320px] bg-table-current z-10 text-center w-[70px] text-primary">
+            <th
+              :class="[
+                'table-header sticky left-[320px] z-10 text-center w-[70px] text-primary',
+                ordersToPlaceNow.length > 0 ? 'bg-warning/20 min-w-[110px]' : 'bg-table-current'
+              ]"
+            >
               <div>Now</div>
               <div class="text-[9px] text-muted font-normal">{{ currentWeekRange }}</div>
+              <span
+                v-for="order in ordersToPlaceNow"
+                :key="order.id"
+                class="block text-[10px] text-warning"
+                :title="order.notes || 'No notes'"
+              >
+                Place order {{ inventoryOrdersStore.getOrderLetter(order.id) }}
+              </span>
             </th>
             <th
               v-for="week in weeks"
               :key="week.index"
               :class="[
                 'table-header text-center',
-                week.hasStoredOrders ? 'min-w-[95px] bg-success/10' : week.isDraftArrival ? 'min-w-[95px] bg-info/10' : 'min-w-[62px]'
+                week.hasOrdersToPlace ? 'min-w-[110px] bg-warning/20' : week.hasStoredOrders ? 'min-w-[95px] bg-success/10' : week.isDraftArrival ? 'min-w-[95px] bg-info/10' : 'min-w-[62px]'
               ]"
             >
               <div>W{{ week.number }}</div>
               <div class="text-[9px] text-subtle font-normal">{{ week.date }}</div>
               <span v-if="week.isDraftArrival" class="block text-[10px] text-brand-light">Draft</span>
+              <span
+                v-for="order in week.ordersToPlace"
+                :key="`place-${order.id}`"
+                class="block text-[10px] text-warning"
+                :title="order.notes || 'No notes'"
+              >
+                Place order {{ inventoryOrdersStore.getOrderLetter(order.id) }}
+              </span>
               <div v-if="week.hasStoredOrders">
                 <span
                   v-for="order in week.storedOrders"
@@ -339,13 +377,20 @@ const getCellBg = (stock, weeklyRate) => {
             <td class="table-cell sticky left-[250px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">
               {{ row.demandSpike.toFixed(2) }}/w
             </td>
-            <td class="table-cell sticky left-[320px] bg-table-current z-10 text-center font-mono w-[70px] text-primary">{{ row.currentStock }}</td>
+            <td
+              :class="[
+                'table-cell sticky left-[320px] z-10 text-center font-mono w-[70px] text-primary',
+                ordersToPlaceNow.length > 0 ? 'bg-warning/20' : 'bg-table-current'
+              ]"
+            >
+              {{ row.currentStock }}
+            </td>
             <td
               v-for="proj in row.projections"
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-info/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasOrdersToPlace ? 'bg-warning/20' : weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-info/10' : getCellBg(proj.stock, row.weeklyRate)
               ]"
             >
               <span>{{ proj.stock }}</span>

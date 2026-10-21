@@ -3,7 +3,8 @@ import {
   MIN_PALLETS,
   MAX_PALLETS,
   MATTRESS_SIZES,
-  FIRMNESS_TYPES
+  FIRMNESS_TYPES,
+  LEAD_TIME_WEEKS
 } from '~/lib/constants/index.js'
 import { withSpringStoreSplitDemand } from '~/lib/utils/index.js'
 
@@ -19,7 +20,7 @@ export const useSpringSettingsStore = defineStore('springSettings', () => {
   const exportFormat = ref('optimized') // 'exact' or 'optimized'
   const startingMonth = ref(new Date().getMonth()) // 0-11
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
-  const deliveryWeeks = ref(10) // 1-15 weeks (shipping lead time)
+  const deliveryWeeks = ref(LEAD_TIME_WEEKS) // 1-15 weeks (shipping lead time)
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
   const useStoreSplitDemand = ref(false) // Keep 12-week size demand and apply fixed spring splits plus the 12-week component model mix
   const componentScale = ref(1.0) // 0.3 to 2.0, multiplier for component orders

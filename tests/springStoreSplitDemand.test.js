@@ -50,9 +50,9 @@ test('preserves 12-week size demand, applies the 12-week recipe mix, then consol
   assert.deepEqual(rates.MICRO_COIL_WEEKLY_DEMAND, { King: 9, Queen: 14 })
   assert.deepEqual(rates.THIN_LATEX_WEEKLY_DEMAND, { King: 9, Queen: 14 })
   assert.equal(rates.WEEKLY_SALES_RATE.King, 8)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0.8)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 2.8)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 4.4)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0.4)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 3.12)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 4.48)
   assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.verysoft, 0)
 })
 
@@ -163,11 +163,11 @@ test('leaves raw rates, spikes and input layer totals unchanged', () => {
 
 test('shares the specified percentages between planning and the timeline display', () => {
   assert.deepEqual(SPRING_PLANNING_SPLITS, {
-    King: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
-    Queen: { verysoft: 0, soft: 10, medium: 50, firm: 40 },
+    King: { verysoft: 0, soft: 5, medium: 39, firm: 56 },
+    Queen: { verysoft: 0, soft: 5, medium: 55, firm: 40 },
     Double: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
     'King Single': { verysoft: 0, soft: 25, medium: 30, firm: 45 },
-    Single: { verysoft: 0, soft: 45, medium: 30, firm: 25 }
+    Single: { verysoft: 0, soft: 40, medium: 30, firm: 30 }
   })
   for (const split of Object.values(SPRING_PLANNING_SPLITS)) {
     assert.equal(Object.values(split).reduce((sum, value) => sum + value, 0), 100)
@@ -183,11 +183,11 @@ test('applies fixed spring splits to every size without requiring observed store
 
   for (const { id: size } of MATTRESS_SIZES) {
     const expectedBySize = {
-      King: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
-      Queen: { verysoft: 0, soft: 10, medium: 50, firm: 40 },
+      King: { verysoft: 0, soft: 5, medium: 39, firm: 56 },
+      Queen: { verysoft: 0, soft: 5, medium: 55, firm: 40 },
       Double: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
       'King Single': { verysoft: 0, soft: 25, medium: 30, firm: 45 },
-      Single: { verysoft: 0, soft: 45, medium: 30, firm: 25 }
+      Single: { verysoft: 0, soft: 40, medium: 30, firm: 30 }
     }
     const expected = expectedBySize[size]
 

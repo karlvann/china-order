@@ -19,7 +19,7 @@ export const useLatexSettingsStore = defineStore('latexSettings', () => {
   // State
   const capacity = ref(DEFAULT_LATEX_CAPACITY)
   const orderWeekOffset = ref(0) // 0-20 weeks from current week
-  const deliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS) // Default 10 weeks
+  const deliveryWeeks = ref(LATEX_LEAD_TIME_WEEKS)
   const useSeasonalDemand = ref(true) // Apply seasonal multipliers to forecast
   const useStoreSplitDemand = ref(false) // Keep 12-week sheet demand and apply fixed mattress latex percentages
 

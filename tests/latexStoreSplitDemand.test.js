@@ -30,11 +30,11 @@ const baseRates = {
 
 test('shares the specified latex percentages with the timeline summary', () => {
   assert.deepEqual(LATEX_PLANNING_SPLIT, {
-    King: { soft: 61, medium: 36, firm: 3 },
-    Queen: { soft: 54, medium: 43, firm: 3 },
-    Double: { soft: 54, medium: 43, firm: 3 },
-    'King Single': { soft: 54, medium: 43, firm: 3 },
-    Single: { soft: 61, medium: 36, firm: 3 }
+    King: { soft: 61, medium: 37, firm: 2 },
+    Queen: { soft: 54, medium: 44, firm: 2 },
+    Double: { soft: 54, medium: 44, firm: 2 },
+    'King Single': { soft: 54, medium: 44, firm: 2 },
+    Single: { soft: 61, medium: 37, firm: 2 }
   })
   for (const size of Object.keys(LATEX_PLANNING_SPLIT)) {
     assert.equal(Object.values(LATEX_PLANNING_SPLIT[size]).reduce((sum, value) => sum + value, 0), 100)
@@ -46,12 +46,12 @@ test('preserves each 12-week sheet total while applying the fixed mix', () => {
 
   assert.deepEqual(rates.WEEKLY_TOTAL_BY_SIZE, { King: 10, Queen: 5 })
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.3, Queen: 0.15 },
-    medium: { King: 3.6, Queen: 2.15 },
+    firm: { King: 0.2, Queen: 0.1 },
+    medium: { King: 3.7, Queen: 2.2 },
     soft: { King: 6.1, Queen: 2.7 }
   })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.03, medium: 0.36, soft: 0.61 })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.03, medium: 0.43, soft: 0.54 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.02, medium: 0.37, soft: 0.61 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.02, medium: 0.44, soft: 0.54 })
   for (const size of LATEX_SIZES) {
     for (const firmness of LATEX_FIRMNESSES) {
       assert.equal(getLatexStoreSplitDemandRate(baseRates, size, firmness), rates.WEEKLY_RATES[firmness][size])
@@ -67,7 +67,7 @@ test('fixed latex demand does not require any recent store orders', () => {
 
     assert.deepEqual(rates.WEEKLY_RATES, withLatexStoreSplitDemand(baseRates).WEEKLY_RATES)
     assert.equal(getLatexStoreSplitDemandRate(input, 'King', 'soft'), 6.1)
-    assert.equal(getLatexStoreSplitDemandRate(input, 'Queen', 'firm'), 0.15)
+    assert.equal(getLatexStoreSplitDemandRate(input, 'Queen', 'firm'), 0.1)
   }
 })
 
@@ -89,8 +89,8 @@ test('rounds the fixed latex planning rates to three decimal places', () => {
   const rates = withLatexStoreSplitDemand(input)
 
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.004, Queen: 0.004 },
-    medium: { King: 0.045, Queen: 0.054 },
+    firm: { King: 0.003, Queen: 0.003 },
+    medium: { King: 0.046, Queen: 0.055 },
     soft: { King: 0.076, Queen: 0.068 }
   })
 })

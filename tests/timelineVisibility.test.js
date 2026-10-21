@@ -6,6 +6,8 @@ import { compileScript, compileTemplate, parse } from '@vue/compiler-sfc'
 import { computed, createSSRApp, reactive, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import { createEmptySpringInventory, createEmptyComponentInventory, createEmptyLatexInventory } from '../lib/utils/inventory.js'
+import { getCurrentMonday } from '../lib/utils/dates.js'
+import { LATEX_LEAD_TIME_WEEKS, LEAD_TIME_WEEKS } from '../lib/constants/index.js'
 
 // Compile the real Vue components in Node; no browser, API or Nuxt build required.
 const root = new URL('../', import.meta.url)
@@ -32,8 +34,8 @@ const hooks = registerHooks({
 const autoImports = {
   computed,
   ref,
-  useSpringOrdersStore: () => ({}),
-  useLatexOrdersStore: () => ({})
+  useSpringOrdersStore: () => ({ getOrderLetter: id => id }),
+  useLatexOrdersStore: () => ({ getOrderLetter: id => id })
 }
 const originalGlobals = Object.fromEntries(Object.keys(autoImports).map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
 Object.assign(globalThis, autoImports)
@@ -114,6 +116,62 @@ for (const scenario of scenarios) {
   })
 }
 
+const placementScenarios = [
+  { ...scenarios[0], leadTimeWeeks: LEAD_TIME_WEEKS },
+  { ...scenarios[1], leadTimeWeeks: LEAD_TIME_WEEKS },
+  { ...scenarios[2], leadTimeWeeks: LATEX_LEAD_TIME_WEEKS }
+]
+
+for (const scenario of placementScenarios) {
+  test(`${scenario.path}: highlights when an unplaced order must be placed`, async () => {
+    const { default: component } = await import(new URL(scenario.path, root).href)
+    const defaults = Object.fromEntries(Object.entries(component.props).map(([key, definition]) => [
+      key,
+      typeof definition.default === 'function' ? definition.default() : definition.default
+    ]))
+    const getArrivalDate = (weekIndex) => {
+      const date = getCurrentMonday()
+      date.setDate(date.getDate() + (weekIndex * 7))
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+    const unplacedOrder = {
+      id: 'A',
+      ordered: false,
+      expected_arrival: getArrivalDate(scenario.leadTimeWeeks + 4),
+      skus: []
+    }
+    const placedOrder = {
+      id: 'B',
+      ordered: true,
+      expected_arrival: unplacedOrder.expected_arrival,
+      skus: []
+    }
+    const props = reactive({
+      ...defaults,
+      inventory: scenario.inventory,
+      usageRates: scenario.usageRates,
+      storedOrders: [unplacedOrder, placedOrder]
+    })
+    const { weeks, ordersToPlaceNow } = component.setup(props, { expose: () => {}, emit: () => {} })
+
+    assert.equal(weeks.value[3].index, 4)
+    assert.equal(weeks.value[3].hasOrdersToPlace, true)
+    assert.deepEqual(weeks.value[3].ordersToPlace.map(order => order.id), ['A'])
+    assert.equal(ordersToPlaceNow.value.length, 0)
+
+    props.storedOrders = [{
+      ...unplacedOrder,
+      expected_arrival: getArrivalDate(scenario.leadTimeWeeks - 2)
+    }]
+
+    assert.deepEqual(ordersToPlaceNow.value.map(order => order.id), ['A'])
+    assert.equal(weeks.value.some(week => week.hasOrdersToPlace), false)
+  })
+}
+
 for (const scenario of scenarios.filter(item => item.path !== 'components/forecast/ComponentTimelineDetailed.vue')) {
   test(`${scenario.path}: renders Spike without a store split column and closes the sticky-column gap`, async () => {
     const { default: component, render } = await import(new URL(scenario.path, root).href)
@@ -125,16 +183,17 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
     assert.match(html, />Spike<\/th>/)
     assert.doesNotMatch(html, />Store split<\/th>/)
     const isSpringTimeline = scenario.path.includes('SpringTimeline')
-    assert.ok(html.includes(`sticky left-[${isSpringTimeline ? 320 : 280}px] bg-table-current`))
+    assert.ok(html.includes(`sticky left-[${isSpringTimeline ? 320 : 280}px] z-10`))
+    assert.ok(html.includes('bg-table-current'))
 
     if (isSpringTimeline) {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
-      assert.ok(summary.includes('King 10% 35% 55%'))
-      assert.ok(summary.includes('Queen 10% 50% 40%'))
+      assert.ok(summary.includes('King 5% 39% 56%'))
+      assert.ok(summary.includes('Queen 5% 55% 40%'))
       assert.ok(summary.includes('Double 10% 35% 55%'))
       assert.doesNotMatch(summary, /King and Double/)
       assert.ok(summary.includes('King Single 25% 30% 45%'))
-      assert.ok(summary.includes('Single 45% 30% 25%'))
+      assert.ok(summary.includes('Single 40% 30% 30%'))
       assert.ok(summary.includes('Size Soft Medium Firm'))
       assert.doesNotMatch(summary, /Very soft/)
       assert.doesNotMatch(summary, /\bVery firm\b/)
@@ -142,11 +201,11 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
     } else {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
       assert.ok(summary.includes('Mattress size Soft Medium Firm'))
-      assert.ok(summary.includes('King 61% 36% 3%'))
-      assert.ok(summary.includes('Queen 54% 43% 3%'))
-      assert.ok(summary.includes('Double 54% 43% 3%'))
-      assert.ok(summary.includes('King Single 54% 43% 3%'))
-      assert.ok(summary.includes('Single 61% 36% 3%'))
+      assert.ok(summary.includes('King 61% 37% 2%'))
+      assert.ok(summary.includes('Queen 54% 44% 2%'))
+      assert.ok(summary.includes('Double 54% 44% 2%'))
+      assert.ok(summary.includes('King Single 54% 44% 2%'))
+      assert.ok(summary.includes('Single 61% 37% 2%'))
       assert.ok(html.indexOf('Fixed latex demand split') < html.indexOf('Latex timeline'))
     }
   })

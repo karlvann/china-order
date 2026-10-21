@@ -18,7 +18,7 @@ This file provides guidance to coding agents when working with code in this repo
 
 1. **Container capacity**: 1-12 pallets (user chooses within range)
 2. **Pallet size**: EXACTLY 30 springs per pallet (supplier fixed)
-3. **Lead time**: Variable by order/season; 10 weeks is the default spring-planning assumption
+3. **Lead time**: Variable by order/season; 11 weeks is the default China spring-planning assumption and 13 weeks is the default Sri Lanka latex-planning assumption
 4. **Pallet allocation**: Whole pallets by size, allocated by demand/coverage urgency
 5. **Component lot sizes**: Fixed by supplier (20 or 10 units)
 6. **No size mixing**: Each spring pallet must be a single mattress size; firmness can be mixed within that size
@@ -272,7 +272,7 @@ The app manages two independent supply chains:
 
 ### Spring tension distribution
 - Live tension ratios are calculated from the full 12-week paid-sales sample.
-- Store split demand uses fixed physical splits: King/Double 10% soft, 35% medium and 55% firm; Queen 10% soft, 50% medium and 40% firm; King Single 25% soft, 30% medium and 45% firm; Single 45% soft, 30% medium and 25% firm. Very soft is 0% for every size.
+- Store split demand uses fixed physical splits: King 5% soft, 39% medium and 56% firm; Queen 5% soft, 55% medium and 40% firm; Double 10% soft, 35% medium and 55% firm; King Single 25% soft, 30% medium and 45% firm; Single 40% soft, 30% medium and 30% firm. Very soft is 0% for every size.
 - Low-selling spring SKUs use a demand floor: if normal SKU demand (`size weekly rate × tension ratio`) is below 1.75/wk, use the higher of normal demand and the raw 12-week SKU average.
 
 ### Component Consolidation

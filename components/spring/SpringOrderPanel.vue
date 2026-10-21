@@ -2,7 +2,7 @@
 import { calculateSpringOrder } from '~/lib/algorithms/springOrder.js'
 import { calculateComponentOrder } from '~/lib/algorithms/componentCalc.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
-import { FIRMNESS_TYPES } from '~/lib/constants/index.js'
+import { FIRMNESS_TYPES, LEAD_TIME_WEEKS } from '~/lib/constants/index.js'
 import { createEmptySpringInventory, SPRING_INVENTORY_SKU_MAP } from '~/lib/utils/inventory.js'
 
 const uiStore = useSpringUIStore()
@@ -18,7 +18,7 @@ const usageRates = computed(() => settingsStore.planningSalesRates)
 // Local order settings (independent of global settingsStore)
 const localPalletCount = ref(8)
 const localOrderWeekOffset = ref(0)
-const localDeliveryWeeks = ref(10)
+const localDeliveryWeeks = ref(LEAD_TIME_WEEKS)
 const localComponentScale = ref(1.0)
 
 // Form state
@@ -480,7 +480,7 @@ const initForm = () => {
     // Reset local settings to defaults
     localPalletCount.value = 8
     localOrderWeekOffset.value = 0
-    localDeliveryWeeks.value = 10
+    localDeliveryWeeks.value = LEAD_TIME_WEEKS
     localComponentScale.value = 1.0
 
     // Set dates based on order week (Now = current Monday)
