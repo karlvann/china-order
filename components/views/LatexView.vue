@@ -40,6 +40,10 @@ onMounted(() => {
   latexSettingsStore.loadFromStorage()
   latexOrdersStore.fetchOrders()
 })
+
+onUnmounted(() => {
+  latexUIStore.closeOrderPanel()
+})
 </script>
 
 <template>

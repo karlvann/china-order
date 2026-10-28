@@ -1,6 +1,7 @@
 <script setup>
 const uiStore = useSpringUIStore()
 const inventoryOrdersStore = useSpringOrdersStore()
+const { downloadProforma } = useOrderProforma()
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -39,14 +40,6 @@ const getItemBreakdown = (order) => {
     }
   })
   return { springs, components }
-}
-
-// Confirm delete (only if not ordered)
-const confirmDelete = async (order) => {
-  if (order.ordered) return
-  if (confirm(`Delete order from ${formatDate(order.order_date)}?`)) {
-    await inventoryOrdersStore.deleteOrder(order.id)
-  }
 }
 
 // Generate TSV from order SKUs
@@ -169,36 +162,25 @@ const exportOrderTSV = (order) => {
           <!-- Actions -->
           <div class="flex items-center gap-2 shrink-0">
             <button
-              @click="exportOrderTSV(order)"
-              :disabled="order.ordered"
-              :class="[
-                'px-3 py-1.5 text-sm rounded transition-colors',
-                order.ordered
-                  ? 'text-disabled cursor-not-allowed'
-                  : 'text-muted hover:text-primary hover:bg-control-surface'
-              ]"
-              :title="order.ordered ? 'Order already placed' : 'Export as TSV'"
+            v-if="!order.ordered"
+            class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            title="Export as TSV"
+            @click="exportOrderTSV(order)"
             >
               Export
             </button>
             <button
-              @click="uiStore.openOrderPanel(order.id)"
-              class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            v-if="order.proforma"
+            class="px-3 py-1.5 text-sm text-brand hover:text-brand-light hover:bg-control-surface rounded transition-colors"
+            @click="downloadProforma(order.proforma)"
             >
-              Edit
+              Download proforma
             </button>
             <button
-              @click="confirmDelete(order)"
-              :disabled="order.ordered"
-              :class="[
-                'px-3 py-1.5 text-sm rounded transition-colors',
-                order.ordered
-                  ? 'text-disabled cursor-not-allowed'
-                  : 'text-danger hover:text-danger-hover hover:bg-danger/10'
-              ]"
-              :title="order.ordered ? 'Cannot delete an order that has been placed' : 'Delete order'"
+            class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            @click="uiStore.openOrderPanel(order.id)"
             >
-              Delete
+              Edit
             </button>
           </div>
         </div>

@@ -1,15 +1,40 @@
 <script setup>
-const appStore = useAppStore()
+const route = useRoute()
 const router = useRouter()
 const { logout } = useDirectusAuth()
 const { clearDirectusSession } = useDirectusSession()
 
 const orderTypes = [
-  { id: 'springs', label: 'Springs' },
-  { id: 'latex', label: 'Latex' }
+  { id: 'springs', label: 'Springs', to: '/springs', activeClass: 'bg-brand text-inverse' },
+  { id: 'latex', label: 'Latex', to: '/latex', activeClass: 'bg-accent-latex text-inverse' },
+  { id: 'archive', label: 'Archive', to: '/archive', activeClass: 'bg-accent-archive text-inverse' }
 ]
 
-const isLatex = computed(() => appStore.isLatexOrderType)
+const activeOrderType = computed(() => route.path.split('/')[1] || 'springs')
+
+const activeTheme = computed(() => {
+  if (activeOrderType.value === 'latex') {
+    return {
+      label: 'LATEX',
+      textClass: 'text-accent-latex',
+      badgeClass: 'bg-accent-latex/20 border-accent-latex/40 text-accent-latex-light'
+    }
+  }
+
+  if (activeOrderType.value === 'archive') {
+    return {
+      label: 'ARCHIVE',
+      textClass: 'text-accent-archive',
+      badgeClass: 'bg-accent-archive/20 border-accent-archive/40 text-accent-archive-light'
+    }
+  }
+
+  return {
+    label: 'SPRINGS',
+    textClass: 'text-brand',
+    badgeClass: 'bg-brand/20 border-brand/40 text-brand-light'
+  }
+})
 
 const handleSignOut = async () => {
   try {
@@ -27,17 +52,15 @@ const handleSignOut = async () => {
     <!-- Brand -->
     <div>
       <div class="flex items-center gap-2.5 mb-0.5">
-        <span :class="['text-lg font-bold tracking-tight', isLatex ? 'text-accent-latex' : 'text-brand']">AusBeds</span>
+        <span :class="['text-lg font-bold tracking-tight', activeTheme.textClass]">AusBeds</span>
         <span class="text-lg text-disabled font-light">|</span>
         <span
           :class="[
-            'px-2.5 py-0.5 rounded text-[10px] font-bold tracking-wider',
-            isLatex
-              ? 'bg-accent-latex/20 border border-accent-latex/40 text-accent-latex-light'
-              : 'bg-brand/20 border border-brand/40 text-brand-light'
+            'px-2.5 py-0.5 rounded border text-[10px] font-bold tracking-wider',
+            activeTheme.badgeClass
           ]"
         >
-          {{ isLatex ? 'LATEX' : 'SPRINGS' }}
+          {{ activeTheme.label }}
         </span>
       </div>
     </div>
@@ -46,21 +69,19 @@ const handleSignOut = async () => {
     <div class="flex items-center gap-4">
       <!-- View Toggle -->
       <div class="flex gap-1 bg-surface border border-border rounded-lg p-1">
-        <button
-          v-for="orderType in orderTypes"
-          :key="orderType.id"
-          @click="appStore.setActiveOrderType(orderType.id)"
-          :class="[
-            'toggle-btn',
-            appStore.activeOrderType === orderType.id
-              ? orderType.id === 'springs'
-                ? 'bg-brand text-inverse'
-                : 'bg-accent-latex text-inverse'
-              : 'hover:bg-surface-hover'
-          ]"
+        <NuxtLink
+        v-for="orderType in orderTypes"
+        :key="orderType.id"
+        :to="orderType.to"
+        :class="[
+          'toggle-btn',
+          activeOrderType === orderType.id
+            ? orderType.activeClass
+            : 'hover:bg-surface-hover'
+        ]"
         >
           {{ orderType.label }}
-        </button>
+        </NuxtLink>
       </div>
 
       <!-- Sign out button -->

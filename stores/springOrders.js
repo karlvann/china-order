@@ -39,7 +39,7 @@ export const useSpringOrdersStore = defineStore('springOrders', () => {
               { applied_to_stock: { _null: true } }
             ]
           },
-          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'ordered', 'applied_to_stock', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
+          fields: ['id', 'order_date', 'expected_arrival', 'order_location', 'notes', 'ordered', 'proforma.id', 'proforma.filename_download', 'proforma.type', 'proforma.filesize', 'applied_to_stock', 'date_updated', 'skus.id', 'skus.skus_id.id', 'skus.skus_id.sku', 'skus.skus_id.size', 'skus.skus_id.name', 'skus.quantity'],
           sort: ['-expected_arrival']
         }
       })

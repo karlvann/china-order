@@ -1,6 +1,7 @@
 <script setup>
 const latexUIStore = useLatexUIStore()
 const latexOrdersStore = useLatexOrdersStore()
+const { downloadProforma } = useOrderProforma()
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -23,14 +24,6 @@ const weeksUntilArrival = (arrivalDate) => {
 const getTotalItems = (order) => {
   if (!order.skus) return 0
   return order.skus.reduce((sum, item) => sum + (item.quantity || 0), 0)
-}
-
-// Confirm delete (only if not ordered)
-const confirmDelete = async (order) => {
-  if (order.ordered) return
-  if (confirm(`Delete order from ${formatDate(order.order_date)}?`)) {
-    await latexOrdersStore.deleteOrder(order.id)
-  }
 }
 
 // Generate TSV from order SKUs
@@ -141,36 +134,25 @@ const exportOrderTSV = (order) => {
           <!-- Actions -->
           <div class="flex items-center gap-2 shrink-0">
             <button
-              @click="exportOrderTSV(order)"
-              :disabled="order.ordered"
-              :class="[
-                'px-3 py-1.5 text-sm rounded transition-colors',
-                order.ordered
-                  ? 'text-disabled cursor-not-allowed'
-                  : 'text-muted hover:text-primary hover:bg-control-surface'
-              ]"
-              :title="order.ordered ? 'Order already placed' : 'Export as TSV'"
+            v-if="!order.ordered"
+            class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            title="Export as TSV"
+            @click="exportOrderTSV(order)"
             >
               Export
             </button>
             <button
-              @click="latexUIStore.openOrderPanel(order.id)"
-              class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            v-if="order.proforma"
+            class="px-3 py-1.5 text-sm text-accent-latex hover:text-accent-latex-light hover:bg-control-surface rounded transition-colors"
+            @click="downloadProforma(order.proforma)"
             >
-              Edit
+              Download proforma
             </button>
             <button
-              @click="confirmDelete(order)"
-              :disabled="order.ordered"
-              :class="[
-                'px-3 py-1.5 text-sm rounded transition-colors',
-                order.ordered
-                  ? 'text-disabled cursor-not-allowed'
-                  : 'text-danger hover:text-danger-hover hover:bg-danger/10'
-              ]"
-              :title="order.ordered ? 'Cannot delete an order that has been placed' : 'Delete order'"
+            class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
+            @click="latexUIStore.openOrderPanel(order.id)"
             >
-              Delete
+              Edit
             </button>
           </div>
         </div>

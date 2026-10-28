@@ -608,6 +608,12 @@ const currentInventory = computed(() => latexInventoryStore.inventory)
               <span class="text-sm text-muted">Order placed with supplier</span>
             </label>
           </div>
+
+          <SharedOrderProformaUpload
+          v-if="isEditing && ordered && savedOrder"
+          :order-id="savedOrder.id"
+          :proforma="savedOrder.proforma"
+          />
         </div>
 
         <!-- SKU Picker -->

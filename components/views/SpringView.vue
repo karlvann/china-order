@@ -60,6 +60,10 @@ const onComponentScroll = (scrollLeft) => {
 onMounted(() => {
   inventoryOrdersStore.fetchOrders()
 })
+
+onUnmounted(() => {
+  uiStore.closeOrderPanel()
+})
 </script>
 
 <template>

@@ -99,7 +99,7 @@ const onSubmit = async () => {
       return
     }
 
-    router.push('/dashboard')
+    router.push('/springs')
   } catch (e) {
     loginError.value = getDirectusErrorMessage(e, 'Invalid email or password')
   } finally {
@@ -111,7 +111,7 @@ watchEffect(() => {
   if (!user.value) return
 
   if (isAllowedUser()) {
-    router.push('/dashboard')
+    router.push('/springs')
     return
   }
 

@@ -54,6 +54,11 @@ export default {
           hover: withOpacity('--color-accent-latex-hover'),
           light: withOpacity('--color-accent-latex-light')
         },
+        'accent-archive': {
+          DEFAULT: withOpacity('--color-accent-archive'),
+          hover: withOpacity('--color-accent-archive-hover'),
+          light: withOpacity('--color-accent-archive-light')
+        },
         success: withOpacity('--color-success'),
         warning: withOpacity('--color-warning'),
         danger: {

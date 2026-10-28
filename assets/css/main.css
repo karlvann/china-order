@@ -36,6 +36,9 @@
     --color-accent-latex: 249 115 22;
     --color-accent-latex-hover: 234 88 12;
     --color-accent-latex-light: 251 146 60;
+    --color-accent-archive: 236 72 153;
+    --color-accent-archive-hover: 219 39 119;
+    --color-accent-archive-light: 249 168 212;
     --color-success: 74 222 128;
     --color-warning: 250 204 21;
     --color-danger: 248 113 113;
@@ -183,6 +186,15 @@
     color: rgb(var(--color-accent-latex-light) / 1);
   }
 
+  .text-accent-archive {
+    color: rgb(var(--color-accent-archive) / 1);
+  }
+
+  .text-accent-archive-light,
+  .hover\:text-accent-archive-light:hover {
+    color: rgb(var(--color-accent-archive-light) / 1);
+  }
+
   .text-success {
     color: rgb(var(--color-success) / 1);
   }
@@ -302,6 +314,18 @@
     background-color: rgb(var(--color-accent-latex-hover) / 1);
   }
 
+  .bg-accent-archive {
+    background-color: rgb(var(--color-accent-archive) / 1);
+  }
+
+  .bg-accent-archive\/20 {
+    background-color: rgb(var(--color-accent-archive) / 0.2);
+  }
+
+  .hover\:bg-accent-archive-hover:hover {
+    background-color: rgb(var(--color-accent-archive-hover) / 1);
+  }
+
   .bg-success\/10 {
     background-color: rgb(var(--color-success) / 0.1);
   }
@@ -349,6 +373,10 @@
 
   .border-accent-latex\/40 {
     border-color: rgb(var(--color-accent-latex) / 0.4);
+  }
+
+  .border-accent-archive\/40 {
+    border-color: rgb(var(--color-accent-archive) / 0.4);
   }
 
   .border-danger\/20 {
