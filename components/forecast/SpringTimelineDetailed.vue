@@ -66,6 +66,10 @@ const props = defineProps({
   useSeasonalDemand: {
     type: Boolean,
     default: false
+  },
+  useFixedDemandSplits: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -195,7 +199,7 @@ const rows = computed(() => {
   const result = []
 
   MATTRESS_SIZES.forEach(size => {
-    FIRMNESS_TYPES.forEach(firmness => {
+    FIRMNESS_TYPES.filter(firmness => firmness !== 'verysoft').forEach(firmness => {
       // Use the same low-selling SKU floor as the spring order algorithm
       const sizeWeeklyRate = props.usageRates.WEEKLY_SALES_RATE[size.id] || 0
       const firmnessDistribution = props.usageRates.FIRMNESS_DISTRIBUTION?.[size.id]?.[firmness] || 0
@@ -281,9 +285,9 @@ const getCellBg = (stock, weeklyRate) => {
 
 <template>
   <div class="mb-8">
-    <div class="mb-6 rounded border border-border p-4">
+    <div v-if="useFixedDemandSplits" class="mb-6 rounded border border-border p-4">
       <h3 class="text-sm font-semibold text-primary">Fixed spring demand splits</h3>
-      <p class="mt-1 text-xs text-muted">Applied within each size's 12-week demand rate when Store split demand is enabled. The size demand totals are unchanged.</p>
+      <p class="mt-1 text-xs text-muted">Applied within each size's 12-week demand rate when fixed demand splits are enabled. The size demand totals are unchanged.</p>
       <div class="mt-3 overflow-x-auto">
         <table class="text-xs text-muted">
           <thead>

@@ -295,7 +295,7 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <div class="mb-6 rounded border border-border p-4">
       <h3 class="text-sm font-semibold text-primary">Fixed latex demand split</h3>
-      <p class="mt-1 text-xs text-muted">Applied within the 12-week King and Queen sheet demand rates when Store split demand is enabled. Sheet demand totals and pillow latex are unchanged.</p>
+      <p class="mt-1 text-xs text-muted">Applied within the 12-week King and Queen sheet demand rates when fixed demand splits are enabled. Sheet demand totals and pillow latex are unchanged.</p>
       <div class="mt-3 overflow-x-auto">
         <table class="text-xs text-muted">
           <thead>
