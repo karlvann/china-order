@@ -53,8 +53,8 @@ The Springs **Store split demand** toggle uses **fixed spring firmness percentag
 
 | Mattress sizes | Soft | Medium | Firm |
 |----------------|------|--------|------|
-| King | 5% | 39% | 56% |
-| Queen | 5% | 55% | 40% |
+| King | 0% | 40% | 60% |
+| Queen | 0% | 65% | 35% |
 | Double | 10% | 35% | 55% |
 | King Single | 25% | 30% | 45% |
 | Single | 40% | 30% | 30% |
@@ -69,21 +69,20 @@ These percentages apply even when there are no recent store orders for a size. A
 
 ### Fixed latex demand split
 
-The Latex **Store split demand** toggle uses fixed mattress latex percentages for each mattress size. Only King and Queen latex sheets are stocked and ordered:
+The Latex **Fixed demand splits** toggle uses fixed percentages for the two stocked latex sheet sizes:
 
-| Mattress size | Soft | Medium | Firm |
-|---------------|------|--------|------|
-| King | 61% | 37% | 2% |
-| Queen | 54% | 44% | 2% |
-| Double | 54% | 44% | 2% |
-| King Single | 54% | 44% | 2% |
-| Single | 61% | 37% | 2% |
+| Latex sheet size | Soft | Medium | Firm |
+|------------------|------|--------|------|
+| King | 69% | 30% | 1% |
+| Queen | 49% | 49% | 2% |
 
-For each inventory size, preserve the existing 12-week weekly sheet demand and redistribute only its firmness mix using the fixed percentages. Existing smaller-mattress cutting rules are already included in the King/Queen latex demand; they are not applied again. King inventory includes King and Single demand, which share the same split. Queen inventory includes Queen, Double and King Single demand, which also share the same split. For example, 20 King sheets/week gives 12.2 soft, 7.2 medium and 0.6 firm sheets/week.
+Pillow latex preserves its combined 12-week demand and uses a fixed split of **60% thin** and **40% thick**.
+
+For each inventory size, preserve the existing 12-week weekly sheet demand and redistribute only its firmness mix using the fixed percentages. Existing cutting rules are already included in the King/Queen latex demand and are not applied again: King inventory includes King and half-sheet Single demand, while Queen inventory includes Queen, Double and King Single demand. For example, 20 King sheets/week gives 13.8 soft, 6 medium and 0.2 firm sheets/week.
 
 These percentages apply regardless of recent store orders or their observed firmness split. Zero or missing 12-week sheet demand gives zero mattress latex planning demand for that size. Rates are rounded to three decimal places and feed both the timeline and order calculations. Turning the toggle off restores the original 12-week firmness mix.
 
-`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the five-size summary above the latex timeline. The **Spike** values, pillow latex demand/spikes, spring splits and micro coil/thin latex rules are unchanged. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
+`LATEX_PLANNING_SPLIT` in `lib/constants/latex.js` supplies both the calculation and the King/Queen summary above the latex timeline. The **Spike** values and spring splits are unchanged. Pillow latex spikes remain measured values, while the planning demand uses the fixed thin/thick split. These are demand percentages, not guaranteed order percentages; stock, pending arrivals and the existing capacity/allocation rules still determine the order.
 
 Mattress SKUs can include a soft-latex suffix (`s`) after the model number for models 11-16, e.g. `cloud15squeen`. This keeps the normal spring firmness for the model but overrides the top latex demand to soft latex. Cooper uses foam instead of micro layers, but still consumes top latex.
 
@@ -114,7 +113,7 @@ This keeps component demand on the same 12-week paid-sales sample as mattress vo
 - Seasonal multipliers still apply separately to timeline projections.
 - Judge accuracy with rolling historical forecasts against subsequent actual recipe consumption, especially over the planned lead time. Automated regression tests verify the calculation, not real-world forecast accuracy.
 
-Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), size-specific King/Queen latex percentages with unchanged pillow demand, zero very-soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
+Run the focused regression tests with `yarn test` (Node 24). They cover the fixed spring percentages (including King Single), size-specific King/Queen latex percentages with a fixed pillow latex split, zero very-soft spring demand despite historical SKU floors, missing store samples, recipe quantity weighting, size consolidation, fallback/zero samples, toggle restoration and valid downstream orders/lot sizes. Timeline tests also verify the displayed split summary, retained Spike columns and 0.05/week row filtering. Tests use mocked sales without accessing Directus.
 
 ### Low-selling spring SKU floor
 
@@ -234,15 +233,17 @@ The component ordering algorithm ensures components are ordered to match spring 
 | Top Panel | All 5 | 1:1 with mattress sales |
 | Bottom Panel | All 5 | 1:1 with mattress sales |
 | Side Panel | King, Queen, Double* | *Double covers Double + KS + Single |
-| Micro Coils | King, Queen** | **Special demand ratio |
-| Thin Latex | King, Queen** | **Special demand ratio |
+| Micro Coils | King, Queen** | **Special demand ratio; ordered from China |
+| Thin Latex | King, Queen** | **Special demand ratio; ordered from Sri Lanka |
 
 ### Micro Coils & Thin Latex Special Rules
 
-- **Always equal:** Micro coils and thin latex must be ordered in equal quantities (they're glued together)
+- Micro coils and thin latex are consumed together at the same rate, but are now purchased from different suppliers.
+- During the supplier transition, thin latex remains available on the China spring order and is also available on the Sri Lanka latex order.
 - **King inventory:** Used for King mattresses (1:1) + Single mattresses (0.5:1, cut in half)
 - **Queen inventory:** Used for Queen, Double, King Single mattresses (1:1, cut from Queen)
 - **Demand ratio:** Cloud mattresses use 2 layers, Aurora uses 1, Cooper uses 0. The algorithm uses actual weekly demand from sales data.
+- The Sri Lanka recommendation projects both inventories to the latex arrival date, includes pending arrivals from both locations, and rounds the thin latex needed to match projected micro-coil stock up to the next 15 units.
 
 ### Algorithm Phases
 
@@ -283,12 +284,17 @@ This prevents scenarios like:
 
 After balancing, both would be closer to 9-13 weeks.
 
-#### Phase 4: Micro Coils & Thin Latex
+#### Phase 4: Micro Coils
 
-Same balancing logic, with additional steps:
-- Scale spring-matched by demand ratio (Cloud/Aurora factor)
-- Equalize micro coils and thin latex quantities
-- Adjust orders to make final stock equal between micro and latex
+The China component calculation continues to use the paired micro-coil/thin-latex inventory position and keeps thin latex editable on the spring order during the supplier transition.
+
+The Sri Lanka order then recommends King and Queen thin latex using:
+
+```javascript
+thinLatexOrder = projectedMicroCoilStockAtArrival - projectedThinLatexStockAtArrival
+```
+
+Negative requirements become zero and positive requirements are rounded up to the next 15 units. This quantity reserves Sri Lanka container capacity before the remaining capacity is allocated across mattress and pillow latex in supplier packs of 3.
 
 #### Phase 5: Apply Scaling
 
@@ -351,7 +357,7 @@ This allows smaller orders to fit in smaller containers while still maintaining 
 
 ## Timeline Projections
 
-Both the Spring Timeline and Component Timeline display 40-week projections showing:
+The spring, component and latex timelines display 60-week projections showing:
 
 - **Current stock** (Now column)
 - **Weekly demand** per row
@@ -363,7 +369,9 @@ Both the Spring Timeline and Component Timeline display 40-week projections show
   - Yellow: Low stock (≤4 weeks) - optional toggle
   - Blue: Overstock (>30 weeks)
 
-The timelines scroll horizontally in sync.
+The latex timeline includes grey, read-only King and Queen micro-coil reference rows sourced from China orders. The corresponding thin latex rows include legacy China arrivals and new Sri Lanka arrivals so the paired inventory can be compared directly. During the transition, the spring component timeline also keeps grey thin latex reference rows.
+
+The spring and component timelines scroll horizontally in sync.
 
 ---
 

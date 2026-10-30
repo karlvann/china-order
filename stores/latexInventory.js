@@ -32,6 +32,8 @@ export const useLatexInventoryStore = defineStore('latexInventory', () => {
 
     if (mapping.pillowLatexType) {
       inventory.value.pillowLatex[mapping.pillowLatexType] = quantity
+    } else if (mapping.thinLatexSize) {
+      inventory.value.thinLatex[mapping.thinLatexSize] = quantity
     } else {
       inventory.value[mapping.firmness][mapping.size] = quantity
     }

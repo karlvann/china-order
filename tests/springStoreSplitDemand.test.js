@@ -50,9 +50,9 @@ test('preserves 12-week size demand, applies the 12-week recipe mix, then consol
   assert.deepEqual(rates.MICRO_COIL_WEEKLY_DEMAND, { King: 9, Queen: 14 })
   assert.deepEqual(rates.THIN_LATEX_WEEKLY_DEMAND, { King: 9, Queen: 14 })
   assert.equal(rates.WEEKLY_SALES_RATE.King, 8)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0.4)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 3.12)
-  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 4.48)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.soft, 0)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.medium, 3.2)
+  assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.firm, 4.8)
   assert.equal(rates.RAW_SKU_WEEKLY_DEMAND.King.verysoft, 0)
 })
 
@@ -163,8 +163,8 @@ test('leaves raw rates, spikes and input layer totals unchanged', () => {
 
 test('shares the specified percentages between planning and the timeline display', () => {
   assert.deepEqual(SPRING_PLANNING_SPLITS, {
-    King: { verysoft: 0, soft: 5, medium: 39, firm: 56 },
-    Queen: { verysoft: 0, soft: 5, medium: 55, firm: 40 },
+    King: { verysoft: 0, soft: 0, medium: 40, firm: 60 },
+    Queen: { verysoft: 0, soft: 0, medium: 65, firm: 35 },
     Double: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
     'King Single': { verysoft: 0, soft: 25, medium: 30, firm: 45 },
     Single: { verysoft: 0, soft: 40, medium: 30, firm: 30 }
@@ -183,8 +183,8 @@ test('applies fixed spring splits to every size without requiring observed store
 
   for (const { id: size } of MATTRESS_SIZES) {
     const expectedBySize = {
-      King: { verysoft: 0, soft: 5, medium: 39, firm: 56 },
-      Queen: { verysoft: 0, soft: 5, medium: 55, firm: 40 },
+      King: { verysoft: 0, soft: 0, medium: 40, firm: 60 },
+      Queen: { verysoft: 0, soft: 0, medium: 65, firm: 35 },
       Double: { verysoft: 0, soft: 10, medium: 35, firm: 55 },
       'King Single': { verysoft: 0, soft: 25, medium: 30, firm: 45 },
       Single: { verysoft: 0, soft: 40, medium: 30, firm: 30 }
@@ -230,6 +230,7 @@ test('historical SKU floors cannot revive very-soft demand or override the fixed
     const expected = getSpringStoreSplitDemandRate(input, sku.size, sku.firmness)
     assert.ok(Math.abs(sku.weeklyDemand - expected) < 0.000001)
     if (sku.firmness === 'verysoft') assert.equal(sku.weeklyDemand, 0)
+    if (['King', 'Queen'].includes(sku.size) && sku.firmness === 'soft') assert.equal(sku.weeklyDemand, 0)
   }
 })
 

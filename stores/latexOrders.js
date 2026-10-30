@@ -161,6 +161,10 @@ export const useLatexOrdersStore = defineStore('latexOrders', () => {
    * Delete a Latex inventory order
    */
   const deleteOrder = async (id) => {
+    const order = getOrderById(id)
+    const isPlaced = order?.ordered === true || order?.ordered === 1 || order?.ordered === 'true'
+    if (!order || isPlaced) return false
+
     loading.value = true
     error.value = null
 

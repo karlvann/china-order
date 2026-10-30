@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { LATEX_FIRMNESSES, LATEX_PLANNING_SPLIT, LATEX_SIZES } from '../lib/constants/index.js'
+import { LATEX_FIRMNESSES, LATEX_PLANNING_SPLIT, LATEX_SIZES, PILLOW_LATEX_PLANNING_SPLIT } from '../lib/constants/index.js'
 import { getLatexStoreSplitDemandRate, withLatexStoreSplitDemand } from '../lib/utils/storeSplitDemand.js'
 
 const baseRates = {
@@ -30,15 +30,13 @@ const baseRates = {
 
 test('shares the specified latex percentages with the timeline summary', () => {
   assert.deepEqual(LATEX_PLANNING_SPLIT, {
-    King: { soft: 61, medium: 37, firm: 2 },
-    Queen: { soft: 54, medium: 44, firm: 2 },
-    Double: { soft: 54, medium: 44, firm: 2 },
-    'King Single': { soft: 54, medium: 44, firm: 2 },
-    Single: { soft: 61, medium: 37, firm: 2 }
+    King: { soft: 69, medium: 30, firm: 1 },
+    Queen: { soft: 49, medium: 49, firm: 2 }
   })
   for (const size of Object.keys(LATEX_PLANNING_SPLIT)) {
     assert.equal(Object.values(LATEX_PLANNING_SPLIT[size]).reduce((sum, value) => sum + value, 0), 100)
   }
+  assert.deepEqual(PILLOW_LATEX_PLANNING_SPLIT, { thin: 60, thick: 40 })
 })
 
 test('preserves each 12-week sheet total while applying the fixed mix', () => {
@@ -46,12 +44,13 @@ test('preserves each 12-week sheet total while applying the fixed mix', () => {
 
   assert.deepEqual(rates.WEEKLY_TOTAL_BY_SIZE, { King: 10, Queen: 5 })
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.2, Queen: 0.1 },
-    medium: { King: 3.7, Queen: 2.2 },
-    soft: { King: 6.1, Queen: 2.7 }
+    firm: { King: 0.1, Queen: 0.1 },
+    medium: { King: 3, Queen: 2.45 },
+    soft: { King: 6.9, Queen: 2.45 }
   })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.02, medium: 0.37, soft: 0.61 })
-  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.02, medium: 0.44, soft: 0.54 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.King, { firm: 0.01, medium: 0.3, soft: 0.69 })
+  assert.deepEqual(rates.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.02, medium: 0.49, soft: 0.49 })
+  assert.deepEqual(rates.PILLOW_LATEX_WEEKLY_RATES, { thin: 0.45, thick: 0.3 })
   for (const size of LATEX_SIZES) {
     for (const firmness of LATEX_FIRMNESSES) {
       assert.equal(getLatexStoreSplitDemandRate(baseRates, size, firmness), rates.WEEKLY_RATES[firmness][size])
@@ -66,7 +65,7 @@ test('fixed latex demand does not require any recent store orders', () => {
     const rates = withLatexStoreSplitDemand(input)
 
     assert.deepEqual(rates.WEEKLY_RATES, withLatexStoreSplitDemand(baseRates).WEEKLY_RATES)
-    assert.equal(getLatexStoreSplitDemandRate(input, 'King', 'soft'), 6.1)
+    assert.equal(getLatexStoreSplitDemandRate(input, 'King', 'soft'), 6.9)
     assert.equal(getLatexStoreSplitDemandRate(input, 'Queen', 'firm'), 0.1)
   }
 })
@@ -89,13 +88,13 @@ test('rounds the fixed latex planning rates to three decimal places', () => {
   const rates = withLatexStoreSplitDemand(input)
 
   assert.deepEqual(rates.WEEKLY_RATES, {
-    firm: { King: 0.003, Queen: 0.003 },
-    medium: { King: 0.046, Queen: 0.055 },
-    soft: { King: 0.076, Queen: 0.068 }
+    firm: { King: 0.001, Queen: 0.003 },
+    medium: { King: 0.038, Queen: 0.061 },
+    soft: { King: 0.086, Queen: 0.061 }
   })
 })
 
-test('preserves measured spikes, pillow demand and the original baseline data', () => {
+test('preserves measured spikes, pillow total demand and the original baseline data', () => {
   const input = structuredClone(baseRates)
   const original = structuredClone(input)
   const rates = withLatexStoreSplitDemand(input)
@@ -103,6 +102,7 @@ test('preserves measured spikes, pillow demand and the original baseline data', 
   assert.deepEqual(input, original)
   assert.deepEqual(rates.WEEKLY_SPIKES, original.WEEKLY_SPIKES)
   assert.deepEqual(rates.PILLOW_LATEX_WEEKLY_SPIKES, original.PILLOW_LATEX_WEEKLY_SPIKES)
-  assert.deepEqual(rates.PILLOW_LATEX_WEEKLY_RATES, original.PILLOW_LATEX_WEEKLY_RATES)
+  assert.deepEqual(rates.PILLOW_LATEX_WEEKLY_RATES, { thin: 0.45, thick: 0.3 })
+  assert.equal(Object.values(rates.PILLOW_LATEX_WEEKLY_RATES).reduce((sum, value) => sum + value, 0), 0.75)
   assert.deepEqual(rates.STORE_SPLIT, original.STORE_SPLIT)
 })

@@ -36,7 +36,7 @@ const hooks = registerHooks({
 const { useSpringSettingsStore } = await import('../stores/springSettings.js')
 const { useSpringSales } = await import('../composables/useSpringSales.js')
 const { useLatexSettingsStore } = await import('../stores/latexSettings.js')
-const { calculateLatexOrder } = await import('../lib/algorithms/latexOrder.js')
+const { calculateLatexOrder, calculateThinLatexRecommendation } = await import('../lib/algorithms/latexOrder.js')
 globalThis.useSpringSettingsStore = useSpringSettingsStore
 
 after(() => {
@@ -164,8 +164,8 @@ test('recipe collection, planning toggle and component ordering work together an
   settings.toggleStoreSplitDemand()
   const planning = settings.planningSalesRates
   assert.equal(planning.WEEKLY_SALES_RATE.King, 6)
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.56, medium: 0.39, soft: 0.05, verysoft: 0 })
-  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.4, medium: 0.55, soft: 0.05, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.King, { firm: 0.6, medium: 0.4, soft: 0, verysoft: 0 })
+  assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Queen, { firm: 0.35, medium: 0.65, soft: 0, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Double, { firm: 0.55, medium: 0.35, soft: 0.1, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION['King Single'], { firm: 0.45, medium: 0.3, soft: 0.25, verysoft: 0 })
   assert.deepEqual(planning.FIRMNESS_DISTRIBUTION.Single, { firm: 0.3, medium: 0.3, soft: 0.4, verysoft: 0 })
@@ -199,6 +199,27 @@ test('recipe collection, planning toggle and component ordering work together an
   assert.deepEqual(JSON.parse(JSON.stringify(settings.planningSalesRates)), baseline)
 })
 
+test('Thin latex recommendation matches projected micro-coil stock at arrival', () => {
+  const recommendation = calculateThinLatexRecommendation({
+    microCoilInventory: { King: 100, Queen: 80 },
+    thinLatexInventory: { King: 70, Queen: 90 },
+    weeklyDemand: { King: 5, Queen: 10 },
+    springOrders: [{
+      arrivalWeekIndex: 4,
+      skus: [
+        { skus_id: { sku: 'microcoilsking' }, quantity: 40 },
+        { skus_id: { sku: 'microcoilsqueen' }, quantity: 60 }
+      ]
+    }],
+    latexOrders: [{
+      arrivalWeekIndex: 6,
+      skus: [{ skus_id: { sku: 'thinlatexqueen' }, quantity: 20 }]
+    }]
+  }, 0, 8)
+
+  assert.deepEqual(recommendation, { King: 75, Queen: 30 })
+})
+
 test('Latex planning state feeds fixed latex rates into orders and restores the baseline', (t) => {
   t.mock.method(console, 'log', () => {})
   setActivePinia(createPinia())
@@ -220,23 +241,24 @@ test('Latex planning state feeds fixed latex rates into orders and restores the 
   const planning = settings.planningLatexSalesRates
   assert.deepEqual(planning.WEEKLY_TOTAL_BY_SIZE, { King: 10, Queen: 5 })
   assert.deepEqual(planning.WEEKLY_SPIKES, baseline.WEEKLY_SPIKES)
-  assert.deepEqual(planning.PILLOW_LATEX_WEEKLY_RATES, baseline.PILLOW_LATEX_WEEKLY_RATES)
+  assert.deepEqual(planning.PILLOW_LATEX_WEEKLY_RATES, { thin: 0.45, thick: 0.3 })
 
   const order = calculateLatexOrder(410, createEmptyLatexInventory(), planning, [])
   const demandBySku = Object.fromEntries(order.skuMetrics.map(sku => [sku.key, sku.weeklyDemand]))
   assert.deepEqual(demandBySku, {
-    'firm|King': 0.2,
-    'medium|King': 3.7,
-    'soft|King': 6.1,
+    'firm|King': 0.1,
+    'medium|King': 3,
+    'soft|King': 6.9,
     'firm|Queen': 0.1,
-    'medium|Queen': 2.2,
-    'soft|Queen': 2.7,
-    'pillowLatex|thin': 0.25,
-    'pillowLatex|thick': 0.5
+    'medium|Queen': 2.45,
+    'soft|Queen': 2.45,
+    'pillowLatex|thin': 0.45,
+    'pillowLatex|thick': 0.3
   })
   const quantities = [...Object.values(order.latex).flatMap(sizes => Object.values(sizes)), ...Object.values(order.pillowLatex)]
-  assert.equal(quantities.reduce((sum, quantity) => sum + quantity, 0), 410)
-  assert.ok(quantities.every(quantity => quantity >= 0 && quantity % 5 === 0))
+  const totalQuantity = quantities.reduce((sum, quantity) => sum + quantity, 0)
+  assert.ok(totalQuantity <= 410 && 410 - totalQuantity < 3)
+  assert.ok(quantities.every(quantity => quantity >= 0 && quantity % 3 === 0))
 
   settings.useStoreSplitDemand = false
   assert.equal(settings.planningLatexSalesRates, settings.latexSalesRates)

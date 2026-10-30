@@ -61,6 +61,8 @@ export const useLatexInventory = () => {
           const qty = sku.quantity || 0
           if (mapping.pillowLatexType) {
             inv.pillowLatex[mapping.pillowLatexType] = qty
+          } else if (mapping.thinLatexSize) {
+            inv.thinLatex[mapping.thinLatexSize] = qty
           } else {
             inv[mapping.firmness][mapping.size] = qty
           }

@@ -2,6 +2,7 @@
 const latexUIStore = useLatexUIStore()
 const latexOrdersStore = useLatexOrdersStore()
 const { downloadProforma } = useOrderProforma()
+const { deleteError, deletePendingOrder, isDeletingOrder, isOrderPlaced } = useInventoryOrderDeletion('latex')
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -79,6 +80,10 @@ const exportOrderTSV = (order) => {
       <h2 class="text-lg font-semibold text-primary">Pending orders</h2>
     </div>
 
+    <div v-if="deleteError" class="mb-4 p-3 bg-danger/10 border border-danger/20 rounded text-danger text-sm">
+      {{ deleteError }}
+    </div>
+
     <!-- Loading State -->
     <div v-if="latexOrdersStore.loading" class="text-muted text-sm py-4">
       Loading orders...
@@ -112,7 +117,7 @@ const exportOrderTSV = (order) => {
               <span class="text-muted text-sm">
                 ({{ weeksUntilArrival(order.expected_arrival) }} weeks)
               </span>
-              <span v-if="order.ordered" class="px-2 py-0.5 text-xs font-medium rounded bg-success/20 text-success">
+              <span v-if="isOrderPlaced(order)" class="px-2 py-0.5 text-xs font-medium rounded bg-success/20 text-success">
                 Ordered
               </span>
               <span v-else class="px-2 py-0.5 text-xs font-medium rounded bg-warning/20 text-warning">
@@ -134,7 +139,7 @@ const exportOrderTSV = (order) => {
           <!-- Actions -->
           <div class="flex items-center gap-2 shrink-0">
             <button
-            v-if="!order.ordered"
+            v-if="!isOrderPlaced(order)"
             class="px-3 py-1.5 text-sm text-muted hover:text-primary hover:bg-control-surface rounded transition-colors"
             title="Export as TSV"
             @click="exportOrderTSV(order)"
@@ -153,6 +158,14 @@ const exportOrderTSV = (order) => {
             @click="latexUIStore.openOrderPanel(order.id)"
             >
               Edit
+            </button>
+            <button
+            v-if="!isOrderPlaced(order)"
+            :disabled="isDeletingOrder(order.id)"
+            class="px-3 py-1.5 text-sm text-danger hover:bg-danger/10 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            @click="deletePendingOrder(order)"
+            >
+              {{ isDeletingOrder(order.id) ? 'Deleting...' : 'Delete' }}
             </button>
           </div>
         </div>

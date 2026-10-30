@@ -9,7 +9,7 @@ import {
 } from '~/lib/constants/index.js'
 import { calculateSkuWeeklyDemand, getCurrentMonday } from '~/lib/utils/index.js'
 
-const WEEKS_TO_SHOW = 40
+const WEEKS_TO_SHOW = 60
 
 const inventoryOrdersStore = useSpringOrdersStore()
 

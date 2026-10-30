@@ -1,5 +1,5 @@
 <script setup>
-import { LATEX_FIRMNESSES, LATEX_SIZES, PILLOW_LATEX_TYPES, PILLOW_LATEX_LABELS } from '~/lib/constants/index.js'
+import { LATEX_FIRMNESSES, LATEX_SIZES, PILLOW_LATEX_TYPES, PILLOW_LATEX_LABELS, LATEX_PACK_SIZE, THIN_LATEX_PACK_SIZE } from '~/lib/constants/index.js'
 
 const props = defineProps({
   modelValue: {
@@ -50,14 +50,22 @@ const setPillowLatexQuantity = (type, value) => {
   setSkuQuantity(`pillowlatex${type}`, value)
 }
 
+const getThinLatexQuantity = (size) => {
+  return getSkuQuantity(`thinlatex${size.toLowerCase()}`)
+}
+
+const setThinLatexQuantity = (size, value) => {
+  setSkuQuantity(`thinlatex${size.toLowerCase()}`, value)
+}
+
 // Increment quantity
 const increment = (firmness, size) => {
-  setQuantity(firmness, size, getQuantity(firmness, size) + 1)
+  setQuantity(firmness, size, getQuantity(firmness, size) + LATEX_PACK_SIZE)
 }
 
 // Decrement quantity
 const decrement = (firmness, size) => {
-  setQuantity(firmness, size, getQuantity(firmness, size) - 1)
+  setQuantity(firmness, size, getQuantity(firmness, size) - LATEX_PACK_SIZE)
 }
 
 // Get current inventory for a SKU (rounded to integer)
@@ -87,8 +95,10 @@ const totalPillowLatex = computed(() => {
   return total
 })
 
+const totalThinLatex = computed(() => LATEX_SIZES.reduce((total, size) => total + getThinLatexQuantity(size), 0))
+
 const grandTotal = computed(() => {
-  return totalBySize.value.King + totalBySize.value.Queen + totalPillowLatex.value
+  return totalBySize.value.King + totalBySize.value.Queen + totalPillowLatex.value + totalThinLatex.value
 })
 </script>
 
@@ -125,6 +135,7 @@ const grandTotal = computed(() => {
               @input="setQuantity(firmness, size, $event.target.value)"
               class="w-16 h-8 text-center bg-input-surface border border-border rounded text-primary text-sm"
               min="0"
+              :step="LATEX_PACK_SIZE"
             >
             <button
               @click="increment(firmness, size)"
@@ -135,6 +146,50 @@ const grandTotal = computed(() => {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Thin latex rows -->
+    <div class="space-y-2">
+      <div class="text-sm font-medium text-muted mb-3">
+        Thin latex for micro coils
+        <span class="text-subtle font-normal">({{ totalThinLatex }} total)</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div
+          v-for="size in LATEX_SIZES"
+          :key="`thin-latex-${size}`"
+          class="flex flex-col items-center bg-surface border border-border rounded-lg p-3"
+        >
+          <div class="text-sm text-primary">{{ size }}</div>
+          <div class="text-xs text-subtle mb-2">Stock: {{ Math.round(currentInventory.thinLatex?.[size] || 0) }}</div>
+
+          <div class="flex items-center gap-2">
+            <button
+              @click="setThinLatexQuantity(size, getThinLatexQuantity(size) - THIN_LATEX_PACK_SIZE)"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
+              :disabled="getThinLatexQuantity(size) <= 0"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              :value="getThinLatexQuantity(size)"
+              @input="setThinLatexQuantity(size, $event.target.value)"
+              class="w-16 h-8 text-center bg-input-surface border border-border rounded text-primary text-sm"
+              min="0"
+              :step="THIN_LATEX_PACK_SIZE"
+            >
+            <button
+              @click="setThinLatexQuantity(size, getThinLatexQuantity(size) + THIN_LATEX_PACK_SIZE)"
+              class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-subtle">Suggested quantities match projected micro-coil stock when this order arrives.</p>
     </div>
 
     <!-- Pillow latex rows -->
@@ -155,7 +210,7 @@ const grandTotal = computed(() => {
 
           <div class="flex items-center gap-2">
             <button
-              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) - 1)"
+              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) - LATEX_PACK_SIZE)"
               class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
               :disabled="getPillowLatexQuantity(type) <= 0"
             >
@@ -167,9 +222,10 @@ const grandTotal = computed(() => {
               @input="setPillowLatexQuantity(type, $event.target.value)"
               class="w-16 h-8 text-center bg-input-surface border border-border rounded text-primary text-sm"
               min="0"
+              :step="LATEX_PACK_SIZE"
             >
             <button
-              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) + 1)"
+              @click="setPillowLatexQuantity(type, getPillowLatexQuantity(type) + LATEX_PACK_SIZE)"
               class="w-8 h-8 flex items-center justify-center rounded bg-control-surface hover:bg-control-hover text-muted transition-colors"
             >
               +

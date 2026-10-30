@@ -5,10 +5,60 @@ const { downloading, downloadProforma } = useOrderProforma()
 
 const order = computed(() => archiveOrdersStore.getOrderById(archiveUIStore.editingOrderId))
 const orderType = computed(() => order.value?.order_location === 'sri_lanka' ? 'Latex' : 'Springs')
+
+const SIZE_ORDER = ['King', 'Queen', 'Double', 'King Single', 'Single']
+const FIRMNESS_ORDER = ['firm', 'medium', 'soft', 'verysoft']
+
+const getItemTypeIndex = (item) => {
+  const sku = (item.skus_id?.sku || '').toLowerCase()
+  if (sku.startsWith('springs') || sku.startsWith('latexfirm') || sku.startsWith('latexmedium') || sku.startsWith('latexsoft')) return 0
+  if (sku.startsWith('microcoils')) return 1
+  if (sku.startsWith('thinlatex')) return 2
+  if (sku.startsWith('felt')) return 3
+  if (sku.startsWith('paneltop')) return 4
+  if (sku.startsWith('panelbottom')) return 5
+  if (sku.startsWith('panelside')) return 6
+  if (sku.startsWith('pillowlatex')) return 7
+  return 8
+}
+
+const getItemSizeIndex = (item) => {
+  const storedSize = item.skus_id?.size
+  const storedIndex = SIZE_ORDER.findIndex(size => size.toLowerCase() === String(storedSize || '').toLowerCase())
+  if (storedIndex !== -1) return storedIndex
+
+  const sku = (item.skus_id?.sku || '').toLowerCase()
+  const skuSizes = [
+    ['kingsingle', 'King Single'],
+    ['king', 'King'],
+    ['queen', 'Queen'],
+    ['double', 'Double'],
+    ['single', 'Single']
+  ]
+  const matchedSize = skuSizes.find(([suffix]) => sku.endsWith(suffix))?.[1]
+  const matchedIndex = SIZE_ORDER.indexOf(matchedSize)
+  return matchedIndex === -1 ? SIZE_ORDER.length : matchedIndex
+}
+
+const getItemFirmnessIndex = (item) => {
+  const sku = (item.skus_id?.sku || '').toLowerCase()
+  const firmnessIndex = FIRMNESS_ORDER.findIndex(firmness => sku.startsWith(`springs${firmness}`) || sku.startsWith(`latex${firmness}`))
+  return firmnessIndex === -1 ? FIRMNESS_ORDER.length : firmnessIndex
+}
+
 const sortedItems = computed(() => {
   if (!order.value?.skus) return []
 
   return [...order.value.skus].sort((a, b) => {
+    const typeDifference = getItemTypeIndex(a) - getItemTypeIndex(b)
+    if (typeDifference !== 0) return typeDifference
+
+    const sizeDifference = getItemSizeIndex(a) - getItemSizeIndex(b)
+    if (sizeDifference !== 0) return sizeDifference
+
+    const firmnessDifference = getItemFirmnessIndex(a) - getItemFirmnessIndex(b)
+    if (firmnessDifference !== 0) return firmnessDifference
+
     const skuA = a.skus_id?.sku || ''
     const skuB = b.skus_id?.sku || ''
     return skuA.localeCompare(skuB)

@@ -2,7 +2,7 @@
 import { FELT_TO_SPRING_RATIO, LEAD_TIME_WEEKS, SEASONAL_DEMAND } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
-const WEEKS_TO_SHOW = 40
+const WEEKS_TO_SHOW = 60
 
 const inventoryOrdersStore = useSpringOrdersStore()
 
@@ -208,12 +208,11 @@ const componentRows = computed(() => {
   const sidePanelSpikes = props.usageRates.SIDE_PANEL_WEEKLY_SPIKE || {}
 
   return [
-    // Micro Coils & Thin Latex - King inventory
+    // Thin latex remains visible as a grey reference while purchasing transitions to Sri Lanka
     { id: 'micro_coils', inventorySize: 'King', label: 'Micro Coils (King)', weeklyDemand: microWeekly.King, demandSpike: microSpikes.King ?? 0 },
-    { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King, demandSpike: latexSpikes.King ?? 0 },
-    // Micro Coils & Thin Latex - Queen inventory
     { id: 'micro_coils', inventorySize: 'Queen', label: 'Micro Coils (Queen)', weeklyDemand: microWeekly.Queen, demandSpike: microSpikes.Queen ?? 0 },
-    { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen, demandSpike: latexSpikes.Queen ?? 0 },
+    { id: 'thin_latex', inventorySize: 'King', label: 'Thin Latex (King)', weeklyDemand: latexWeekly.King, demandSpike: latexSpikes.King ?? 0, reference: true },
+    { id: 'thin_latex', inventorySize: 'Queen', label: 'Thin Latex (Queen)', weeklyDemand: latexWeekly.Queen, demandSpike: latexSpikes.Queen ?? 0, reference: true },
     // Felt - extra top-up only; springs arrive packaged in usable felt
     { id: 'felt', inventorySize: 'King', label: 'Felt (King)', weeklyDemand: rates.King * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.King ?? 0) * FELT_TO_SPRING_RATIO },
     { id: 'felt', inventorySize: 'Queen', label: 'Felt (Queen)', weeklyDemand: rates.Queen * FELT_TO_SPRING_RATIO, demandSpike: (rateSpikes.Queen ?? 0) * FELT_TO_SPRING_RATIO },
@@ -313,7 +312,8 @@ const rows = computed(() => {
       orderAmount,
       weeklyRate,
       demandSpike: comp.demandSpike ?? 0,
-      projections
+      projections,
+      reference: comp.reference || false
     })
   })
 
@@ -397,17 +397,21 @@ const getCellBg = (stock, weeklyRate) => {
           <tr
             v-for="row in rows"
             :key="`${row.component}-${row.size}`"
-            class="border-b border-border hover:bg-surface-hover/30"
+            :class="[
+              'border-b border-border hover:bg-surface-hover/30',
+              row.reference ? 'text-subtle' : ''
+            ]"
           >
-            <td class="table-cell sticky left-0 bg-background z-10 w-[172px] min-w-[172px] max-w-[172px] font-medium text-xs">{{ row.label }}</td>
+            <td :class="['table-cell sticky left-0 bg-background z-10 w-[172px] min-w-[172px] max-w-[172px] font-medium text-xs', row.reference ? 'text-subtle' : 'text-primary']">{{ row.label }}</td>
             <td class="table-cell sticky left-[172px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
             <td class="table-cell sticky left-[242px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">
               {{ row.demandSpike.toFixed(2) }}/w
             </td>
             <td
               :class="[
-                'table-cell sticky left-[312px] z-10 text-center font-mono w-[70px] text-primary',
-                ordersToPlaceNow.length > 0 ? 'bg-warning/20' : 'bg-table-current'
+                'table-cell sticky left-[312px] z-10 text-center font-mono w-[70px]',
+                ordersToPlaceNow.length > 0 ? 'bg-warning/20' : 'bg-table-current',
+                row.reference ? 'text-subtle' : 'text-primary'
               ]"
             >
               {{ row.currentStock }}
@@ -417,7 +421,8 @@ const getCellBg = (stock, weeklyRate) => {
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasOrdersToPlace ? 'bg-warning/20' : weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-info/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasOrdersToPlace ? 'bg-warning/20' : weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-info/10' : getCellBg(proj.stock, row.weeklyRate),
+                row.reference ? 'text-subtle' : 'text-primary'
               ]"
             >
               <span>{{ proj.stock }}</span>

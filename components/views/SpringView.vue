@@ -36,6 +36,12 @@ const activeComponentOrder = computed(() => {
 // Draft arrival week for timeline display
 const draftArrivalWeek = computed(() => uiStore.draftArrivalWeek)
 
+// The edited order is represented by the draft, so exclude its saved copy.
+const timelineStoredOrders = computed(() => {
+  if (!uiStore.editingOrderId) return inventoryOrdersStore.pendingOrders
+  return inventoryOrdersStore.pendingOrders.filter(order => String(order.id) !== String(uiStore.editingOrderId))
+})
+
 // Refs for syncing timeline scroll
 const springTimelineRef = ref(null)
 const componentTimelineRef = ref(null)
@@ -149,7 +155,7 @@ onUnmounted(() => {
       <!-- Header -->
       <!-- <div class="mb-6">
         <h1 class="text-2xl font-bold text-primary mb-2">
-          40-week inventory forecast
+          60-week inventory forecast
         </h1>
         <p class="text-sm text-muted">
           Projected stock levels with container arrival {{ settingsStore.deliveryWeeks }} weeks from order. Components match spring quantities (1:1).
@@ -195,7 +201,7 @@ onUnmounted(() => {
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
-        :stored-orders="inventoryOrdersStore.pendingOrders"
+        :stored-orders="timelineStoredOrders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
         :use-fixed-demand-splits="settingsStore.useStoreSplitDemand"
         @scroll="onSpringScroll"
@@ -213,7 +219,7 @@ onUnmounted(() => {
         :current-week="settingsStore.currentWeekNumber"
         :usage-rates="usageRates"
         :show-yellow-warnings="showYellowWarnings"
-        :stored-orders="inventoryOrdersStore.pendingOrders"
+        :stored-orders="timelineStoredOrders"
         :use-seasonal-demand="settingsStore.useSeasonalDemand"
         @scroll="onComponentScroll"
       />

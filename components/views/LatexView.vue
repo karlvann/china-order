@@ -3,10 +3,15 @@ const latexSettingsStore = useLatexSettingsStore()
 const latexUIStore = useLatexUIStore()
 const latexOrdersStore = useLatexOrdersStore()
 const latexInventoryStore = useLatexInventoryStore()
+const springInventoryStore = useSpringInventoryStore()
+const springOrdersStore = useSpringOrdersStore()
+const springSettingsStore = useSpringSettingsStore()
 
-// Fetch latex sales data
+// Fetch latex and micro-layer planning data
 const latexSales = useLatexSales()
 const latexInventory = useLatexInventory()
+const componentInventory = useComponentInventory()
+const springSales = useSpringSales()
 
 // Toggle for showing yellow warning backgrounds (off by default)
 const showYellowWarnings = ref(false)
@@ -26,6 +31,12 @@ const activeLatexOrder = computed(() => {
 // Draft arrival week for timeline display
 const draftArrivalWeek = computed(() => latexUIStore.draftArrivalWeek)
 
+// The edited order is represented by the draft, so exclude its saved copy.
+const timelineStoredOrders = computed(() => {
+  if (!latexUIStore.editingOrderId) return latexOrdersStore.pendingOrders
+  return latexOrdersStore.pendingOrders.filter(order => String(order.id) !== String(latexUIStore.editingOrderId))
+})
+
 // Usage rates for timeline
 const usageRates = computed(() => latexSettingsStore.planningLatexSalesRates)
 
@@ -34,11 +45,18 @@ const refreshLatexInventory = () => latexInventory.refresh()
 watch(latexInventory.inventory, latexInventoryStore.setInventory, { immediate: true, deep: true })
 watch(latexInventory.loading, latexInventoryStore.setLoading, { immediate: true })
 watch(latexInventory.error, latexInventoryStore.setError, { immediate: true })
+watch(componentInventory.components, springInventoryStore.setComponents, { immediate: true, deep: true })
+watch(componentInventory.loading, springInventoryStore.setComponentsLoading, { immediate: true })
+watch(componentInventory.error, springInventoryStore.setComponentsError, { immediate: true })
+
+const componentUsageRates = computed(() => springSettingsStore.planningSalesRates)
 
 // Fetch orders on mount
 onMounted(() => {
   latexSettingsStore.loadFromStorage()
+  springSettingsStore.loadFromStorage()
   latexOrdersStore.fetchOrders()
+  springOrdersStore.fetchOrders()
 })
 
 onUnmounted(() => {
@@ -101,7 +119,7 @@ onUnmounted(() => {
                 'relative inline-flex h-5 w-9 items-center rounded-full transition-colors',
                 latexSettingsStore.useStoreSplitDemand ? 'bg-accent-latex' : 'bg-toggle-off'
               ]"
-              title="Keep 12-week sheet demand while applying fixed mattress latex firmness percentages; pillow demand is unchanged"
+              title="Keep 12-week sheet and pillow demand totals while applying fixed firmness and pillow splits"
               @click="latexSettingsStore.toggleStoreSplitDemand()"
             >
               <span
@@ -127,17 +145,17 @@ onUnmounted(() => {
     <!-- Main Content -->
     <div class="max-w-[1600px] mx-auto px-6 py-8">
       <!-- Loading State -->
-      <div v-if="latexSales.loading.value || latexInventoryStore.loading" class="text-center py-10">
+      <div v-if="latexSales.loading.value || latexInventoryStore.loading || componentInventory.loading.value || springSales.loading.value" class="text-center py-10">
         <div class="text-muted">Loading latex data...</div>
       </div>
 
       <!-- Error State -->
-      <div v-else-if="latexSales.error.value || latexInventoryStore.error" class="text-center py-10">
+      <div v-else-if="latexSales.error.value || latexInventoryStore.error || componentInventory.error.value || springSales.error.value" class="text-center py-10">
         <div class="text-danger">
-          {{ latexSales.error.value || latexInventoryStore.error }}
+          {{ latexSales.error.value || latexInventoryStore.error || componentInventory.error.value || springSales.error.value }}
         </div>
         <button
-          @click="latexSales.refresh(); refreshLatexInventory()"
+          @click="latexSales.refresh(); refreshLatexInventory(); componentInventory.refresh(); springSales.refresh()"
           class="mt-4 px-4 py-2 bg-control-surface hover:bg-control-hover text-primary rounded"
         >
           Retry
@@ -159,8 +177,11 @@ onUnmounted(() => {
           :usage-rates="usageRates"
           :show-yellow-warnings="showYellowWarnings"
           :hide-zero-demand-items="hideZeroDemandItems"
-          :stored-orders="latexOrdersStore.pendingOrders"
+          :stored-orders="timelineStoredOrders"
           :use-seasonal-demand="latexSettingsStore.useSeasonalDemand"
+          :component-inventory="springInventoryStore.components"
+          :component-usage-rates="componentUsageRates"
+          :spring-orders="springOrdersStore.pendingOrders"
         />
       </template>
     </div>

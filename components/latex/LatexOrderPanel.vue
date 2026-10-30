@@ -8,6 +8,9 @@ const latexOrdersStore = useLatexOrdersStore()
 const inventoryOrderReceivingStore = useInventoryOrderReceivingStore()
 const latexSettingsStore = useLatexSettingsStore()
 const latexInventoryStore = useLatexInventoryStore()
+const springInventoryStore = useSpringInventoryStore()
+const springOrdersStore = useSpringOrdersStore()
+const springSettingsStore = useSpringSettingsStore()
 const latexSkuLookup = useLatexSkuLookup()
 
 // Usage rates from settings store
@@ -174,6 +177,14 @@ const convertLatexOrderToSkuQuantities = (latexOrder) => {
     }
   }
 
+  for (const size of LATEX_SIZES) {
+    const qty = latexOrder.thinLatex?.[size] || 0
+    const skuId = skuIdMap[`thinlatex${size.toLowerCase()}`]
+    if (skuId && qty > 0) {
+      quantities[skuId] = qty
+    }
+  }
+
   return quantities
 }
 
@@ -188,6 +199,7 @@ const convertSkuQuantitiesToLatexOrder = () => {
     thin: 0,
     thick: 0
   }
+  const thinLatex = { King: 0, Queen: 0 }
 
   const skuIdMap = latexSkuLookup.getSkuIdMap()
 
@@ -209,6 +221,13 @@ const convertSkuQuantitiesToLatexOrder = () => {
     }
   }
 
+  for (const size of LATEX_SIZES) {
+    const skuId = skuIdMap[`thinlatex${size.toLowerCase()}`]
+    if (skuId && skuQuantities.value[skuId]) {
+      thinLatex[size] = skuQuantities.value[skuId]
+    }
+  }
+
   // Calculate total
   let total = 0
   for (const firmness of LATEX_FIRMNESSES) {
@@ -219,10 +238,14 @@ const convertSkuQuantitiesToLatexOrder = () => {
   for (const type of PILLOW_LATEX_TYPES) {
     total += pillowLatex[type]
   }
+  for (const size of LATEX_SIZES) {
+    total += thinLatex[size]
+  }
 
   return {
     latex,
     pillowLatex,
+    thinLatex,
     metadata: {
       total_items: total,
       container_capacity: containerCapacity.value
@@ -235,6 +258,10 @@ const computeOrderFromSettings = () => {
   if (!usageRates.value?.WEEKLY_TOTAL_BY_SIZE) return null
 
   const pendingOrders = convertPendingOrdersForAlgorithm()
+  const latexOrders = latexUIStore.editingOrderId
+    ? latexOrdersStore.pendingOrders.filter(order => order.id !== latexUIStore.editingOrderId)
+    : latexOrdersStore.pendingOrders
+  const springRates = springSettingsStore.planningSalesRates
 
   return calculateLatexOrder(
     containerCapacity.value,
@@ -242,7 +269,14 @@ const computeOrderFromSettings = () => {
     usageRates.value,
     pendingOrders,
     localOrderWeekOffset.value,
-    localDeliveryWeeks.value
+    localDeliveryWeeks.value,
+    {
+      microCoilInventory: springInventoryStore.components.micro_coils,
+      thinLatexInventory: latexInventoryStore.inventory.thinLatex,
+      weeklyDemand: springRates.MICRO_COIL_WEEKLY_DEMAND,
+      springOrders: springOrdersStore.pendingOrders,
+      latexOrders
+    }
   )
 }
 
@@ -268,6 +302,16 @@ watch(localCapacity, () => {
 })
 
 watch(usageRates, () => {
+  if (!latexUIStore.orderPanelOpen || isInitializing.value || isEditing.value) return
+  updateFromAlgorithm()
+}, { deep: true })
+
+watch([
+  () => springInventoryStore.components,
+  () => springSettingsStore.planningSalesRates,
+  () => springOrdersStore.pendingOrders,
+  () => latexOrdersStore.pendingOrders
+], () => {
   if (!latexUIStore.orderPanelOpen || isInitializing.value || isEditing.value) return
   updateFromAlgorithm()
 }, { deep: true })

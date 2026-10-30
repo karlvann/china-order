@@ -4,12 +4,13 @@ import {
   LATEX_PLANNING_SPLIT,
   PILLOW_LATEX_TYPES,
   PILLOW_LATEX_LABELS,
+  PILLOW_LATEX_PLANNING_SPLIT,
   SEASONAL_DEMAND,
   LATEX_LEAD_TIME_WEEKS
 } from '~/lib/constants/index.js'
 import { getCurrentMonday } from '~/lib/utils/index.js'
 
-const WEEKS_TO_SHOW = 40
+const WEEKS_TO_SHOW = 60
 
 const latexOrdersStore = useLatexOrdersStore()
 
@@ -66,6 +67,18 @@ const props = defineProps({
   useSeasonalDemand: {
     type: Boolean,
     default: false
+  },
+  componentInventory: {
+    type: Object,
+    default: () => ({})
+  },
+  componentUsageRates: {
+    type: Object,
+    default: () => ({})
+  },
+  springOrders: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -178,7 +191,7 @@ const getRemainingWeekFraction = () => {
   return daysRemaining / 7
 }
 
-const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate, demandSpike }) => {
+const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate, demandSpike, storedOrders = props.storedOrders, reference = false }) => {
   const remainingWeekFraction = getRemainingWeekFraction()
   const projections = []
 
@@ -199,7 +212,7 @@ const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate
     }
 
     // Add stored order arrivals
-    const storedOrdersThisWeek = getOrdersArrivingInWeek(i)
+    const storedOrdersThisWeek = storedOrders.filter(order => getOrderWeekIndex(order) === i)
     for (const order of storedOrdersThisWeek) {
       const qty = getOrderSkuQuantity(order, skuString)
       stock += qty
@@ -226,7 +239,8 @@ const buildRow = ({ key, label, skuString, currentStock, orderAmount, weeklyRate
     orderAmount,
     weeklyRate,
     demandSpike: demandSpike ?? 0,
-    projections
+    projections,
+    reference
   }
 }
 
@@ -236,6 +250,36 @@ const rows = computed(() => {
 
   // Rows in order: Queen first (sells more), then King
   const orderedSizes = ['Queen', 'King']
+  const microLayerOrders = [...props.springOrders, ...props.storedOrders]
+
+  orderedSizes.forEach(size => {
+    const sizeKey = size.toLowerCase()
+    const weeklyRate = props.componentUsageRates.MICRO_COIL_WEEKLY_DEMAND?.[size] || 0
+    const demandSpike = props.componentUsageRates.MICRO_COIL_WEEKLY_SPIKE?.[size] ?? 0
+
+    result.push(buildRow({
+      key: `thin-latex-${size}`,
+      label: `${size} thin latex`,
+      skuString: `thinlatex${sizeKey}`,
+      currentStock: props.inventory.thinLatex?.[size] || 0,
+      orderAmount: props.latexOrder?.thinLatex?.[size] || 0,
+      weeklyRate,
+      demandSpike,
+      storedOrders: microLayerOrders
+    }))
+
+    result.push(buildRow({
+      key: `micro-coils-${size}`,
+      label: `${size} micro coils`,
+      skuString: `microcoils${sizeKey}`,
+      currentStock: props.componentInventory.micro_coils?.[size] || 0,
+      orderAmount: 0,
+      weeklyRate,
+      demandSpike,
+      storedOrders: props.springOrders,
+      reference: true
+    }))
+  })
 
   orderedSizes.forEach(size => {
     LATEX_FIRMNESSES.forEach(firmness => {
@@ -295,12 +339,12 @@ const getCellBg = (stock, weeklyRate) => {
   <div class="mb-8">
     <div class="mb-6 rounded border border-border p-4">
       <h3 class="text-sm font-semibold text-primary">Fixed latex demand split</h3>
-      <p class="mt-1 text-xs text-muted">Applied within the 12-week King and Queen sheet demand rates when fixed demand splits are enabled. Sheet demand totals and pillow latex are unchanged.</p>
+      <p class="mt-1 text-xs text-muted">Applied within the 12-week sheet and pillow latex demand totals when fixed demand splits are enabled. Total demand is unchanged.</p>
       <div class="mt-3 overflow-x-auto">
         <table class="text-xs text-muted">
           <thead>
             <tr>
-              <th class="pr-6 pb-1 text-left">Mattress size</th>
+              <th class="pr-6 pb-1 text-left">Latex sheet size</th>
               <th class="pr-6 pb-1 text-right">Soft</th>
               <th class="pr-6 pb-1 text-right">Medium</th>
               <th class="pb-1 text-right">Firm</th>
@@ -312,6 +356,23 @@ const getCellBg = (stock, weeklyRate) => {
               <td class="pr-6 py-1 text-right font-mono">{{ split.soft }}%</td>
               <td class="pr-6 py-1 text-right font-mono">{{ split.medium }}%</td>
               <td class="py-1 text-right font-mono">{{ split.firm }}%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <table class="mt-4 text-xs text-muted">
+          <thead>
+            <tr>
+              <th class="pr-6 pb-1 text-left">Pillow latex</th>
+              <th class="pr-6 pb-1 text-right">Thin</th>
+              <th class="pb-1 text-right">Thick</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pr-6 py-1 font-medium text-primary">Demand split</td>
+              <td class="pr-6 py-1 text-right font-mono">{{ PILLOW_LATEX_PLANNING_SPLIT.thin }}%</td>
+              <td class="py-1 text-right font-mono">{{ PILLOW_LATEX_PLANNING_SPLIT.thick }}%</td>
             </tr>
           </tbody>
         </table>
@@ -382,17 +443,28 @@ const getCellBg = (stock, weeklyRate) => {
           <tr
             v-for="row in rows"
             :key="row.key"
-            class="border-b border-border hover:bg-surface-hover/30"
+            :class="[
+              'border-b border-border hover:bg-surface-hover/30',
+              row.reference ? 'text-subtle' : ''
+            ]"
           >
-            <td class="table-cell sticky left-0 bg-background z-10 w-[140px] font-medium">{{ row.label }}</td>
-            <td class="table-cell sticky left-[140px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
-            <td class="table-cell sticky left-[210px] bg-background z-10 text-center font-mono text-muted w-[70px] min-w-[70px] max-w-[70px]">
+            <td
+              :class="[
+                'table-cell sticky left-0 z-10 w-[140px] font-medium bg-background',
+                row.reference ? 'text-subtle' : 'text-primary'
+              ]"
+            >
+              {{ row.label }}
+            </td>
+            <td class="table-cell sticky left-[140px] z-10 text-center font-mono text-muted bg-background w-[70px] min-w-[70px] max-w-[70px]">{{ row.weeklyRate.toFixed(2) }}/w</td>
+            <td class="table-cell sticky left-[210px] z-10 text-center font-mono text-muted bg-background w-[70px] min-w-[70px] max-w-[70px]">
               {{ row.demandSpike.toFixed(2) }}/w
             </td>
             <td
               :class="[
-                'table-cell sticky left-[280px] z-10 text-center font-mono w-[70px] text-primary',
-                ordersToPlaceNow.length > 0 ? 'bg-warning/20' : 'bg-table-current'
+                'table-cell sticky left-[280px] z-10 text-center font-mono w-[70px]',
+                ordersToPlaceNow.length > 0 ? 'bg-warning/20' : 'bg-table-current',
+                row.reference ? 'text-subtle' : 'text-primary'
               ]"
             >
               {{ row.currentStock }}
@@ -402,7 +474,8 @@ const getCellBg = (stock, weeklyRate) => {
               :key="proj.week"
               :class="[
                 'table-cell text-center font-mono',
-                weeks[proj.week - 1]?.hasOrdersToPlace ? 'bg-warning/20' : weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-accent-latex/10' : getCellBg(proj.stock, row.weeklyRate)
+                weeks[proj.week - 1]?.hasOrdersToPlace ? 'bg-warning/20' : weeks[proj.week - 1]?.hasStoredOrders ? 'bg-success/10' : weeks[proj.week - 1]?.isDraftArrival ? 'bg-accent-latex/10' : getCellBg(proj.stock, row.weeklyRate),
+                row.reference ? 'text-subtle' : ''
               ]"
             >
               <span>{{ proj.stock }}</span>

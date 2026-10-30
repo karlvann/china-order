@@ -56,7 +56,7 @@ const scenarios = [
       WEEKLY_SALES_RATE: { King: 1 },
       FIRMNESS_DISTRIBUTION: { King: { verysoft: 0, firm: 0.049, medium: 0.05, soft: 0.051 } }
     },
-    totalRows: 20,
+    totalRows: 15,
     visibleRows: 2
   },
   {
@@ -64,11 +64,11 @@ const scenarios = [
     inventory: { components: createEmptyComponentInventory() },
     usageRates: {
       WEEKLY_SALES_RATE: { King: 0, Queen: 0, Double: 0, 'King Single': 0, Single: 0 },
-      MICRO_COIL_WEEKLY_DEMAND: { King: 0, Queen: 0.049 },
+      MICRO_COIL_WEEKLY_DEMAND: { King: 0.05, Queen: 0.049 },
       THIN_LATEX_WEEKLY_DEMAND: { King: 0.05, Queen: 0.051 }
     },
     totalRows: 22,
-    visibleRows: 2
+    visibleRows: 3
   },
   {
     path: 'components/latex/LatexTimeline.vue',
@@ -77,7 +77,7 @@ const scenarios = [
       WEEKLY_RATES: { firm: { King: 0, Queen: 0.049 }, medium: { King: 0.05, Queen: 0.051 } },
       PILLOW_LATEX_WEEKLY_RATES: { thin: 0, thick: 0.05 }
     },
-    totalRows: 8,
+    totalRows: 12,
     visibleRows: 3
   }
 ]
@@ -177,7 +177,8 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
     const { default: component, render } = await import(new URL(scenario.path, root).href)
     const html = await renderToString(createSSRApp({ ...component, render }, {
       inventory: scenario.inventory,
-      usageRates: scenario.usageRates
+      usageRates: scenario.usageRates,
+      useFixedDemandSplits: true
     }))
 
     assert.match(html, />Spike<\/th>/)
@@ -188,8 +189,8 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
 
     if (isSpringTimeline) {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
-      assert.ok(summary.includes('King 5% 39% 56%'))
-      assert.ok(summary.includes('Queen 5% 55% 40%'))
+      assert.ok(summary.includes('King 0% 40% 60%'))
+      assert.ok(summary.includes('Queen 0% 65% 35%'))
       assert.ok(summary.includes('Double 10% 35% 55%'))
       assert.doesNotMatch(summary, /King and Double/)
       assert.ok(summary.includes('King Single 25% 30% 45%'))
@@ -200,12 +201,12 @@ for (const scenario of scenarios.filter(item => item.path !== 'components/foreca
       assert.ok(html.indexOf('Fixed spring demand splits') < html.indexOf('Spring timeline'))
     } else {
       const summary = html.split('</table>')[0].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ')
-      assert.ok(summary.includes('Mattress size Soft Medium Firm'))
-      assert.ok(summary.includes('King 61% 37% 2%'))
-      assert.ok(summary.includes('Queen 54% 44% 2%'))
-      assert.ok(summary.includes('Double 54% 44% 2%'))
-      assert.ok(summary.includes('King Single 54% 44% 2%'))
-      assert.ok(summary.includes('Single 61% 37% 2%'))
+      assert.ok(summary.includes('Latex sheet size Soft Medium Firm'))
+      assert.ok(summary.includes('King 69% 30% 1%'))
+      assert.ok(summary.includes('Queen 49% 49% 2%'))
+      assert.doesNotMatch(summary, /Double/)
+      assert.doesNotMatch(summary, /King Single/)
+      assert.doesNotMatch(summary, /\bSingle\b/)
       assert.ok(html.indexOf('Fixed latex demand split') < html.indexOf('Latex timeline'))
     }
   })
